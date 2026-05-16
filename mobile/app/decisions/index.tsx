@@ -169,7 +169,7 @@ export default function DecisionsScreen() {
                   </Text>
                 </View>
                 <Text className="text-textMuted text-xs">
-                  {formatMoney(todayNet, locale)} {locale === 'ar' ? 'مقابل متوسط آخر ٧ أيام' : 'vs 7-day average'} {formatMoney(sevenDayAvg, locale)}
+                  {formatMoney(todayNet, locale)} {locale === 'ar' ? 'مقارنةً بمتوسط آخر 7 أيام' : 'vs 7-day average'} {formatMoney(sevenDayAvg, locale)}
                 </Text>
               </Card>
             </Section>

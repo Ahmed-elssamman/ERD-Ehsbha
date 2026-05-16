@@ -1,0 +1,27 @@
+node_modules/
+**/node_modules/
+
+# Backend workspace is not needed by the mobile build.
+backend/
+
+# Local-only artifacts.
+.expo/
+**/.expo/
+dist/
+build/
+**/dist/
+**/build/
+
+# Environment & secrets — eas.json carries the build-time env vars.
+.env
+**/.env
+.env.local
+**/.env.local
+.env.*.local
+**/.env.*.local
+
+coverage/
+**/coverage/
+*.log
+*.tsbuildinfo
+.DS_Store

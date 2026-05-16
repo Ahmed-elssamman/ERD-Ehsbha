@@ -10,7 +10,7 @@ import { Button } from '@/ui/Button';
 import { TripRow } from '@/ui/TripRow';
 import { EmptyState } from '@/ui/EmptyState';
 import { DailyOdometerCard } from '@/ui/DailyOdometerCard';
-import { Analytics, Recommendations, Score, Trips } from '@/api/endpoints';
+import { Analytics, Apps, Recommendations, Score, Trips, Vehicles } from '@/api/endpoints';
 import { formatHours, formatKm, formatMoney } from '@/lib/format';
 import { getLocale, t } from '@/i18n';
 import { useNetwork } from '@/stores/network.store';
@@ -20,6 +20,8 @@ export default function HomeScreen() {
   const locale = getLocale();
   const pending = useNetwork((s) => s.pendingMutations);
 
+  const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list(), staleTime: 5 * 60_000 });
+  const appsQ = useQuery({ queryKey: ['apps', 'me'], queryFn: () => Apps.mine(), staleTime: 5 * 60_000 });
   const todayQ = useQuery({ queryKey: ['analytics', 'today'], queryFn: () => Analytics.today(), staleTime: 60_000 });
   const decisionsQ = useQuery({ queryKey: ['decisions', 'today'], queryFn: () => Recommendations.today(), staleTime: 5 * 60_000 });
   const scoreQ = useQuery({ queryKey: ['score', 'today'], queryFn: () => Score.today(), staleTime: 60_000 });
@@ -50,6 +52,34 @@ export default function HomeScreen() {
         }
       />
 
+      {/* First-time onboarding banner — no vehicle yet */}
+      {!vehiclesQ.isLoading && (vehiclesQ.data ?? []).length === 0 ? (
+        <Pressable onPress={() => router.push('/vehicles/new' as any)} className="mb-3">
+          <View className="bg-accent/10 border border-accent/40 rounded-2xl p-4">
+            <Text className="text-accent font-bold text-base mb-1">{t('home.setupCta')}</Text>
+            <Text className="text-textMuted text-sm mb-2">{t('home.setupCtaBody')}</Text>
+            <View className="flex-row items-center justify-between mt-2">
+              <Text className="text-text font-medium">🚗 {t('vehicles.addFirst')}</Text>
+              <Text className="text-accent text-lg">›</Text>
+            </View>
+          </View>
+        </Pressable>
+      ) : null}
+
+      {/* Apps setup banner — has vehicle but no apps */}
+      {!vehiclesQ.isLoading && (vehiclesQ.data ?? []).length > 0 && !appsQ.isLoading && (appsQ.data ?? []).filter((a: any) => a.enabled).length === 0 ? (
+        <Pressable onPress={() => router.push('/apps' as any)} className="mb-3">
+          <View className="bg-accentAlt/10 border border-accentAlt/40 rounded-2xl p-4">
+            <Text className="text-accentAlt font-bold text-base mb-1">{t('home.appsCta')}</Text>
+            <Text className="text-textMuted text-sm mb-2">{t('home.appsCtaBody')}</Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-text font-medium">📱 {t('apps.title')}</Text>
+              <Text className="text-accentAlt text-lg">›</Text>
+            </View>
+          </View>
+        </Pressable>
+      ) : null}
+
       {todayQ.isLoading ? (
         <View className="py-6 items-center"><ActivityIndicator color="#34D399" /></View>
       ) : (
@@ -71,6 +101,30 @@ export default function HomeScreen() {
 
       <View className="mt-4">
         <DailyOdometerCard />
+      </View>
+
+      <View className="mt-3 flex-row gap-3">
+        <Pressable onPress={() => router.push('/maintenance' as any)} className="flex-1">
+          <View className="bg-surface border border-border rounded-2xl p-4 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3">
+              <Text className="text-accent text-xl">🔧</Text>
+              <Text className="text-text font-bold">{t('maintenance.hub')}</Text>
+            </View>
+            <Text className="text-textMuted text-lg">›</Text>
+          </View>
+        </Pressable>
+      </View>
+
+      <View className="mt-3 flex-row gap-3">
+        <Pressable onPress={() => router.push('/maintenance/costs' as any)} className="flex-1">
+          <View className="bg-surface border border-border rounded-2xl p-4 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3">
+              <Text className="text-accent text-xl">💰</Text>
+              <Text className="text-text font-bold">{t('vehicleCosts.title')}</Text>
+            </View>
+            <Text className="text-textMuted text-lg">›</Text>
+          </View>
+        </Pressable>
       </View>
 
       {score ? (

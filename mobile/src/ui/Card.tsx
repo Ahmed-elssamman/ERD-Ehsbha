@@ -6,11 +6,11 @@ interface Props extends ViewProps {
   tone?: 'default' | 'elevated';
 }
 
-export function Card({ children, tone = 'default', className, ...rest }: Props & { className?: string }) {
+export const Card = React.memo(function Card({ children, tone = 'default', className, ...rest }: Props & { className?: string }) {
   const bg = tone === 'elevated' ? 'bg-surface2' : 'bg-surface';
   return (
     <View {...rest} className={`${bg} rounded-2xl p-4 border border-border ${className ?? ''}`}>
       {children}
     </View>
   );
-}
+});

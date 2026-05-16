@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { t } from '@/i18n';
 
 interface Props {
   title: string;
@@ -8,7 +9,7 @@ interface Props {
   onDismiss?: () => void;
 }
 
-export function DecisionCard({ title, body, tone = 'neutral', onDismiss }: Props) {
+export const DecisionCard = React.memo(function DecisionCard({ title, body, tone = 'neutral', onDismiss }: Props) {
   const accentBar = {
     earn: 'bg-accent',
     protect: 'bg-warn',
@@ -24,10 +25,10 @@ export function DecisionCard({ title, body, tone = 'neutral', onDismiss }: Props
         <Text className="text-textMuted text-sm leading-5">{body}</Text>
         {onDismiss ? (
           <Pressable onPress={onDismiss} className="mt-3 self-start">
-            <Text className="text-accentAlt text-sm">تجاهل</Text>
+            <Text className="text-accentAlt text-sm">{t('decisions.dismiss')}</Text>
           </Pressable>
         ) : null}
       </View>
     </View>
   );
-}
+});

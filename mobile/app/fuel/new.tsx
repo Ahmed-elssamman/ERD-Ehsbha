@@ -16,6 +16,7 @@ import { formatMoney } from '@/lib/format';
 import { enqueue } from '@/offline/queue';
 import { useNetwork } from '@/stores/network.store';
 import { showErrorAlert, toUserError } from '@/lib/errors';
+import { normalizeNumberInput, normalizeIntInput } from '@/lib/numbers';
 
 const Schema = z.object({
   vehicleId: z.string().min(1),
@@ -92,7 +93,7 @@ export default function NewFuelScreen() {
                   label={t('fuel.liters')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeNumberInput(v))}
                   error={errors.liters?.message}
                 />
               )}
@@ -107,7 +108,7 @@ export default function NewFuelScreen() {
                   label={t('fuel.pricePerLiter')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeNumberInput(v))}
                   error={errors.pricePerLiterEgp?.message}
                 />
               )}
@@ -128,7 +129,7 @@ export default function NewFuelScreen() {
               label={t('fuel.odometer')}
               keyboardType="numeric"
               value={String(value || '')}
-              onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
+              onChangeText={(v) => onChange(normalizeIntInput(v))}
               error={errors.odometerKm?.message}
             />
           )}

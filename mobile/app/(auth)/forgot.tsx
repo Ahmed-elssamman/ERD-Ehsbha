@@ -12,13 +12,13 @@ import { Card } from '@/ui/Card';
 import { Auth } from '@/api/endpoints';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
-import { isValidLocalEgyptPhone, toE164 } from '@/lib/phone';
+import { isValidLocalEgyptPhone, normalizeDigits, toE164 } from '@/lib/phone';
 
 const Schema = z.object({
   phone: z
     .string()
     .min(1, 'required')
-    .refine((v) => isValidLocalEgyptPhone(v.replace(/[\s-]/g, '')), { message: 'invalid' }),
+    .refine((v) => isValidLocalEgyptPhone(normalizeDigits(v).replace(/[\s-]/g, '')), { message: 'invalid' }),
 });
 type Form = z.infer<typeof Schema>;
 
@@ -70,7 +70,7 @@ export default function ForgotPasswordScreen() {
               maxLength={11}
               placeholder="01019579006"
               value={value}
-              onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
+              onChangeText={(v) => onChange(normalizeDigits(v).replace(/[^\d]/g, ''))}
               onBlur={onBlur}
               error={errors.phone ? t('auth.phoneInvalid') : undefined}
               hint={!errors.phone ? t('auth.phoneHint') : undefined}

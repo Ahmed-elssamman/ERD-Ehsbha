@@ -12,13 +12,13 @@ import { Auth } from '@/api/endpoints';
 import { useAuth } from '@/stores/auth.store';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
-import { isValidLocalEgyptPhone, toE164 } from '@/lib/phone';
+import { isValidLocalEgyptPhone, normalizeDigits, toE164 } from '@/lib/phone';
 
 const Schema = z.object({
   phone: z
     .string()
     .min(1, 'required')
-    .refine((v) => isValidLocalEgyptPhone(v.replace(/[\s-]/g, '')), {
+    .refine((v) => isValidLocalEgyptPhone(normalizeDigits(v).replace(/[\s-]/g, '')), {
       message: 'invalid',
     }),
   password: z.string().min(8).max(128),
@@ -29,25 +29,49 @@ export default function LoginScreen() {
   const router = useRouter();
   const setSession = useAuth((s) => s.setSession);
   const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const { control, handleSubmit, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(Schema),
     defaultValues: { phone: '', password: '' },
+    mode: 'onSubmit',
   });
 
+  const onInvalid = (errs: any) => {
+    const first = Object.keys(errs)[0];
+    if (first === 'phone') setApiError(t('auth.phoneInvalid'));
+    else if (first === 'password') setApiError(t('auth.passwordTooShort'));
+    else setApiError(t('errors.VALIDATION_ERROR'));
+  };
+
   const onSubmit = async (data: Form) => {
+    setApiError(null);
     const phoneE164 = toE164(data.phone);
     if (!phoneE164) {
-      showErrorAlert({ response: { data: { error: { code: 'VALIDATION_ERROR' } } } });
+      setApiError(t('auth.phoneInvalid'));
+      return;
+    }
+    const password = data.password.trim();
+    if (password.length < 8) {
+      setApiError(t('auth.passwordTooShort'));
       return;
     }
     setSubmitting(true);
     try {
-      const result = await Auth.login({ phone: phoneE164, password: data.password });
+      const result = await Auth.login({ phone: phoneE164, password });
+      setApiError(null);
       await setSession(result);
       router.replace('/(tabs)/home');
-    } catch (err) {
-      showErrorAlert(err);
+    } catch (err: any) {
+      const code = err?.response?.data?.error?.code;
+      if (code === 'INVALID_CREDENTIALS' || err?.response?.status === 401) {
+        setApiError(t('auth.invalidCredentials'));
+      } else if (!err?.response) {
+        setApiError(t('errors.NETWORK_OFFLINE'));
+        showErrorAlert(err);
+      } else {
+        showErrorAlert(err);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +92,8 @@ export default function LoginScreen() {
               maxLength={11}
               placeholder="01019579006"
               value={value}
-              onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
+              // Normalize Arabic/Persian digits to Latin AND strip non-digits.
+              onChangeText={(v) => onChange(normalizeDigits(v).replace(/[^\d]/g, ''))}
               onBlur={onBlur}
               error={errors.phone ? t('auth.phoneInvalid') : undefined}
               hint={!errors.phone ? t('auth.phoneHint') : undefined}
@@ -83,6 +108,7 @@ export default function LoginScreen() {
               label={t('auth.password')}
               secureTextEntry
               autoCapitalize="none"
+              autoCorrect={false}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -91,7 +117,13 @@ export default function LoginScreen() {
           )}
         />
 
-        <Button label={t('auth.login')} loading={submitting} onPress={handleSubmit(onSubmit)} />
+        {apiError ? (
+          <View className="bg-danger/10 border border-danger/40 rounded-xl p-3">
+            <Text className="text-danger text-sm text-center">{apiError}</Text>
+          </View>
+        ) : null}
+
+        <Button label={t('auth.login')} loading={submitting} onPress={handleSubmit(onSubmit, onInvalid)} />
 
         <View className="items-center mt-1">
           <Text className="text-accent text-sm" onPress={() => router.push('/(auth)/forgot' as any)}>

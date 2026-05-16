@@ -12,6 +12,7 @@ import { Button } from '@/ui/Button';
 import { Maintenance, Vehicles } from '@/api/endpoints';
 import { t, getLocale } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
+import { normalizeNumberInput, normalizeIntInput } from '@/lib/numbers';
 
 const Schema = z.object({
   maintenanceItemId: z.string().min(1),
@@ -130,7 +131,7 @@ export default function NewMaintenanceScreen() {
                   label={t('maintenance.cost')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeNumberInput(v))}
                   error={errors.costEgp?.message}
                 />
               )}
@@ -145,7 +146,7 @@ export default function NewMaintenanceScreen() {
                   label={t('maintenance.odometer')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeIntInput(v))}
                   error={errors.odometerKm?.message}
                 />
               )}

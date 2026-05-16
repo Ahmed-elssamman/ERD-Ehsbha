@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/ui/Screen';
@@ -11,6 +12,7 @@ import { Vehicles } from '@/api/endpoints';
 import { t, getLocale } from '@/i18n';
 import { formatMoney, formatPercent } from '@/lib/format';
 import { showErrorAlert } from '@/lib/errors';
+import { normalizeNumberInput, normalizeIntInput } from '@/lib/numbers';
 
 interface Form {
   fuelTankCostEgp: string;
@@ -49,6 +51,7 @@ const empty: Form = {
 export default function VehicleCostsScreen() {
   const locale = getLocale();
   const qc = useQueryClient();
+  const router = useRouter();
 
   const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list() });
   const vehicle = (vehiclesQ.data ?? []).find((v: any) => v.isActive) ?? (vehiclesQ.data ?? [])[0];
@@ -114,6 +117,11 @@ export default function VehicleCostsScreen() {
     return (
       <Screen>
         <Header title={t('vehicleCosts.title')} back />
+        <View className="mt-12 items-center px-6">
+          <Text className="text-text text-lg font-bold text-center mb-2">{t('vehicles.emptyTitle')}</Text>
+          <Text className="text-textMuted text-center text-sm mb-4">{t('vehicles.emptyBody')}</Text>
+          <Button label={t('vehicles.addFirst')} onPress={() => router.push('/vehicles/new' as any)} fullWidth={false} />
+        </View>
       </Screen>
     );
   }
@@ -186,12 +194,12 @@ export default function VehicleCostsScreen() {
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller control={control} name="fuelTankCostEgp" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.fuelTankCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+              <Input label={t('vehicleCosts.fuelTankCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
             )} />
           </View>
           <View className="flex-1">
             <Controller control={control} name="fuelTankKmRange" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.fuelTankKmRange')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+              <Input label={t('vehicleCosts.fuelTankKmRange')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
             )} />
           </View>
         </View>
@@ -201,12 +209,12 @@ export default function VehicleCostsScreen() {
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller control={control} name="oilCostEgp" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.oilCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+              <Input label={t('vehicleCosts.oilCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
             )} />
           </View>
           <View className="flex-1">
             <Controller control={control} name="oilIntervalKm" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.oilInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+              <Input label={t('vehicleCosts.oilInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
             )} />
           </View>
         </View>
@@ -216,12 +224,12 @@ export default function VehicleCostsScreen() {
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller control={control} name="tireCostEgp" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.tireCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+              <Input label={t('vehicleCosts.tireCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
             )} />
           </View>
           <View className="flex-1">
             <Controller control={control} name="tireIntervalKm" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.tireInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+              <Input label={t('vehicleCosts.tireInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
             )} />
           </View>
         </View>
@@ -231,12 +239,12 @@ export default function VehicleCostsScreen() {
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller control={control} name="brakesCostEgp" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.brakesCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+              <Input label={t('vehicleCosts.brakesCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
             )} />
           </View>
           <View className="flex-1">
             <Controller control={control} name="brakesIntervalKm" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.brakesInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+              <Input label={t('vehicleCosts.brakesInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
             )} />
           </View>
         </View>
@@ -247,12 +255,12 @@ export default function VehicleCostsScreen() {
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Controller control={control} name="chainCostEgp" render={({ field: { value, onChange } }) => (
-                <Input label={t('vehicleCosts.chainCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+                <Input label={t('vehicleCosts.chainCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
               )} />
             </View>
             <View className="flex-1">
               <Controller control={control} name="chainIntervalKm" render={({ field: { value, onChange } }) => (
-                <Input label={t('vehicleCosts.chainInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+                <Input label={t('vehicleCosts.chainInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
               )} />
             </View>
           </View>
@@ -263,12 +271,12 @@ export default function VehicleCostsScreen() {
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller control={control} name="batteryCostEgp" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.batteryCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+              <Input label={t('vehicleCosts.batteryCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
             )} />
           </View>
           <View className="flex-1">
             <Controller control={control} name="batteryIntervalMonths" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.batteryInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+              <Input label={t('vehicleCosts.batteryInterval')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
             )} />
           </View>
         </View>
@@ -278,12 +286,12 @@ export default function VehicleCostsScreen() {
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller control={control} name="monthlyMaintCostEgp" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.monthlyMaintCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))} />
+              <Input label={t('vehicleCosts.monthlyMaintCost')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeNumberInput(v))} />
             )} />
           </View>
           <View className="flex-1">
             <Controller control={control} name="monthlyAvgKm" render={({ field: { value, onChange } }) => (
-              <Input label={t('vehicleCosts.monthlyAvgKm')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))} />
+              <Input label={t('vehicleCosts.monthlyAvgKm')} keyboardType="numeric" value={value} onChangeText={(v) => onChange(normalizeIntInput(v))} />
             )} />
           </View>
         </View>

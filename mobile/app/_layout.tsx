@@ -22,10 +22,21 @@ import { startSync } from '@/offline/sync';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,
+      // 2 minutes: most KPI/list data is fine to reuse this long; per-query
+      // can override (e.g. analytics today uses 60s).
+      staleTime: 2 * 60_000,
       gcTime: 60 * 60 * 1000,
       retry: 1,
+      retryDelay: 500,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: 'always',
+      // Don't refetch on every screen mount — only when stale.
+      refetchOnMount: false,
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      retry: 0,
+      networkMode: 'offlineFirst',
     },
   },
 });

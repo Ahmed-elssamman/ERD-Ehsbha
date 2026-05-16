@@ -41,6 +41,9 @@ export default function ProfileScreen() {
     );
   };
 
+  const vehicles = vehiclesQ.data ?? [];
+  const activeGoals = (goalsQ.data ?? []).filter((g: any) => g.isActive);
+
   return (
     <Screen>
       <Header title={t('tabs.profile')} />
@@ -52,58 +55,85 @@ export default function ProfileScreen() {
 
       {/* Quick links */}
       <View className="mt-4 gap-2">
-        <RowLink
-          label={t('profile.maintenance')}
-          icon="🔧"
-          onPress={() => router.push('/maintenance' as any)}
-        />
-        <RowLink
-          label={t('decisions.title')}
-          icon="✦"
-          onPress={() => router.push('/decisions' as any)}
-        />
+        <RowLink icon="🔧" label={t('maintenance.hub')} onPress={() => router.push('/maintenance' as any)} />
+        <RowLink icon="💰" label={t('vehicleCosts.title')} onPress={() => router.push('/maintenance/costs' as any)} />
+        <RowLink icon="✦" label={t('decisions.title')} onPress={() => router.push('/decisions' as any)} />
       </View>
 
-      {/* Vehicles */}
+      {/* Setup: vehicles, apps, areas, goals */}
       <View className="mt-6">
-        <SectionLabel label={t('profile.vehicles')} />
-        {(vehiclesQ.data ?? []).map((v: any) => (
-          <Card key={v.id} className="mb-2">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-1">
-                <Text className="text-text font-bold">
-                  {v.make || v.model ? `${v.make ?? ''} ${v.model ?? ''}`.trim() : v.type}
-                </Text>
-                <Text className="text-textMuted text-xs mt-1">
-                  {locale === 'ar' ? (v.type === 'CAR' ? 'عربية' : 'موتوسيكل') : v.type} · {v.fuelType}
-                </Text>
+        <SectionLabel label={locale === 'ar' ? 'الإعدادات الأساسية' : 'Setup'} />
+        <View className="gap-2">
+          <SetupRow
+            icon="🚗"
+            label={t('vehicles.title')}
+            badge={vehicles.length > 0 ? String(vehicles.length) : undefined}
+            warn={vehicles.length === 0}
+            onPress={() => router.push('/vehicles/new' as any)}
+            secondary={
+              vehicles.length === 0
+                ? t('vehicles.emptyTitle')
+                : vehicles.map((v: any) => v.make || t(`onboarding.type.${v.type}` as any)).join(' · ')
+            }
+          />
+          <SetupRow
+            icon="📱"
+            label={t('apps.title')}
+            onPress={() => router.push('/apps' as any)}
+            secondary={t('apps.subtitle')}
+          />
+          <SetupRow
+            icon="📍"
+            label={t('areas.title')}
+            onPress={() => router.push('/areas' as any)}
+            secondary={t('areas.subtitle')}
+          />
+          <SetupRow
+            icon="🎯"
+            label={t('goals.title')}
+            badge={activeGoals.length > 0 ? String(activeGoals.length) : undefined}
+            onPress={() => router.push('/goals' as any)}
+            secondary={
+              activeGoals[0]
+                ? formatMoney(activeGoals[0].targetPiastres, locale)
+                : t('goals.subtitle')
+            }
+          />
+        </View>
+      </View>
+
+      {/* Vehicles list preview (only if exist) */}
+      {vehicles.length > 0 ? (
+        <View className="mt-6">
+          <SectionLabel label={t('profile.vehicles')} />
+          {vehicles.map((v: any) => (
+            <Card key={v.id} className="mb-2">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <Text className="text-text font-bold">
+                    {v.make || v.model ? `${v.make ?? ''} ${v.model ?? ''}`.trim() : t(`onboarding.type.${v.type}` as any)}
+                  </Text>
+                  <Text className="text-textMuted text-xs mt-1">
+                    {t(`onboarding.type.${v.type}` as any)} · {t(`vehicles.fuelTypes.${v.fuelType}` as any)}
+                  </Text>
+                </View>
+                {v.isActive ? <Pill label="●" tone="success" /> : null}
               </View>
-              {v.isActive ? <Pill label="●" tone="success" /> : null}
-            </View>
-          </Card>
-        ))}
-      </View>
-
-      {/* Goals */}
-      <View className="mt-4">
-        <SectionLabel label={t('profile.goals')} />
-        {(goalsQ.data ?? []).filter((g: any) => g.isActive).length === 0 ? (
-          <Card>
-            <Text className="text-textMuted text-sm">{t('common.noData')}</Text>
-          </Card>
-        ) : (
-          (goalsQ.data ?? []).filter((g: any) => g.isActive).map((g: any) => (
-            <Card key={g.id} className="mb-2">
-              <Text className="text-textMuted text-xs">{periodLabel(g.period, locale)}</Text>
-              <Text className="text-text font-bold mt-1">{formatMoney(g.targetPiastres, locale)}</Text>
             </Card>
-          ))
-        )}
-      </View>
+          ))}
+          <Pressable onPress={() => router.push('/vehicles/new' as any)}>
+            <Card>
+              <View className="flex-row items-center justify-center">
+                <Text className="text-accent font-medium">+ {t('vehicles.new')}</Text>
+              </View>
+            </Card>
+          </Pressable>
+        </View>
+      ) : null}
 
-      {/* Settings */}
+      {/* Account section */}
       <View className="mt-6">
-        <SectionLabel label={t('profile.settings')} />
+        <SectionLabel label={locale === 'ar' ? 'الحساب' : 'Account'} />
         <View className="gap-2">
           <Pressable onPress={toggleLocale}>
             <Card>
@@ -146,9 +176,45 @@ function RowLink({ label, icon, onPress }: { label: string; icon: string; onPres
   );
 }
 
-function periodLabel(p: string, locale: 'ar' | 'en'): string {
-  if (locale === 'ar') {
-    return p === 'DAILY' ? 'يومي' : p === 'WEEKLY' ? 'أسبوعي' : 'شهري';
-  }
-  return p === 'DAILY' ? 'Daily' : p === 'WEEKLY' ? 'Weekly' : 'Monthly';
+function SetupRow({
+  icon,
+  label,
+  badge,
+  warn,
+  secondary,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  badge?: string;
+  warn?: boolean;
+  secondary?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress}>
+      <Card className={warn ? 'border-warn/40 bg-warn/5' : undefined}>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3 flex-1">
+            <Text className="text-accent text-lg">{icon}</Text>
+            <View className="flex-1">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-text font-medium">{label}</Text>
+                {badge ? (
+                  <View className="px-2 py-0.5 rounded-full bg-accent/15">
+                    <Text className="text-accent text-xs font-bold">{badge}</Text>
+                  </View>
+                ) : null}
+                {warn ? <Text className="text-warn text-xs">⚠</Text> : null}
+              </View>
+              {secondary ? (
+                <Text className="text-textMuted text-xs mt-0.5" numberOfLines={1}>{secondary}</Text>
+              ) : null}
+            </View>
+          </View>
+          <Text className="text-textMuted text-lg">›</Text>
+        </View>
+      </Card>
+    </Pressable>
+  );
 }

@@ -9,6 +9,17 @@
 const LOCAL_EGYPT = /^01[0125][0-9]{8}$/;       // 11 digits, e.g. 01019579006
 const E164_EGYPT = /^\+201[0125][0-9]{8}$/;     // +20 + 10 digits
 
+/**
+ * Normalize Arabic-Indic (٠-٩) and Persian (۰-۹) digits to Latin (0-9).
+ * Many drivers in Egypt type with the Arabic keyboard active and end up
+ * with Arabic digits that don't match our regex or the stored phone.
+ */
+export function normalizeDigits(input: string): string {
+  if (!input) return '';
+  return input.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+              .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+}
+
 export function isValidLocalEgyptPhone(input: string): boolean {
   return LOCAL_EGYPT.test(input.replace(/[\s-]/g, ''));
 }
@@ -24,7 +35,8 @@ export function isValidE164Phone(input: string): boolean {
  */
 export function toE164(input: string): string | null {
   if (!input) return null;
-  const cleaned = input.replace(/[\s\-()]/g, '');
+  // First normalize Arabic/Persian digits to Latin, then strip separators.
+  const cleaned = normalizeDigits(input).replace(/[\s\-()]/g, '');
 
   if (E164_EGYPT.test(cleaned)) return cleaned;
 

@@ -8,6 +8,7 @@ import { Odometer } from '@/api/endpoints';
 import { formatKm } from '@/lib/format';
 import { t, getLocale } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
+import { normalizeIntInput } from '@/lib/numbers';
 
 /**
  * Today's odometer card — shown on Home. Lets the driver log total km driven
@@ -73,7 +74,7 @@ export function DailyOdometerCard() {
               label={t('odometer.currentTotal')}
               keyboardType="numeric"
               value={km}
-              onChangeText={(v) => setKm(v.replace(/[^\d]/g, ''))}
+              onChangeText={(v) => setKm(normalizeIntInput(v))}
               placeholder="120"
             />
             <View className="mt-4">

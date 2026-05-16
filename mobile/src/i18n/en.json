@@ -32,7 +32,8 @@
     "resetSuccess": "Password changed",
     "resetSuccessBody": "Your password is updated. Log in now.",
     "backToLogin": "Back to login",
-    "devCodeNote": "Dev mode: code shown here"
+    "devCodeNote": "Your reset code is shown below",
+    "smsComingSoon": "SMS delivery isn't set up yet — code shown here temporarily"
   },
   "onboarding": {
     "vehicleTitle": "Your vehicle",
@@ -75,7 +76,11 @@
     "endShift": "End shift",
     "endShiftSubtitle": "Enter today's odometer reading so we can compute empty km",
     "dailyTotalKm": "Today's total km",
-    "dailyTotalKmHint": "If you enter today's total, Ehsbha will auto-compute empty km"
+    "dailyTotalKmHint": "If you enter today's total, Ehsbha will auto-compute empty km",
+    "setupCta": "Let's get set up",
+    "setupCtaBody": "Add your first vehicle so we can track profit and cost-per-km",
+    "appsCta": "Pick your apps",
+    "appsCtaBody": "So we can compare apps and tell you which earns most"
   },
   "trip": {
     "new": "New trip",
@@ -100,6 +105,10 @@
     "paidKmExceeds": "Trip km cannot exceed total km",
     "advanced": "Additional details (optional)",
     "advancedHint": "Skipping these reduces analytics accuracy",
+    "errKmRequired": "Enter the trip distance",
+    "errGrossRequired": "Enter the shown price",
+    "errVehicleRequired": "Pick a vehicle",
+    "errAppRequired": "Pick an app",
     "waitingMinutes": "Waiting time (min)",
     "trafficLevel": "Traffic",
     "weather": "Weather",
@@ -127,6 +136,69 @@
       "SHORT": "Short",
       "DELIVERY": "Delivery"
     }
+  },
+  "vehicles": {
+    "title": "Vehicles",
+    "new": "Add vehicle",
+    "edit": "Edit vehicle",
+    "newSubtitle": "Tell us a bit about your vehicle",
+    "type": "Vehicle type",
+    "make": "Make",
+    "model": "Model",
+    "year": "Year",
+    "fuelType": "Fuel type",
+    "tankLiters": "Tank capacity (L)",
+    "baselineKmPerLiter": "Avg km/L",
+    "baselineKmPerLiterHint": "Approximate fuel consumption",
+    "odometerKm": "Current odometer (km)",
+    "odometerKmHint": "Leave 0 if not sure",
+    "addFirst": "Add your first vehicle",
+    "emptyTitle": "No vehicles yet",
+    "emptyBody": "Add your first vehicle so we can track profit and costs",
+    "fuelTypes": {
+      "PETROL_80": "Petrol 80",
+      "PETROL_92": "Petrol 92",
+      "PETROL_95": "Petrol 95",
+      "DIESEL": "Diesel",
+      "CNG": "CNG",
+      "ELECTRIC": "Electric"
+    }
+  },
+  "apps": {
+    "title": "My apps",
+    "subtitle": "Pick the apps you drive on",
+    "mySection": "Enabled apps",
+    "catalogSection": "Known apps",
+    "customSection": "Custom app",
+    "addCustom": "Add custom app (private client, delivery, anything)",
+    "customName": "App name",
+    "customNamePlaceholder": "e.g. Private client, Delivery…",
+    "commission": "Commission",
+    "defaultCommission": "Default commission",
+    "removeConfirm": "Remove this app?",
+    "emptyMine": "No apps selected yet",
+    "emptyMineBody": "Pick from known apps below or add a custom one"
+  },
+  "areas": {
+    "title": "Areas",
+    "subtitle": "Add areas you work in to analyze geographic performance",
+    "add": "Add area",
+    "name": "Area name",
+    "namePlaceholder": "e.g. Maadi, Nasr City, Zamalek",
+    "color": "Color",
+    "removeConfirm": "Remove this area?",
+    "emptyTitle": "No areas yet",
+    "emptyBody": "Add the areas you work in to see which area earns you most"
+  },
+  "goals": {
+    "title": "My goals",
+    "subtitle": "Set a target and we'll track your progress",
+    "add": "Add goal",
+    "period": "Period",
+    "target": "Target amount",
+    "removeConfirm": "Remove this goal?",
+    "emptyTitle": "No goals yet",
+    "emptyBody": "Set a monthly goal and we'll forecast where you'll land"
   },
   "fuel": {
     "new": "Refuel",

@@ -7,7 +7,7 @@ interface Props {
   size?: 'sm' | 'md';
 }
 
-export function Pill({ label, tone = 'default', size = 'sm' }: Props) {
+export const Pill = React.memo(function Pill({ label, tone = 'default', size = 'sm' }: Props) {
   const toneCls = {
     default: 'bg-surface2 text-text',
     success: 'bg-accent/15 text-accent',
@@ -21,4 +21,4 @@ export function Pill({ label, tone = 'default', size = 'sm' }: Props) {
       <Text className={`${toneCls.split(' ')[1]} ${sizeCls.split(' ')[2]} font-medium`}>{label}</Text>
     </View>
   );
-}
+});

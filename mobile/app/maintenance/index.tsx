@@ -62,7 +62,11 @@ export default function MaintenanceHubScreen() {
     return (
       <Screen>
         <Header title={t('maintenance.hub')} back />
-        <EmptyState title={t('profile.vehicles')} body={locale === 'ar' ? 'ضيف عربية الأول من البروفايل' : 'Add a vehicle first from Profile'} />
+        <EmptyState
+          title={t('vehicles.emptyTitle')}
+          body={t('vehicles.emptyBody')}
+          action={<Button label={t('vehicles.addFirst')} onPress={() => router.push('/vehicles/new' as any)} fullWidth={false} />}
+        />
       </Screen>
     );
   }

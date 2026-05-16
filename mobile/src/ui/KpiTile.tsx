@@ -9,7 +9,7 @@ interface Props {
   tone?: 'positive' | 'negative' | 'neutral';
 }
 
-export function KpiTile({ label, value, trend, tone = 'neutral' }: Props) {
+export const KpiTile = React.memo(function KpiTile({ label, value, trend, tone = 'neutral' }: Props) {
   const trendColor = tone === 'positive' ? 'text-accent' : tone === 'negative' ? 'text-danger' : 'text-textMuted';
   return (
     <Card className="flex-1">
@@ -22,4 +22,4 @@ export function KpiTile({ label, value, trend, tone = 'neutral' }: Props) {
       ) : null}
     </Card>
   );
-}
+});

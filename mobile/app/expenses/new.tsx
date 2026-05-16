@@ -15,6 +15,7 @@ import { t } from '@/i18n';
 import { enqueue } from '@/offline/queue';
 import { useNetwork } from '@/stores/network.store';
 import { showErrorAlert, toUserError } from '@/lib/errors';
+import { normalizeNumberInput } from '@/lib/numbers';
 
 const CATEGORIES = ['RENT', 'INSURANCE', 'FINE', 'TOLL', 'FOOD', 'PHONE', 'WASH', 'PARKING', 'OTHER'] as const;
 
@@ -98,7 +99,7 @@ export default function NewExpenseScreen() {
               label={t('expense.amount')}
               keyboardType="numeric"
               value={String(value || '')}
-              onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+              onChangeText={(v) => onChange(normalizeNumberInput(v))}
               error={errors.amountEgp?.message}
             />
           )}

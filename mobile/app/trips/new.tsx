@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import { formatMoney } from '@/lib/format';
 import { enqueue } from '@/offline/queue';
 import { useNetwork } from '@/stores/network.store';
 import { showErrorAlert, toUserError } from '@/lib/errors';
+import { normalizeNumberInput, normalizeIntInput } from '@/lib/numbers';
 
 const TrafficEnum = z.enum(['LIGHT', 'MEDIUM', 'HEAVY', 'STANDSTILL']);
 const WeatherEnum = z.enum(['CLEAR', 'RAIN', 'DUST', 'HOT', 'COLD']);
@@ -53,15 +54,22 @@ export default function NewTripScreen() {
   const online = useNetwork((s) => s.online);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list() });
-  const appsQ = useQuery({ queryKey: ['apps', 'me'], queryFn: () => Apps.mine() });
-  const areasQ = useQuery({ queryKey: ['areas'], queryFn: () => Areas.list() });
+  const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list(), staleTime: 5 * 60_000 });
+  const appsQ = useQuery({ queryKey: ['apps', 'me'], queryFn: () => Apps.mine(), staleTime: 5 * 60_000 });
+  const areasQ = useQuery({ queryKey: ['areas'], queryFn: () => Areas.list(), staleTime: 5 * 60_000 });
 
   const vehicles = vehiclesQ.data ?? [];
-  const apps = (appsQ.data ?? []).filter((a: any) => a.enabled);
+  const apps = useMemo(
+    () => (appsQ.data ?? []).filter((a: any) => a.enabled),
+    [appsQ.data],
+  );
   const areas = areasQ.data ?? [];
 
-  const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<Form>({
+  const isLoadingSetup = vehiclesQ.isLoading || appsQ.isLoading;
+  const noVehicles = !isLoadingSetup && vehicles.length === 0;
+  const noApps = !isLoadingSetup && apps.length === 0;
+
+  const { control, handleSubmit, setValue, watch, getValues, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(Schema),
     defaultValues: {
       vehicleId: '',
@@ -75,23 +83,34 @@ export default function NewTripScreen() {
   });
 
   useEffect(() => {
-    if (!watch('vehicleId') && vehicles.length > 0) {
+    // Auto-pick the active vehicle + first enabled app once the data lands.
+    const currentVehicleId = getValues('vehicleId');
+    const currentAppId = getValues('driverAppId');
+    if (!currentVehicleId && vehicles.length > 0) {
       setValue('vehicleId', vehicles.find((v: any) => v.isActive)?.id ?? vehicles[0].id);
     }
-    if (!watch('driverAppId') && apps.length > 0) setValue('driverAppId', apps[0].id);
+    if (!currentAppId && apps.length > 0) setValue('driverAppId', apps[0].id);
   }, [vehicles.length, apps.length]);
 
+  // useWatch only re-renders THIS component when these specific fields change,
+  // instead of re-rendering on every form interaction. Big perf win.
+  const watchedDriverAppId = useWatch({ control, name: 'driverAppId' });
+  const watchedGross = useWatch({ control, name: 'grossEgp' });
+  const watchedReceived = useWatch({ control, name: 'receivedEgp' });
+  const watchedTip = useWatch({ control, name: 'tipEgp' });
+  const watchedToll = useWatch({ control, name: 'tollEgp' });
+  const watchedParking = useWatch({ control, name: 'parkingEgp' });
+
   const selectedApp = useMemo(
-    () => apps.find((a: any) => a.id === watch('driverAppId')),
-    [apps, watch('driverAppId')],
+    () => apps.find((a: any) => a.id === watchedDriverAppId),
+    [apps, watchedDriverAppId],
   );
-  const grossEgp = watch('grossEgp') ?? 0;
-  const receivedEgp = watch('receivedEgp');
-  const tipEgp = watch('tipEgp') ?? 0;
-  const tollEgp = watch('tollEgp') ?? 0;
-  const parkingEgp = watch('parkingEgp') ?? 0;
+  const grossEgp = Number(watchedGross) || 0;
+  const receivedEgp = watchedReceived;
+  const tipEgp = Number(watchedTip) || 0;
+  const tollEgp = Number(watchedToll) || 0;
+  const parkingEgp = Number(watchedParking) || 0;
   const appCommissionPct = selectedApp ? Number(selectedApp.commissionPct) : 0;
-  // If driver entered what they received, derive commission from that.
   const commissionEgp = receivedEgp !== undefined && receivedEgp !== null && Number(receivedEgp) >= 0
     ? Math.max(0, grossEgp - Number(receivedEgp))
     : (grossEgp * appCommissionPct) / 100;
@@ -102,14 +121,33 @@ export default function NewTripScreen() {
     mutationFn: async (input: any) => Trips.create(input),
   });
 
-  const advancedFieldsTouched =
-    watch('waitingMinutes') !== undefined ||
-    watch('trafficLevel') !== undefined ||
-    watch('weather') !== undefined ||
-    watch('tripCategory') !== undefined ||
-    watch('rating') !== undefined;
+  // Single useWatch read of an array; one subscription instead of five.
+  const advancedValues = useWatch({
+    control,
+    name: ['waitingMinutes', 'trafficLevel', 'weather', 'tripCategory', 'rating'],
+  });
+  const advancedFieldsTouched = advancedValues.some((v) => v !== undefined);
+
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const onInvalid = (errs: any) => {
+    // Surface the first validation error so the user sees something tangible.
+    const firstErrorField = Object.keys(errs)[0];
+    if (firstErrorField === 'tripKm') {
+      setSubmitError(t('trip.errKmRequired'));
+    } else if (firstErrorField === 'grossEgp') {
+      setSubmitError(t('trip.errGrossRequired'));
+    } else if (firstErrorField === 'vehicleId') {
+      setSubmitError(t('trip.errVehicleRequired'));
+    } else if (firstErrorField === 'driverAppId') {
+      setSubmitError(t('trip.errAppRequired'));
+    } else {
+      setSubmitError(t('errors.VALIDATION_ERROR'));
+    }
+  };
 
   const onSubmit = async (data: Form) => {
+    setSubmitError(null);
     const now = new Date();
     const start = new Date(now.getTime() - data.durationMinutes * 60_000);
 
@@ -173,6 +211,43 @@ export default function NewTripScreen() {
     }
   };
 
+  if (isLoadingSetup) {
+    return (
+      <Screen>
+        <Header title={t('trip.new')} back />
+        <View className="py-12 items-center">
+          <Text className="text-textMuted">{t('common.loading')}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (noVehicles) {
+    return (
+      <Screen>
+        <Header title={t('trip.new')} back />
+        <View className="mt-8 items-center px-6">
+          <Text className="text-text text-lg font-bold mb-2 text-center">{t('vehicles.emptyTitle')}</Text>
+          <Text className="text-textMuted text-sm mb-5 text-center">{t('vehicles.emptyBody')}</Text>
+          <Button label={t('vehicles.addFirst')} onPress={() => router.push('/vehicles/new' as any)} fullWidth={false} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (noApps) {
+    return (
+      <Screen>
+        <Header title={t('trip.new')} back />
+        <View className="mt-8 items-center px-6">
+          <Text className="text-text text-lg font-bold mb-2 text-center">{t('apps.emptyMine')}</Text>
+          <Text className="text-textMuted text-sm mb-5 text-center">{t('apps.emptyMineBody')}</Text>
+          <Button label={t('apps.title')} onPress={() => router.push('/apps' as any)} fullWidth={false} />
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       <Header title={t('trip.new')} back />
@@ -205,7 +280,7 @@ export default function NewTripScreen() {
                   label={t('trip.gross')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeNumberInput(v))}
                   error={errors.grossEgp?.message}
                 />
               )}
@@ -222,7 +297,7 @@ export default function NewTripScreen() {
                   keyboardType="numeric"
                   value={value !== undefined && value !== null ? String(value) : ''}
                   onChangeText={(v) => {
-                    const s = v.replace(/[^\d.]/g, '');
+                    const s = normalizeNumberInput(v);
                     onChange(s === '' ? undefined : Number(s));
                   }}
                 />
@@ -298,7 +373,7 @@ export default function NewTripScreen() {
                   hint={t('trip.tripKmHint')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeNumberInput(v))}
                   error={errors.tripKm?.message}
                 />
               )}
@@ -313,7 +388,7 @@ export default function NewTripScreen() {
                   label={t('trip.duration')}
                   keyboardType="numeric"
                   value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
+                  onChangeText={(v) => onChange(normalizeIntInput(v))}
                 />
               )}
             />
@@ -328,7 +403,7 @@ export default function NewTripScreen() {
               label={t('trip.tip')}
               keyboardType="numeric"
               value={String(value || '')}
-              onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+              onChangeText={(v) => onChange(normalizeNumberInput(v))}
             />
           )}
         />
@@ -359,7 +434,7 @@ export default function NewTripScreen() {
                       label={t('trip.tollPiastres')}
                       keyboardType="numeric"
                       value={value !== undefined ? String(value) : ''}
-                      onChangeText={(v) => onChange(v === '' ? undefined : Number(v.replace(/[^\d.]/g, '')))}
+                      onChangeText={(v) => onChange(v === '' ? undefined : Number(normalizeNumberInput(v)))}
                     />
                   )}
                 />
@@ -373,7 +448,7 @@ export default function NewTripScreen() {
                       label={t('trip.parkingPiastres')}
                       keyboardType="numeric"
                       value={value !== undefined ? String(value) : ''}
-                      onChangeText={(v) => onChange(v === '' ? undefined : Number(v.replace(/[^\d.]/g, '')))}
+                      onChangeText={(v) => onChange(v === '' ? undefined : Number(normalizeNumberInput(v)))}
                     />
                   )}
                 />
@@ -390,7 +465,7 @@ export default function NewTripScreen() {
                       label={t('trip.waitingMinutes')}
                       keyboardType="numeric"
                       value={value !== undefined ? String(value) : ''}
-                      onChangeText={(v) => onChange(v === '' ? undefined : Number(v.replace(/[^\d]/g, '')))}
+                      onChangeText={(v) => onChange(v === '' ? undefined : Number(normalizeIntInput(v)))}
                     />
                   )}
                 />
@@ -405,7 +480,7 @@ export default function NewTripScreen() {
                       keyboardType="numeric"
                       value={value !== undefined ? String(value) : ''}
                       onChangeText={(v) => {
-                        const n = Number(v.replace(/[^\d]/g, ''));
+                        const n = Number(normalizeIntInput(v));
                         onChange(v === '' ? undefined : Math.min(5, Math.max(1, n)));
                       }}
                     />
@@ -451,7 +526,13 @@ export default function NewTripScreen() {
           </View>
         ) : null}
 
-        <Button label={t('common.save')} loading={mutation.isPending} onPress={handleSubmit(onSubmit)} />
+        {submitError ? (
+          <View className="bg-danger/10 border border-danger/40 rounded-xl p-3">
+            <Text className="text-danger text-sm text-center">{submitError}</Text>
+          </View>
+        ) : null}
+
+        <Button label={t('common.save')} loading={mutation.isPending} onPress={handleSubmit(onSubmit, onInvalid)} />
       </View>
     </Screen>
   );

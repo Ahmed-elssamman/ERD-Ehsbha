@@ -19,12 +19,15 @@ interface Props {
   onPress?: () => void;
 }
 
-export function TripRow({ trip, appName, areaName, onPress }: Props) {
+function TripRowImpl({ trip, appName, areaName, onPress }: Props) {
+  const locale = getLocale();
+  // Derive once per render — these don't change shape across re-renders.
   const net = trip.grossPiastres + trip.tipPiastres - trip.commissionPiastres;
   const start = new Date(trip.startedAt);
-  const end = new Date(trip.endedAt);
-  const minutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60_000));
-  const locale = getLocale();
+  const minutes = Math.max(
+    0,
+    Math.round((new Date(trip.endedAt).getTime() - start.getTime()) / 60_000),
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -43,3 +46,16 @@ export function TripRow({ trip, appName, areaName, onPress }: Props) {
     </Pressable>
   );
 }
+
+// Trip rows render heavily in lists — memo prevents re-render when sibling rows change.
+export const TripRow = React.memo(TripRowImpl, (prev, next) => {
+  return (
+    prev.trip.id === next.trip.id &&
+    prev.trip.grossPiastres === next.trip.grossPiastres &&
+    prev.trip.commissionPiastres === next.trip.commissionPiastres &&
+    prev.trip.totalKmMeters === next.trip.totalKmMeters &&
+    prev.appName === next.appName &&
+    prev.areaName === next.areaName &&
+    prev.onPress === next.onPress
+  );
+});

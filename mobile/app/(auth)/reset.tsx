@@ -13,6 +13,7 @@ import { Auth } from '@/api/endpoints';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
 import { fromE164 } from '@/lib/phone';
+import { normalizeIntInput } from '@/lib/numbers';
 
 const Schema = z
   .object({
@@ -62,9 +63,10 @@ export default function ResetPasswordScreen() {
       </Card>
 
       {devCode ? (
-        <Card className="mb-4 border-warn/40 bg-warn/10">
-          <Text className="text-warn text-xs font-bold mb-1">{t('auth.devCodeNote')}</Text>
-          <Text className="text-text text-2xl font-bold tracking-widest">{devCode}</Text>
+        <Card className="mb-4 border-warn/60 bg-warn/15">
+          <Text className="text-warn text-xs font-bold mb-2">⚠ {t('auth.devCodeNote')}</Text>
+          <Text className="text-text text-4xl font-bold tracking-widest text-center my-1">{devCode}</Text>
+          <Text className="text-textMuted text-xs mt-2 text-center">{t('auth.smsComingSoon')}</Text>
         </Card>
       ) : null}
 
@@ -80,7 +82,7 @@ export default function ResetPasswordScreen() {
               maxLength={6}
               placeholder="000000"
               value={value}
-              onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
+              onChangeText={(v) => onChange(normalizeIntInput(v))}
               onBlur={onBlur}
               error={errors.code ? t('auth.phoneInvalid') : undefined}
             />
