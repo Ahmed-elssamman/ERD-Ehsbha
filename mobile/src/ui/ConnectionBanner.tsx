@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import { api } from '@/api/client';
 import { useNetwork } from '@/stores/network.store';
-import { getLocale } from '@/i18n';
+import { t } from '@/i18n';
 
 /**
  * Tiny diagnostic banner shown in development when the API isn't reachable.
@@ -14,7 +14,6 @@ export function ConnectionBanner() {
   const online = useNetwork((s) => s.online);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
-  const locale = getLocale();
 
   const apiUrl =
     (process.env.EXPO_PUBLIC_API_URL as string | undefined) ??
@@ -47,24 +46,22 @@ export function ConnectionBanner() {
     >
       <Text className="text-warn text-xs font-bold mb-0.5">
         {checking
-          ? locale === 'ar' ? 'بنفحص الاتصال…' : 'Checking connection…'
+          ? t('diag.checking')
           : apiReachable === false
-          ? locale === 'ar' ? '⚠ السيرفر مش راد' : '⚠ Backend not reachable'
-          : locale === 'ar' ? 'بنحاول نوصل للسيرفر' : 'Connecting to backend'}
+          ? t('diag.unreachable')
+          : t('diag.connecting')}
       </Text>
       <Text className="text-textMuted text-[10px]" numberOfLines={1}>
         {apiUrl}
       </Text>
       {apiReachable === false ? (
         <Text className="text-textMuted text-[10px] mt-1">
-          {locale === 'ar'
-            ? 'لو على موبايل: غيّر EXPO_PUBLIC_API_URL لـ IP الكمبيوتر في .env'
-            : 'On phone? Set EXPO_PUBLIC_API_URL to your PC LAN IP in .env'}
+          {t('diag.hint')}
         </Text>
       ) : null}
       {!online ? (
         <Text className="text-textMuted text-[10px] mt-1">
-          {locale === 'ar' ? 'مفيش إنترنت' : 'Offline'}
+          {t('diag.offline')}
         </Text>
       ) : null}
     </Pressable>

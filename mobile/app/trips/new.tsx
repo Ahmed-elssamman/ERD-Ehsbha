@@ -14,9 +14,14 @@ import { Card } from '@/ui/Card';
 import { Apps, Areas, Trips, Vehicles } from '@/api/endpoints';
 import { t, getLocale } from '@/i18n';
 import { kmToMeters } from '@/lib/helpers';
+import { formatMoney } from '@/lib/format';
 import { enqueue } from '@/offline/queue';
 import { useNetwork } from '@/stores/network.store';
 import { showErrorAlert, toUserError } from '@/lib/errors';
+
+const TrafficEnum = z.enum(['LIGHT', 'MEDIUM', 'HEAVY', 'STANDSTILL']);
+const WeatherEnum = z.enum(['CLEAR', 'RAIN', 'DUST', 'HOT', 'COLD']);
+const CategoryEnum = z.enum(['STANDARD', 'AIRPORT', 'LONG', 'SHORT', 'DELIVERY']);
 
 const Schema = z.object({
   vehicleId: z.string().min(1),
@@ -24,9 +29,17 @@ const Schema = z.object({
   areaId: z.string().nullable().optional(),
   grossEgp: z.coerce.number().min(0),
   tipEgp: z.coerce.number().min(0).default(0),
-  totalKm: z.coerce.number().min(0),
-  paidKm: z.coerce.number().min(0),
+  tripKm: z.coerce.number().min(0.1),
   durationMinutes: z.coerce.number().int().min(1).max(720),
+  // Optional advanced (accuracy boosters)
+  waitingMinutes: z.coerce.number().int().min(0).max(180).optional(),
+  trafficLevel: TrafficEnum.optional(),
+  weather: WeatherEnum.optional(),
+  tripCategory: CategoryEnum.optional(),
+  tollEgp: z.coerce.number().min(0).optional(),
+  parkingEgp: z.coerce.number().min(0).optional(),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+  notes: z.string().max(500).optional(),
 });
 type Form = z.infer<typeof Schema>;
 
@@ -35,6 +48,7 @@ export default function NewTripScreen() {
   const qc = useQueryClient();
   const locale = getLocale();
   const online = useNetwork((s) => s.online);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list() });
   const appsQ = useQuery({ queryKey: ['apps', 'me'], queryFn: () => Apps.mine() });
@@ -52,8 +66,7 @@ export default function NewTripScreen() {
       areaId: null,
       grossEgp: 0,
       tipEgp: 0,
-      totalKm: 0,
-      paidKm: 0,
+      tripKm: 0,
       durationMinutes: 15,
     },
   });
@@ -65,24 +78,49 @@ export default function NewTripScreen() {
     if (!watch('driverAppId') && apps.length > 0) setValue('driverAppId', apps[0].id);
   }, [vehicles.length, apps.length]);
 
-  const selectedApp = useMemo(() => apps.find((a: any) => a.id === watch('driverAppId')), [apps, watch('driverAppId')]);
+  const selectedApp = useMemo(
+    () => apps.find((a: any) => a.id === watch('driverAppId')),
+    [apps, watch('driverAppId')],
+  );
   const grossEgp = watch('grossEgp') ?? 0;
-  const commissionPct = selectedApp ? Number(selectedApp.commissionPct) : 0;
-  const commissionEgp = Math.round(grossEgp * commissionPct) / 100;
   const tipEgp = watch('tipEgp') ?? 0;
-  const netEgp = Math.max(0, grossEgp + tipEgp - commissionEgp);
+  const tollEgp = watch('tollEgp') ?? 0;
+  const parkingEgp = watch('parkingEgp') ?? 0;
+  const commissionPct = selectedApp ? Number(selectedApp.commissionPct) : 0;
+  const commissionEgp = (grossEgp * commissionPct) / 100;
+  const netEgp = Math.max(0, grossEgp + tipEgp - commissionEgp - tollEgp - parkingEgp);
 
   const mutation = useMutation({
     mutationFn: async (input: any) => Trips.create(input),
   });
 
+  const advancedFieldsTouched =
+    watch('waitingMinutes') !== undefined ||
+    watch('trafficLevel') !== undefined ||
+    watch('weather') !== undefined ||
+    watch('tripCategory') !== undefined ||
+    watch('rating') !== undefined;
+
   const onSubmit = async (data: Form) => {
-    if (data.paidKm > data.totalKm) {
-      Alert.alert('!', locale === 'ar' ? 'كيلومترات الراكب أكبر من الإجمالي' : 'Paid km exceeds total km');
-      return;
-    }
     const now = new Date();
     const start = new Date(now.getTime() - data.durationMinutes * 60_000);
+
+    // New empty-km model: per-trip empty is 0. Daily empty is derived from
+    // daily odometer reading minus sum of trip km. Trip stores km as both
+    // totalKm and paidKm for backward compatibility with current aggregate logic.
+    const tripMeters = kmToMeters(data.tripKm);
+
+    // Build notes JSON with optional advanced fields so analytics can opt-in later.
+    const meta: Record<string, unknown> = {};
+    if (data.waitingMinutes !== undefined) meta.waitingMinutes = data.waitingMinutes;
+    if (data.trafficLevel) meta.trafficLevel = data.trafficLevel;
+    if (data.weather) meta.weather = data.weather;
+    if (data.tripCategory) meta.tripCategory = data.tripCategory;
+    if (data.rating) meta.rating = data.rating;
+    const notesJson = Object.keys(meta).length > 0
+      ? JSON.stringify(meta) + (data.notes ? `\n${data.notes}` : '')
+      : data.notes ?? '';
+
     const body = {
       vehicleId: data.vehicleId,
       driverAppId: data.driverAppId,
@@ -92,8 +130,9 @@ export default function NewTripScreen() {
       grossPiastres: Math.round(data.grossEgp * 100),
       tipPiastres: Math.round(data.tipEgp * 100),
       commissionPiastres: Math.round(commissionEgp * 100),
-      totalKmMeters: kmToMeters(data.totalKm),
-      paidKmMeters: kmToMeters(data.paidKm),
+      totalKmMeters: tripMeters,
+      paidKmMeters: tripMeters,
+      notes: notesJson || null,
       clientMutationId: uuidv4(),
     };
 
@@ -110,7 +149,6 @@ export default function NewTripScreen() {
     } catch (err) {
       const ue = toUserError(err);
       if (ue.isNetwork) {
-        // queue offline and close — driver doesn't lose the trip
         await enqueue({ endpoint: '/trips', method: 'POST', body });
         router.back();
       } else {
@@ -124,18 +162,23 @@ export default function NewTripScreen() {
       <Header title={t('trip.new')} back />
 
       <View className="gap-4 mt-2">
+        {/* Net profit preview card */}
         <Card>
           <Text className="text-textMuted text-xs mb-2">{t('home.todayProfit')}</Text>
-          <Text className="text-accent text-3xl font-bold">
-            {locale === 'ar' ? `${netEgp.toFixed(0)} ج.م` : `EGP ${netEgp.toFixed(0)}`}
-          </Text>
-          {commissionEgp > 0 && (
-            <Text className="text-textMuted text-xs mt-1">
-              {t('trip.commission')}: {commissionEgp.toFixed(0)} ({commissionPct}%)
+          <Text className="text-accent text-3xl font-bold">{formatMoney(Math.round(netEgp * 100), locale)}</Text>
+          {commissionEgp > 0 ? (
+            <Text className="text-textMuted text-xs mt-1.5">
+              {t('trip.commission')}: −{formatMoney(Math.round(commissionEgp * 100), locale)} ({commissionPct}%)
             </Text>
-          )}
+          ) : null}
+          {(tollEgp > 0 || parkingEgp > 0) ? (
+            <Text className="text-textMuted text-xs mt-0.5">
+              {t('trip.tollPiastres')} + {t('trip.parkingPiastres')}: −{formatMoney(Math.round((tollEgp + parkingEgp) * 100), locale)}
+            </Text>
+          ) : null}
         </Card>
 
+        {/* Core fields */}
         <Controller
           control={control}
           name="grossEgp"
@@ -163,7 +206,7 @@ export default function NewTripScreen() {
                     <Pressable
                       key={a.id}
                       onPress={() => onChange(a.id)}
-                      className={`px-4 h-10 rounded-full items-center justify-center ${active ? 'bg-accent' : 'bg-surface border border-border'}`}
+                      className={`px-4 h-11 rounded-full items-center justify-center ${active ? 'bg-accent' : 'bg-surface border border-border'}`}
                     >
                       <Text className={`text-sm font-medium ${active ? 'text-bg' : 'text-text'}`}>
                         {a.customName ?? a.appSource?.name}
@@ -185,7 +228,7 @@ export default function NewTripScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 <Pressable
                   onPress={() => onChange(null)}
-                  className={`px-4 h-10 rounded-full items-center justify-center ${!value ? 'bg-accent' : 'bg-surface border border-border'}`}
+                  className={`px-4 h-11 rounded-full items-center justify-center ${!value ? 'bg-accent' : 'bg-surface border border-border'}`}
                 >
                   <Text className={`text-sm ${!value ? 'text-bg' : 'text-text'}`}>—</Text>
                 </Pressable>
@@ -195,7 +238,7 @@ export default function NewTripScreen() {
                     <Pressable
                       key={a.id}
                       onPress={() => onChange(a.id)}
-                      className={`px-4 h-10 rounded-full items-center justify-center ${active ? 'bg-accent' : 'bg-surface border border-border'}`}
+                      className={`px-4 h-11 rounded-full items-center justify-center ${active ? 'bg-accent' : 'bg-surface border border-border'}`}
                     >
                       <Text className={`text-sm ${active ? 'text-bg' : 'text-text'}`}>{a.name}</Text>
                     </Pressable>
@@ -210,34 +253,19 @@ export default function NewTripScreen() {
           <View className="flex-1">
             <Controller
               control={control}
-              name="totalKm"
+              name="tripKm"
               render={({ field: { value, onChange } }) => (
                 <Input
-                  label={t('trip.totalKm')}
+                  label={t('trip.tripKm')}
+                  hint={t('trip.tripKmHint')}
                   keyboardType="numeric"
                   value={String(value || '')}
                   onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  error={errors.tripKm?.message}
                 />
               )}
             />
           </View>
-          <View className="flex-1">
-            <Controller
-              control={control}
-              name="paidKm"
-              render={({ field: { value, onChange } }) => (
-                <Input
-                  label={t('trip.paidKm')}
-                  keyboardType="numeric"
-                  value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
-                />
-              )}
-            />
-          </View>
-        </View>
-
-        <View className="flex-row gap-3">
           <View className="flex-1">
             <Controller
               control={control}
@@ -252,24 +280,189 @@ export default function NewTripScreen() {
               )}
             />
           </View>
-          <View className="flex-1">
+        </View>
+
+        <Controller
+          control={control}
+          name="tipEgp"
+          render={({ field: { value, onChange } }) => (
+            <Input
+              label={t('trip.tip')}
+              keyboardType="numeric"
+              value={String(value || '')}
+              onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+            />
+          )}
+        />
+
+        {/* Advanced fields collapsible */}
+        <Pressable
+          onPress={() => setShowAdvanced((s) => !s)}
+          className="bg-surface border border-border rounded-2xl p-4"
+        >
+          <View className="flex-row items-center justify-between">
+            <Text className="text-text font-bold">{t('trip.advanced')}</Text>
+            <Text className="text-accent text-lg">{showAdvanced ? '−' : '+'}</Text>
+          </View>
+          {!showAdvanced && !advancedFieldsTouched ? (
+            <Text className="text-textMuted text-xs mt-1.5">⚠ {t('trip.advancedHint')}</Text>
+          ) : null}
+        </Pressable>
+
+        {showAdvanced ? (
+          <View className="gap-4">
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Controller
+                  control={control}
+                  name="tollEgp"
+                  render={({ field: { value, onChange } }) => (
+                    <Input
+                      label={t('trip.tollPiastres')}
+                      keyboardType="numeric"
+                      value={value !== undefined ? String(value) : ''}
+                      onChangeText={(v) => onChange(v === '' ? undefined : Number(v.replace(/[^\d.]/g, '')))}
+                    />
+                  )}
+                />
+              </View>
+              <View className="flex-1">
+                <Controller
+                  control={control}
+                  name="parkingEgp"
+                  render={({ field: { value, onChange } }) => (
+                    <Input
+                      label={t('trip.parkingPiastres')}
+                      keyboardType="numeric"
+                      value={value !== undefined ? String(value) : ''}
+                      onChangeText={(v) => onChange(v === '' ? undefined : Number(v.replace(/[^\d.]/g, '')))}
+                    />
+                  )}
+                />
+              </View>
+            </View>
+
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Controller
+                  control={control}
+                  name="waitingMinutes"
+                  render={({ field: { value, onChange } }) => (
+                    <Input
+                      label={t('trip.waitingMinutes')}
+                      keyboardType="numeric"
+                      value={value !== undefined ? String(value) : ''}
+                      onChangeText={(v) => onChange(v === '' ? undefined : Number(v.replace(/[^\d]/g, '')))}
+                    />
+                  )}
+                />
+              </View>
+              <View className="flex-1">
+                <Controller
+                  control={control}
+                  name="rating"
+                  render={({ field: { value, onChange } }) => (
+                    <Input
+                      label={t('trip.rating')}
+                      keyboardType="numeric"
+                      value={value !== undefined ? String(value) : ''}
+                      onChangeText={(v) => {
+                        const n = Number(v.replace(/[^\d]/g, ''));
+                        onChange(v === '' ? undefined : Math.min(5, Math.max(1, n)));
+                      }}
+                    />
+                  )}
+                />
+              </View>
+            </View>
+
+            <ChipPicker
+              label={t('trip.trafficLevel')}
+              optionsKey="trip.traffic"
+              options={['LIGHT', 'MEDIUM', 'HEAVY', 'STANDSTILL']}
+              control={control}
+              name="trafficLevel"
+            />
+            <ChipPicker
+              label={t('trip.weather')}
+              optionsKey="trip.weatherTypes"
+              options={['CLEAR', 'RAIN', 'DUST', 'HOT', 'COLD']}
+              control={control}
+              name="weather"
+            />
+            <ChipPicker
+              label={t('trip.tripCategory')}
+              optionsKey="trip.categories"
+              options={['STANDARD', 'AIRPORT', 'LONG', 'SHORT', 'DELIVERY']}
+              control={control}
+              name="tripCategory"
+            />
+
             <Controller
               control={control}
-              name="tipEgp"
+              name="notes"
               render={({ field: { value, onChange } }) => (
                 <Input
-                  label={t('trip.tip')}
-                  keyboardType="numeric"
-                  value={String(value || '')}
-                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  label={t('trip.notes')}
+                  value={value ?? ''}
+                  onChangeText={onChange}
+                  multiline
                 />
               )}
             />
           </View>
-        </View>
+        ) : null}
 
         <Button label={t('common.save')} loading={mutation.isPending} onPress={handleSubmit(onSubmit)} />
       </View>
     </Screen>
+  );
+}
+
+function ChipPicker({
+  label,
+  options,
+  optionsKey,
+  control,
+  name,
+}: {
+  label: string;
+  options: string[];
+  optionsKey: string;
+  control: any;
+  name: any;
+}) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { value, onChange } }) => (
+        <View>
+          <Text className="text-text mb-2 text-sm">{label} <Text className="text-textMuted text-xs">({t('common.optional')})</Text></Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Pressable
+              onPress={() => onChange(undefined)}
+              className={`px-3 h-9 rounded-full items-center justify-center ${!value ? 'bg-accent' : 'bg-surface border border-border'}`}
+            >
+              <Text className={`text-xs ${!value ? 'text-bg' : 'text-text'}`}>—</Text>
+            </Pressable>
+            {options.map((o) => {
+              const active = o === value;
+              return (
+                <Pressable
+                  key={o}
+                  onPress={() => onChange(o)}
+                  className={`px-3 h-9 rounded-full items-center justify-center ${active ? 'bg-accent' : 'bg-surface border border-border'}`}
+                >
+                  <Text className={`text-xs font-medium ${active ? 'text-bg' : 'text-text'}`}>
+                    {t(`${optionsKey}.${o}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+    />
   );
 }

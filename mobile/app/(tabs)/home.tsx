@@ -85,7 +85,12 @@ export default function HomeScreen() {
       ) : null}
 
       <View className="mt-6">
-        <Text className="text-text font-bold text-base mb-3">{t('home.decisions')}</Text>
+        <View className="flex-row items-center justify-between mb-3">
+          <Text className="text-text font-bold text-base">{t('home.decisions')}</Text>
+          <Pressable onPress={() => router.push('/decisions' as any)} hitSlop={8}>
+            <Text className="text-accent text-sm">{t('home.decisionsViewAll')}</Text>
+          </Pressable>
+        </View>
         {decisions.length === 0 ? (
           <Text className="text-textMuted text-sm">{t('home.emptyDecisions')}</Text>
         ) : (

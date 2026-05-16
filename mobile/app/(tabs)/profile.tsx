@@ -5,13 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/ui/Screen';
 import { Header } from '@/ui/Header';
 import { Card } from '@/ui/Card';
-import { Button } from '@/ui/Button';
+import { Pill } from '@/ui/Pill';
 import { useAuth } from '@/stores/auth.store';
 import { useSettings } from '@/stores/settings.store';
 import { Auth, Driver, Goals, Vehicles } from '@/api/endpoints';
 import { formatMoney } from '@/lib/format';
 import { t, getLocale } from '@/i18n';
-import { I18nManager } from 'react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -51,42 +50,77 @@ export default function ProfileScreen() {
         <Text className="text-textMuted text-sm mt-1">{user?.phone}</Text>
       </Card>
 
-      <View className="mt-4">
+      {/* Quick links */}
+      <View className="mt-4 gap-2">
+        <RowLink
+          label={t('profile.maintenance')}
+          icon="🔧"
+          onPress={() => router.push('/maintenance' as any)}
+        />
+        <RowLink
+          label={t('decisions.title')}
+          icon="✦"
+          onPress={() => router.push('/decisions' as any)}
+        />
+      </View>
+
+      {/* Vehicles */}
+      <View className="mt-6">
         <SectionLabel label={t('profile.vehicles')} />
         {(vehiclesQ.data ?? []).map((v: any) => (
           <Card key={v.id} className="mb-2">
             <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-text font-bold">{v.make ?? '—'} {v.model ?? ''}</Text>
-                <Text className="text-textMuted text-xs mt-1">{v.type} · {v.fuelType}</Text>
+              <View className="flex-1">
+                <Text className="text-text font-bold">
+                  {v.make || v.model ? `${v.make ?? ''} ${v.model ?? ''}`.trim() : v.type}
+                </Text>
+                <Text className="text-textMuted text-xs mt-1">
+                  {locale === 'ar' ? (v.type === 'CAR' ? 'عربية' : 'موتوسيكل') : v.type} · {v.fuelType}
+                </Text>
               </View>
-              {v.isActive && <View className="px-2 py-1 rounded-full bg-accent/15"><Text className="text-accent text-xs">●</Text></View>}
+              {v.isActive ? <Pill label="●" tone="success" /> : null}
             </View>
           </Card>
         ))}
       </View>
 
+      {/* Goals */}
       <View className="mt-4">
         <SectionLabel label={t('profile.goals')} />
-        {(goalsQ.data ?? []).filter((g: any) => g.isActive).map((g: any) => (
-          <Card key={g.id} className="mb-2">
-            <Text className="text-textMuted text-xs">{g.period}</Text>
-            <Text className="text-text font-bold mt-1">{formatMoney(g.targetPiastres, locale)}</Text>
+        {(goalsQ.data ?? []).filter((g: any) => g.isActive).length === 0 ? (
+          <Card>
+            <Text className="text-textMuted text-sm">{t('common.noData')}</Text>
           </Card>
-        ))}
+        ) : (
+          (goalsQ.data ?? []).filter((g: any) => g.isActive).map((g: any) => (
+            <Card key={g.id} className="mb-2">
+              <Text className="text-textMuted text-xs">{periodLabel(g.period, locale)}</Text>
+              <Text className="text-text font-bold mt-1">{formatMoney(g.targetPiastres, locale)}</Text>
+            </Card>
+          ))
+        )}
       </View>
 
-      <View className="mt-4 gap-2">
-        <Pressable onPress={toggleLocale}>
-          <Card>
-            <Text className="text-text">{locale === 'ar' ? t('profile.toggleToEn') : t('profile.toggleToAr')}</Text>
-          </Card>
-        </Pressable>
-        <Pressable onPress={onLogout}>
-          <Card>
-            <Text className="text-danger">{locale === 'ar' ? 'تسجيل الخروج' : 'Log out'}</Text>
-          </Card>
-        </Pressable>
+      {/* Settings */}
+      <View className="mt-6">
+        <SectionLabel label={t('profile.settings')} />
+        <View className="gap-2">
+          <Pressable onPress={toggleLocale}>
+            <Card>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-text">{t('profile.language')}</Text>
+                <Text className="text-textMuted text-sm">
+                  {locale === 'ar' ? 'العربية' : 'English'}
+                </Text>
+              </View>
+            </Card>
+          </Pressable>
+          <Pressable onPress={onLogout}>
+            <Card>
+              <Text className="text-danger">{t('profile.logout')}</Text>
+            </Card>
+          </Pressable>
+        </View>
       </View>
     </Screen>
   );
@@ -94,4 +128,27 @@ export default function ProfileScreen() {
 
 function SectionLabel({ label }: { label: string }) {
   return <Text className="text-textMuted text-sm mb-2 px-1">{label}</Text>;
+}
+
+function RowLink({ label, icon, onPress }: { label: string; icon: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress}>
+      <Card>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3">
+            <Text className="text-accent text-lg">{icon}</Text>
+            <Text className="text-text font-medium">{label}</Text>
+          </View>
+          <Text className="text-textMuted text-lg">›</Text>
+        </View>
+      </Card>
+    </Pressable>
+  );
+}
+
+function periodLabel(p: string, locale: 'ar' | 'en'): string {
+  if (locale === 'ar') {
+    return p === 'DAILY' ? 'يومي' : p === 'WEEKLY' ? 'أسبوعي' : 'شهري';
+  }
+  return p === 'DAILY' ? 'Daily' : p === 'WEEKLY' ? 'Weekly' : 'Monthly';
 }

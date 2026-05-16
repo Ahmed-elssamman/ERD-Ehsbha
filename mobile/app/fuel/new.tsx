@@ -12,6 +12,7 @@ import { Input } from '@/ui/Input';
 import { Button } from '@/ui/Button';
 import { Fuel, Vehicles } from '@/api/endpoints';
 import { t, getLocale } from '@/i18n';
+import { formatMoney } from '@/lib/format';
 import { enqueue } from '@/offline/queue';
 import { useNetwork } from '@/stores/network.store';
 import { showErrorAlert, toUserError } from '@/lib/errors';
@@ -116,7 +117,7 @@ export default function NewFuelScreen() {
         <View className="bg-surface rounded-xl p-4 border border-border">
           <Text className="text-textMuted text-xs mb-1">{t('fuel.total')}</Text>
           <Text className="text-text text-2xl font-bold">
-            {locale === 'ar' ? `${total.toFixed(2)} ج.م` : `EGP ${total.toFixed(2)}`}
+            {formatMoney(Math.round(total * 100), locale)}
           </Text>
         </View>
         <Controller
