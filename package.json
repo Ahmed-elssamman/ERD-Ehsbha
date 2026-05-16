@@ -1,0 +1,21 @@
+{
+  "name": "ehsbha",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "mobile"
+  ],
+  "scripts": {
+    "backend:dev": "npm --workspace backend run start:dev",
+    "backend:build": "npm --workspace backend run build",
+    "backend:test": "npm --workspace backend run test",
+    "backend:typecheck": "npm --workspace backend run typecheck",
+    "backend:prisma:generate": "npm --workspace backend run prisma:generate",
+    "backend:prisma:migrate": "npm --workspace backend run prisma:migrate",
+    "backend:seed": "npm --workspace backend run seed",
+    "mobile:start": "npm --workspace mobile run start",
+    "mobile:android": "npm --workspace mobile run android",
+    "mobile:typecheck": "npm --workspace mobile run typecheck"
+  }
+}

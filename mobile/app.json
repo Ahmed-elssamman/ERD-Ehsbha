@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Ehsbha",
+    "slug": "ehsbha",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "ehsbha",
+    "jsEngine": "hermes",
+    "splash": {
+      "backgroundColor": "#0B0F14",
+      "resizeMode": "contain"
+    },
+    "android": {
+      "package": "com.ehsbha.app",
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.ehsbha.app",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:4000/api/v1"
+    }
+  }
+}

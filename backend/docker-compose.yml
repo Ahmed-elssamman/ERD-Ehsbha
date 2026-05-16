@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ehsbha-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ehsbha
+      POSTGRES_PASSWORD: ehsbha
+      POSTGRES_DB: ehsbha
+    ports:
+      - "5432:5432"
+    volumes:
+      - ehsbha_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ehsbha -d ehsbha"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: ehsbha-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://ehsbha:ehsbha@postgres:5432/ehsbha?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 30d
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    ports:
+      - "4000:4000"
+    command: sh -c "npx prisma migrate deploy && node dist/main.js"
+
+volumes:
+  ehsbha_pg:
