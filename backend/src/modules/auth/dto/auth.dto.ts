@@ -27,3 +27,15 @@ export const LogoutSchema = z.object({
   refreshToken: z.string().min(20),
 });
 export type LogoutDto = z.infer<typeof LogoutSchema>;
+
+export const ForgotPasswordSchema = z.object({
+  phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+});
+export type ForgotPasswordDto = z.infer<typeof ForgotPasswordSchema>;
+
+export const ResetPasswordSchema = z.object({
+  phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+  code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+  newPassword: z.string().min(8).max(128),
+});
+export type ResetPasswordDto = z.infer<typeof ResetPasswordSchema>;

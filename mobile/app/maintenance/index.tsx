@@ -100,6 +100,19 @@ export default function MaintenanceHubScreen() {
         </Card>
       </View>
 
+      {/* Cost intelligence link */}
+      <Pressable onPress={() => router.push('/maintenance/costs' as any)} className="mb-4">
+        <Card>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1">
+              <Text className="text-text font-bold">{t('vehicleCosts.title')}</Text>
+              <Text className="text-textMuted text-xs mt-1">{t('vehicleCosts.subtitle')}</Text>
+            </View>
+            <Text className="text-accent text-lg">›</Text>
+          </View>
+        </Card>
+      </Pressable>
+
       {/* Alerts */}
       {overdueCount + redCount > 0 ? (
         <Card className="mb-4 border-danger/40 bg-danger/10">

@@ -47,6 +47,11 @@ export class TripsService {
       if (dup) return dup;
     }
     const emptyKmMeters = dto.totalKmMeters - dto.paidKmMeters;
+    // If the driver entered what they actually received after the platform deduction,
+    // derive the commission from that. Otherwise fall back to whatever was passed.
+    const commissionPiastres = dto.receivedPiastres !== undefined && dto.receivedPiastres !== null
+      ? Math.max(0, dto.grossPiastres - dto.receivedPiastres)
+      : dto.commissionPiastres;
     const trip = await this.prisma.$transaction(async (tx) => {
       const created = await tx.trip.create({
         data: {
@@ -57,8 +62,11 @@ export class TripsService {
           startedAt: dto.startedAt,
           endedAt: dto.endedAt,
           grossPiastres: dto.grossPiastres,
+          receivedPiastres: dto.receivedPiastres ?? null,
           tipPiastres: dto.tipPiastres,
-          commissionPiastres: dto.commissionPiastres,
+          commissionPiastres,
+          tollPiastres: dto.tollPiastres,
+          parkingPiastres: dto.parkingPiastres,
           totalKmMeters: dto.totalKmMeters,
           paidKmMeters: dto.paidKmMeters,
           emptyKmMeters,

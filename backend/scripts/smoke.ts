@@ -220,6 +220,64 @@ async function main() {
   console.log('\nSync:');
   await assertOk('POST /sync/pull', call('POST', '/sync/pull', { limit: 50 }));
 
+  // 18. Password reset flow
+  console.log('\nPassword reset:');
+  const forgotRes = await call('POST', '/auth/password/forgot', { phone }, false);
+  if (forgotRes.status === 200) ok('POST /auth/password/forgot');
+  else ko('POST /auth/password/forgot', `status ${forgotRes.status}`);
+
+  const devCode = (forgotRes.body?.data ?? forgotRes.body)?.devCode;
+  if (devCode && /^\d{6}$/.test(devCode)) ok('Dev code returned (6 digits)');
+  else ko('Dev code', 'expected a 6-digit devCode in dev mode');
+
+  // Forgot for unknown phone should still return 200 (no enumeration leak)
+  const forgotUnknown = await call('POST', '/auth/password/forgot', { phone: '+209999999999' }, false);
+  if (forgotUnknown.status === 200) ok('Unknown phone → 200 (no enumeration)');
+  else ko('Unknown phone forgot', `status ${forgotUnknown.status}`);
+
+  // Wrong code → 401
+  const wrongReset = await call('POST', '/auth/password/reset', {
+    phone,
+    code: '000000',
+    newPassword: 'temp-new-pass-1234',
+  }, false);
+  if (wrongReset.status === 401) ok('Wrong code → 401');
+  else ko('Wrong code → 401', `got ${wrongReset.status}`);
+
+  // Right code → reset, then login with new password, then restore original
+  if (devCode) {
+    const newPassword = 'newDemoPass99';
+    const reset1 = await call('POST', '/auth/password/reset', {
+      phone,
+      code: devCode,
+      newPassword,
+    }, false);
+    if (reset1.status === 200) ok('POST /auth/password/reset with correct code');
+    else ko('POST /auth/password/reset', `status ${reset1.status} body ${JSON.stringify(reset1.body)}`);
+
+    // Old password no longer works
+    const oldLogin = await call('POST', '/auth/login', { phone, password }, false);
+    if (oldLogin.status === 401) ok('Old password rejected after reset');
+    else ko('Old password rejected', `got ${oldLogin.status}`);
+
+    // New password works
+    const newLogin = await call('POST', '/auth/login', { phone, password: newPassword }, false);
+    if (newLogin.status === 200) ok('New password works');
+    else ko('New password login', `got ${newLogin.status}`);
+
+    // Restore original password so the smoke test is idempotent
+    const restoreForgot = await call('POST', '/auth/password/forgot', { phone }, false);
+    const restoreCode = (restoreForgot.body?.data ?? restoreForgot.body)?.devCode;
+    if (restoreCode) {
+      await call('POST', '/auth/password/reset', {
+        phone,
+        code: restoreCode,
+        newPassword: password,
+      }, false);
+      ok('Restored original password');
+    }
+  }
+
   summarize();
 }
 

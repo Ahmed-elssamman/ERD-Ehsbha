@@ -140,6 +140,111 @@ export class AuthService {
     });
   }
 
+  /**
+   * Begin password reset. Returns the code in dev mode so the driver can copy it
+   * (no SMS provider yet). In prod, the code is sent via SMS and not returned.
+   *
+   * Security:
+   *  - Always returns the same shape regardless of whether the phone exists,
+   *    so an attacker can't enumerate registered phones.
+   *  - Any previous unused codes for the user are invalidated.
+   *  - Code is hashed before storage.
+   */
+  async forgotPassword(phone: string): Promise<{ sent: boolean; devCode?: string; expiresInMinutes: number }> {
+    const expiresInMinutes = 15;
+    const user = await this.prisma.user.findUnique({ where: { phone } });
+
+    if (!user) {
+      // Don't leak whether the phone is registered. Pretend we sent.
+      return { sent: true, expiresInMinutes };
+    }
+
+    // Invalidate any previously-unused codes
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const code = generateNumericCode(6);
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        codeHash: sha256(code),
+        expiresAt: new Date(Date.now() + expiresInMinutes * 60_000),
+      },
+    });
+
+    const isProd = process.env.NODE_ENV === 'production';
+    if (!isProd) {
+      // Dev: surface the code so the driver can finish the flow without an SMS provider.
+      // Replace with an SMS gateway call here when one is wired in.
+      // eslint-disable-next-line no-console
+      console.log(`[reset-password] phone=${phone} code=${code} (dev only)`);
+    }
+
+    return {
+      sent: true,
+      expiresInMinutes,
+      ...(isProd ? {} : { devCode: code }),
+    };
+  }
+
+  async resetPassword(phone: string, code: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { phone } });
+    if (!user) {
+      throw new UnauthorizedException({ code: 'RESET_INVALID', message: 'Invalid reset request' });
+    }
+
+    const codeHash = sha256(code);
+    const token = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        userId: user.id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!token) {
+      throw new UnauthorizedException({ code: 'RESET_EXPIRED', message: 'No active reset request — request a new code' });
+    }
+
+    if (token.attempts >= 5) {
+      // Lock this token after too many wrong attempts.
+      await this.prisma.passwordResetToken.update({
+        where: { id: token.id },
+        data: { usedAt: new Date() },
+      });
+      throw new UnauthorizedException({ code: 'RESET_LOCKED', message: 'Too many wrong attempts — request a new code' });
+    }
+
+    if (token.codeHash !== codeHash) {
+      await this.prisma.passwordResetToken.update({
+        where: { id: token.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException({ code: 'RESET_CODE_WRONG', message: 'Wrong code' });
+    }
+
+    const passwordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: token.id },
+        data: { usedAt: new Date() },
+      }),
+      // Revoke all active refresh tokens — force all devices to log in again.
+      this.prisma.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+  }
+
   private async issueTokens(
     userId: string,
     phone: string,
@@ -173,6 +278,16 @@ export class AuthService {
 
 function sha256(input: string): string {
   return createHash('sha256').update(input).digest('hex');
+}
+
+function generateNumericCode(digits: number): string {
+  // Cryptographically secure 6-digit code (rejection sampling for uniformity)
+  const max = 10 ** digits;
+  let n: number;
+  do {
+    n = randomBytes(4).readUInt32BE(0);
+  } while (n >= Math.floor(0xFFFFFFFF / max) * max);
+  return String(n % max).padStart(digits, '0');
 }
 
 function parseDurationMs(s: string): number {

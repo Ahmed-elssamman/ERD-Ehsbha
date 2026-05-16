@@ -14,6 +14,12 @@ export interface AuthResult {
   refreshToken: string;
 }
 
+export interface ForgotPasswordResult {
+  sent: boolean;
+  expiresInMinutes: number;
+  devCode?: string;
+}
+
 export const Auth = {
   register: (body: { phone: string; password: string; displayName: string }) =>
     api.post('/auth/register', body).then((r) => unwrap<AuthResult>(r.data)),
@@ -23,13 +29,26 @@ export const Auth = {
     api.post('/auth/refresh', { refreshToken }).then((r) => unwrap<AuthResult>(r.data)),
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }).then((r) => unwrap<void>(r.data)),
+  forgotPassword: (phone: string) =>
+    api.post('/auth/password/forgot', { phone }).then((r) => unwrap<ForgotPasswordResult>(r.data)),
+  resetPassword: (phone: string, code: string, newPassword: string) =>
+    api.post('/auth/password/reset', { phone, code, newPassword }).then((r) => unwrap<{ ok: boolean }>(r.data)),
 };
 
 export const Vehicles = {
   list: () => api.get('/vehicles').then((r) => unwrap<any[]>(r.data)),
   create: (body: any) => api.post('/vehicles', body).then((r) => unwrap<any>(r.data)),
   update: (id: string, body: any) => api.patch(`/vehicles/${id}`, body).then((r) => unwrap<any>(r.data)),
+  updateCosts: (id: string, body: any) => api.patch(`/vehicles/${id}/costs`, body).then((r) => unwrap<any>(r.data)),
+  costSummary: (id: string) => api.get(`/vehicles/${id}/cost-summary`).then((r) => unwrap<any>(r.data)),
   remove: (id: string) => api.delete(`/vehicles/${id}`),
+};
+
+export const Odometer = {
+  get: (date?: string) =>
+    api.get('/odometer/daily', { params: date ? { date } : undefined }).then((r) => unwrap<any>(r.data)),
+  set: (body: { date?: string; totalKmMeters: number; notes?: string | null }) =>
+    api.post('/odometer/daily', body).then((r) => unwrap<any>(r.data)),
 };
 
 export const Apps = {

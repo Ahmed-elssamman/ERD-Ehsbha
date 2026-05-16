@@ -27,7 +27,10 @@ const Schema = z.object({
   vehicleId: z.string().min(1),
   driverAppId: z.string().min(1),
   areaId: z.string().nullable().optional(),
+  // Shown price (gross) and what the driver actually received after platform fee.
+  // If received is provided, system derives commission. Otherwise uses driver-app commission %.
   grossEgp: z.coerce.number().min(0),
+  receivedEgp: z.coerce.number().min(0).optional(),
   tipEgp: z.coerce.number().min(0).default(0),
   tripKm: z.coerce.number().min(0.1),
   durationMinutes: z.coerce.number().int().min(1).max(720),
@@ -83,12 +86,17 @@ export default function NewTripScreen() {
     [apps, watch('driverAppId')],
   );
   const grossEgp = watch('grossEgp') ?? 0;
+  const receivedEgp = watch('receivedEgp');
   const tipEgp = watch('tipEgp') ?? 0;
   const tollEgp = watch('tollEgp') ?? 0;
   const parkingEgp = watch('parkingEgp') ?? 0;
-  const commissionPct = selectedApp ? Number(selectedApp.commissionPct) : 0;
-  const commissionEgp = (grossEgp * commissionPct) / 100;
-  const netEgp = Math.max(0, grossEgp + tipEgp - commissionEgp - tollEgp - parkingEgp);
+  const appCommissionPct = selectedApp ? Number(selectedApp.commissionPct) : 0;
+  // If driver entered what they received, derive commission from that.
+  const commissionEgp = receivedEgp !== undefined && receivedEgp !== null && Number(receivedEgp) >= 0
+    ? Math.max(0, grossEgp - Number(receivedEgp))
+    : (grossEgp * appCommissionPct) / 100;
+  const effectiveCommissionPct = grossEgp > 0 ? (commissionEgp / grossEgp) * 100 : 0;
+  const netEgp = Math.max(0, grossEgp - commissionEgp + tipEgp - tollEgp - parkingEgp);
 
   const mutation = useMutation({
     mutationFn: async (input: any) => Trips.create(input),
@@ -128,8 +136,16 @@ export default function NewTripScreen() {
       startedAt: start.toISOString(),
       endedAt: now.toISOString(),
       grossPiastres: Math.round(data.grossEgp * 100),
+      receivedPiastres: data.receivedEgp !== undefined && data.receivedEgp !== null
+        ? Math.round(Number(data.receivedEgp) * 100)
+        : null,
       tipPiastres: Math.round(data.tipEgp * 100),
+      // If received is set, server derives commission from gross-received.
+      // We still send commissionPiastres as a hint based on app % so the server
+      // can fall back if received is missing.
       commissionPiastres: Math.round(commissionEgp * 100),
+      tollPiastres: Math.round((data.tollEgp ?? 0) * 100),
+      parkingPiastres: Math.round((data.parkingEgp ?? 0) * 100),
       totalKmMeters: tripMeters,
       paidKmMeters: tripMeters,
       notes: notesJson || null,
@@ -168,7 +184,7 @@ export default function NewTripScreen() {
           <Text className="text-accent text-3xl font-bold">{formatMoney(Math.round(netEgp * 100), locale)}</Text>
           {commissionEgp > 0 ? (
             <Text className="text-textMuted text-xs mt-1.5">
-              {t('trip.commission')}: −{formatMoney(Math.round(commissionEgp * 100), locale)} ({commissionPct}%)
+              {t('trip.commission')}: −{formatMoney(Math.round(commissionEgp * 100), locale)} ({effectiveCommissionPct.toFixed(0)}%)
             </Text>
           ) : null}
           {(tollEgp > 0 || parkingEgp > 0) ? (
@@ -178,20 +194,42 @@ export default function NewTripScreen() {
           ) : null}
         </Card>
 
-        {/* Core fields */}
-        <Controller
-          control={control}
-          name="grossEgp"
-          render={({ field: { value, onChange } }) => (
-            <Input
-              label={t('trip.gross')}
-              keyboardType="numeric"
-              value={String(value || '')}
-              onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
-              error={errors.grossEgp?.message}
+        {/* Shown vs received: most accurate input — drives auto-commission */}
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Controller
+              control={control}
+              name="grossEgp"
+              render={({ field: { value, onChange } }) => (
+                <Input
+                  label={t('trip.gross')}
+                  keyboardType="numeric"
+                  value={String(value || '')}
+                  onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
+                  error={errors.grossEgp?.message}
+                />
+              )}
             />
-          )}
-        />
+          </View>
+          <View className="flex-1">
+            <Controller
+              control={control}
+              name="receivedEgp"
+              render={({ field: { value, onChange } }) => (
+                <Input
+                  label={t('trip.receivedAfterFees')}
+                  hint={t('trip.receivedHint')}
+                  keyboardType="numeric"
+                  value={value !== undefined && value !== null ? String(value) : ''}
+                  onChangeText={(v) => {
+                    const s = v.replace(/[^\d.]/g, '');
+                    onChange(s === '' ? undefined : Number(s));
+                  }}
+                />
+              )}
+            />
+          </View>
+        </View>
 
         <Controller
           control={control}

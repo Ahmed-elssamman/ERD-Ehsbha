@@ -8,30 +8,27 @@ import { Screen } from '@/ui/Screen';
 import { Header } from '@/ui/Header';
 import { Input } from '@/ui/Input';
 import { Button } from '@/ui/Button';
+import { Card } from '@/ui/Card';
 import { Auth } from '@/api/endpoints';
-import { useAuth } from '@/stores/auth.store';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
 import { isValidLocalEgyptPhone, toE164 } from '@/lib/phone';
 
 const Schema = z.object({
-  displayName: z.string().min(2).max(80),
   phone: z
     .string()
     .min(1, 'required')
     .refine((v) => isValidLocalEgyptPhone(v.replace(/[\s-]/g, '')), { message: 'invalid' }),
-  password: z.string().min(8).max(128),
 });
 type Form = z.infer<typeof Schema>;
 
-export default function RegisterScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const setSession = useAuth((s) => s.setSession);
   const [submitting, setSubmitting] = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(Schema),
-    defaultValues: { displayName: '', phone: '', password: '' },
+    defaultValues: { phone: '' },
   });
 
   const onSubmit = async (data: Form) => {
@@ -42,13 +39,15 @@ export default function RegisterScreen() {
     }
     setSubmitting(true);
     try {
-      const result = await Auth.register({
-        displayName: data.displayName,
-        phone: phoneE164,
-        password: data.password,
-      });
-      await setSession(result);
-      router.replace('/(tabs)/home');
+      const result = await Auth.forgotPassword(phoneE164);
+      // Always navigate to reset screen — even if the phone doesn't exist (we don't leak).
+      router.push({
+        pathname: '/(auth)/reset',
+        params: {
+          phone: phoneE164,
+          devCode: result.devCode ?? '',
+        },
+      } as any);
     } catch (err) {
       showErrorAlert(err);
     } finally {
@@ -58,21 +57,8 @@ export default function RegisterScreen() {
 
   return (
     <Screen>
-      <Header title={t('auth.createAccount')} back />
+      <Header title={t('auth.forgotTitle')} back subtitle={t('auth.forgotSubtitle')} />
       <View className="gap-4 mt-4">
-        <Controller
-          control={control}
-          name="displayName"
-          render={({ field: { value, onChange, onBlur } }) => (
-            <Input
-              label={t('auth.displayName')}
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.displayName?.message}
-            />
-          )}
-        />
         <Controller
           control={control}
           name="phone"
@@ -91,27 +77,10 @@ export default function RegisterScreen() {
             />
           )}
         />
-        <Controller
-          control={control}
-          name="password"
-          render={({ field: { value, onChange, onBlur } }) => (
-            <Input
-              label={t('auth.password')}
-              secureTextEntry
-              autoCapitalize="none"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.password ? t('auth.passwordTooShort') : undefined}
-            />
-          )}
-        />
-        <Button label={t('auth.register')} loading={submitting} onPress={handleSubmit(onSubmit)} />
+        <Button label={t('auth.sendCode')} loading={submitting} onPress={handleSubmit(onSubmit)} />
         <View className="items-center mt-2">
-          <Text className="text-textMuted text-sm">{t('auth.hasAccount')}{' '}
-            <Text className="text-accent" onPress={() => router.replace('/(auth)/login')}>
-              {t('auth.alreadyMember')}
-            </Text>
+          <Text className="text-accent text-sm" onPress={() => router.back()}>
+            {t('auth.backToLogin')}
           </Text>
         </View>
       </View>

@@ -19,6 +19,7 @@ import { ScoreModule } from './modules/score/score.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { HealthModule } from './modules/health/health.module';
+import { OdometerModule } from './modules/odometer/odometer.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { HealthModule } from './modules/health/health.module';
     NotificationsModule,
     SyncModule,
     HealthModule,
+    OdometerModule,
   ],
 })
 export class AppModule {}

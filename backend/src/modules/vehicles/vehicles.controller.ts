@@ -3,7 +3,14 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 import { VehiclesService } from './vehicles.service';
-import { CreateVehicleDto, CreateVehicleSchema, UpdateVehicleDto, UpdateVehicleSchema } from './dto/vehicles.dto';
+import {
+  CreateVehicleDto,
+  CreateVehicleSchema,
+  UpdateVehicleCostsDto,
+  UpdateVehicleCostsSchema,
+  UpdateVehicleDto,
+  UpdateVehicleSchema,
+} from './dto/vehicles.dto';
 
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard)
@@ -35,6 +42,20 @@ export class VehiclesController {
     @Body(new ZodValidationPipe(UpdateVehicleSchema)) dto: UpdateVehicleDto,
   ) {
     return this.svc.update(driverId, id, dto);
+  }
+
+  @Patch(':id/costs')
+  updateCosts(
+    @CurrentDriverId() driverId: string,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(UpdateVehicleCostsSchema)) dto: UpdateVehicleCostsDto,
+  ) {
+    return this.svc.updateCosts(driverId, id, dto);
+  }
+
+  @Get(':id/cost-summary')
+  costSummary(@CurrentDriverId() driverId: string, @Param('id') id: string) {
+    return this.svc.costSummary(driverId, id);
   }
 
   @Delete(':id')

@@ -23,8 +23,24 @@ model User {
   driver        Driver?
   refreshTokens RefreshToken[]
   deviceTokens  DeviceToken[]
+  resetTokens   PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+  @@map("password_reset_tokens")
 }
 
 enum UserStatus {
@@ -78,8 +94,23 @@ model Driver {
   monthlyAggregates MonthlyAggregate[]
   appDailyAggregates AppDailyAggregate[]
   areaDailyAggregates AreaDailyAggregate[]
+  dailyOdometers DailyOdometer[]
 
   @@map("drivers")
+}
+
+model DailyOdometer {
+  driverId      String   @map("driver_id")
+  date          DateTime @db.Date
+  totalKmMeters BigInt   @map("total_km_meters")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@id([driverId, date])
+  @@map("daily_odometers")
 }
 
 enum VehicleType {
@@ -108,6 +139,23 @@ model Vehicle {
   baselineKmPerLiter  Decimal  @default("12") @db.Decimal(6, 2) @map("baseline_km_per_liter")
   odometerMeters     BigInt   @default(0) @map("odometer_meters")
   isActive           Boolean  @default(true) @map("is_active")
+
+  // Cost intelligence (all piastres, all intervals in km except battery in months)
+  fuelTankCostPiastres        Int?    @map("fuel_tank_cost_piastres")
+  fuelTankKmRange             Int?    @map("fuel_tank_km_range")
+  oilCostPiastres             Int?    @map("oil_cost_piastres")
+  oilIntervalKm               Int?    @map("oil_interval_km")
+  tireCostPiastres            Int?    @map("tire_cost_piastres")
+  tireIntervalKm              Int?    @map("tire_interval_km")
+  brakesCostPiastres          Int?    @map("brakes_cost_piastres")
+  brakesIntervalKm            Int?    @map("brakes_interval_km")
+  chainCostPiastres           Int?    @map("chain_cost_piastres")
+  chainIntervalKm             Int?    @map("chain_interval_km")
+  batteryCostPiastres         Int?    @map("battery_cost_piastres")
+  batteryIntervalMonths       Int?    @map("battery_interval_months")
+  monthlyMaintCostPiastres    Int?    @map("monthly_maint_cost_piastres")
+  monthlyAvgKm                Int?    @map("monthly_avg_km")
+
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
@@ -183,8 +231,11 @@ model Trip {
   startedAt           DateTime @map("started_at")
   endedAt             DateTime @map("ended_at")
   grossPiastres       Int      @map("gross_piastres")
+  receivedPiastres    Int?     @map("received_piastres")
   tipPiastres         Int      @default(0) @map("tip_piastres")
   commissionPiastres  Int      @default(0) @map("commission_piastres")
+  tollPiastres        Int      @default(0) @map("toll_piastres")
+  parkingPiastres     Int      @default(0) @map("parking_piastres")
   totalKmMeters       Int      @map("total_km_meters")
   paidKmMeters        Int      @map("paid_km_meters")
   emptyKmMeters       Int      @map("empty_km_meters")

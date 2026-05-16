@@ -3,6 +3,8 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 import {
+  ForgotPasswordDto,
+  ForgotPasswordSchema,
   LoginDto,
   LoginSchema,
   LogoutDto,
@@ -11,6 +13,8 @@ import {
   RefreshSchema,
   RegisterDto,
   RegisterSchema,
+  ResetPasswordDto,
+  ResetPasswordSchema,
 } from './dto/auth.dto';
 
 @Controller('auth')
@@ -40,5 +44,18 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async logout(@Body(new ZodValidationPipe(LogoutSchema)) dto: LogoutDto): Promise<void> {
     await this.auth.logout(dto.refreshToken);
+  }
+
+  @Post('password/forgot')
+  @HttpCode(HttpStatus.OK)
+  forgot(@Body(new ZodValidationPipe(ForgotPasswordSchema)) dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.phone);
+  }
+
+  @Post('password/reset')
+  @HttpCode(HttpStatus.OK)
+  async reset(@Body(new ZodValidationPipe(ResetPasswordSchema)) dto: ResetPasswordDto) {
+    await this.auth.resetPassword(dto.phone, dto.code, dto.newPassword);
+    return { ok: true };
   }
 }

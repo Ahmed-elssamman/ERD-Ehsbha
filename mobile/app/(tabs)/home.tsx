@@ -9,6 +9,7 @@ import { DecisionCard } from '@/ui/DecisionCard';
 import { Button } from '@/ui/Button';
 import { TripRow } from '@/ui/TripRow';
 import { EmptyState } from '@/ui/EmptyState';
+import { DailyOdometerCard } from '@/ui/DailyOdometerCard';
 import { Analytics, Recommendations, Score, Trips } from '@/api/endpoints';
 import { formatHours, formatKm, formatMoney } from '@/lib/format';
 import { getLocale, t } from '@/i18n';
@@ -67,6 +68,10 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
+
+      <View className="mt-4">
+        <DailyOdometerCard />
+      </View>
 
       {score ? (
         <View className="mt-6">

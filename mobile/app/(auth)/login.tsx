@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,9 +12,15 @@ import { Auth } from '@/api/endpoints';
 import { useAuth } from '@/stores/auth.store';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
+import { isValidLocalEgyptPhone, toE164 } from '@/lib/phone';
 
 const Schema = z.object({
-  phone: z.string().regex(/^\+?\d{8,15}$/),
+  phone: z
+    .string()
+    .min(1, 'required')
+    .refine((v) => isValidLocalEgyptPhone(v.replace(/[\s-]/g, '')), {
+      message: 'invalid',
+    }),
   password: z.string().min(8).max(128),
 });
 type Form = z.infer<typeof Schema>;
@@ -26,13 +32,18 @@ export default function LoginScreen() {
 
   const { control, handleSubmit, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(Schema),
-    defaultValues: { phone: '+201000000001', password: '' },
+    defaultValues: { phone: '', password: '' },
   });
 
   const onSubmit = async (data: Form) => {
+    const phoneE164 = toE164(data.phone);
+    if (!phoneE164) {
+      showErrorAlert({ response: { data: { error: { code: 'VALIDATION_ERROR' } } } });
+      return;
+    }
     setSubmitting(true);
     try {
-      const result = await Auth.login(data);
+      const result = await Auth.login({ phone: phoneE164, password: data.password });
       await setSession(result);
       router.replace('/(tabs)/home');
     } catch (err) {
@@ -54,10 +65,13 @@ export default function LoginScreen() {
               label={t('auth.phone')}
               keyboardType="phone-pad"
               autoCapitalize="none"
+              maxLength={11}
+              placeholder="01019579006"
               value={value}
-              onChangeText={onChange}
+              onChangeText={(v) => onChange(v.replace(/[^\d]/g, ''))}
               onBlur={onBlur}
-              error={errors.phone?.message}
+              error={errors.phone ? t('auth.phoneInvalid') : undefined}
+              hint={!errors.phone ? t('auth.phoneHint') : undefined}
             />
           )}
         />
@@ -72,13 +86,22 @@ export default function LoginScreen() {
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={errors.password?.message}
+              error={errors.password ? t('auth.passwordTooShort') : undefined}
             />
           )}
         />
+
         <Button label={t('auth.login')} loading={submitting} onPress={handleSubmit(onSubmit)} />
+
+        <View className="items-center mt-1">
+          <Text className="text-accent text-sm" onPress={() => router.push('/(auth)/forgot' as any)}>
+            {t('auth.forgotPassword')}
+          </Text>
+        </View>
+
         <View className="items-center mt-2">
-          <Text className="text-textMuted text-sm">{t('auth.noAccount')}{' '}
+          <Text className="text-textMuted text-sm">
+            {t('auth.noAccount')}{' '}
             <Text className="text-accent" onPress={() => router.replace('/(auth)/register')}>
               {t('auth.createAccount')}
             </Text>
