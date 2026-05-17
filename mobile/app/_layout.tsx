@@ -38,8 +38,11 @@ const queryClient = new QueryClient({
       retryDelay: 500,
       refetchOnWindowFocus: false,
       refetchOnReconnect: 'always',
-      // Don't refetch on every screen mount — only when stale.
-      refetchOnMount: false,
+      // refetchOnMount defaults to `true`: refetch on mount only when the
+      // query is stale (within staleTime → cached; past staleTime or after
+      // invalidateQueries → refetch). Setting this to `false` previously
+      // suppressed refetches even after `invalidateQueries`, so newly
+      // created trips never showed up until the cache aged out.
       networkMode: 'offlineFirst',
     },
     mutations: {

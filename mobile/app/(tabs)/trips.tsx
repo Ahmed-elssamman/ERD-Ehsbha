@@ -1,22 +1,30 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/ui/Screen';
 import { Header } from '@/ui/Header';
-import { TripRow } from '@/ui/TripRow';
+import { TripRow, TripRowTrip } from '@/ui/TripRow';
 import { EmptyState } from '@/ui/EmptyState';
 import { Button } from '@/ui/Button';
 import { FilterSheet, FilterValue } from '@/ui/FilterSheet';
 import { Pill } from '@/ui/Pill';
-import { Apps, Areas, Trips, Vehicles } from '@/api/endpoints';
+import { RouteDateSheet } from '@/ui/RouteDateSheet';
+import { Apps, Areas, Trips, Vehicles, TripListItem } from '@/api/endpoints';
 import { t } from '@/i18n';
 import { go, ROUTES } from '@/constants/routes';
+
+interface EditingTrip {
+  id: string;
+  route: string | null;
+  tripDate: string | null;
+}
 
 export default function TripsScreen(): React.ReactElement {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterValue>({});
   const [filterOpen, setFilterOpen] = useState(false);
+  const [editing, setEditing] = useState<EditingTrip | null>(null);
 
   const queryParams = useMemo(() => {
     const p: Record<string, string> = {};
@@ -35,18 +43,37 @@ export default function TripsScreen(): React.ReactElement {
   const areasQ = useQuery({ queryKey: ['areas'], queryFn: () => Areas.list() });
   const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list() });
 
+  // When the tab regains focus (e.g. after returning from /trips/new),
+  // force a refetch so newly created trips appear immediately even if the
+  // cache somehow missed the invalidate (offline-first edge cases).
+  useFocusEffect(
+    useCallback(() => {
+      tripsQ.refetch();
+    }, [tripsQ.refetch]),
+  );
+
   const appMap = new Map<string, string>();
   for (const a of appsQ.data ?? []) appMap.set(a.id, a.customName ?? a.appSource?.name ?? '');
   const areaMap = new Map<string, string>();
   for (const a of areasQ.data ?? []) areaMap.set(a.id, a.name);
 
-  const items = tripsQ.data?.items ?? [];
+  const items: TripListItem[] = tripsQ.data?.items ?? [];
 
   const activeFilterCount =
     (filter.range ? 1 : 0) +
     (filter.appId ? 1 : 0) +
     (filter.areaId ? 1 : 0) +
     (filter.vehicleId ? 1 : 0);
+
+  const openEditRoute = useCallback((trip: TripRowTrip) => {
+    setEditing({
+      id: trip.id,
+      route: trip.route ?? null,
+      tripDate: trip.tripDate ?? null,
+    });
+  }, []);
+
+  const closeEditRoute = useCallback(() => setEditing(null), []);
 
   return (
     <Screen scrollable={false}>
@@ -84,21 +111,27 @@ export default function TripsScreen(): React.ReactElement {
       ) : (
         <FlatList
           data={items}
-          keyExtractor={(item: any) => item.id}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TripRow
               trip={item}
               appName={appMap.get(item.driverAppId)}
               areaName={item.areaId ? areaMap.get(item.areaId) : undefined}
               onPress={() => router.push(go(ROUTES.TRIP_DETAIL, { id: item.id }))}
+              onEditRoute={openEditRoute}
             />
           )}
+          ListEmptyComponent={
+            <EmptyState title={t('home.noTrips')} />
+          }
           ItemSeparatorComponent={() => <View className="h-1" />}
           contentContainerStyle={{ paddingBottom: 24 }}
           removeClippedSubviews
           windowSize={5}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
+          refreshing={tripsQ.isFetching && !tripsQ.isLoading}
+          onRefresh={() => tripsQ.refetch()}
         />
       )}
 
@@ -117,6 +150,14 @@ export default function TripsScreen(): React.ReactElement {
           id: v.id,
           label: `${v.make ?? ''} ${v.model ?? ''}`.trim() || v.type,
         }))}
+      />
+
+      <RouteDateSheet
+        visible={!!editing}
+        tripId={editing?.id ?? null}
+        initialRoute={editing?.route ?? null}
+        initialTripDate={editing?.tripDate ?? null}
+        onClose={closeEditRoute}
       />
     </Screen>
   );

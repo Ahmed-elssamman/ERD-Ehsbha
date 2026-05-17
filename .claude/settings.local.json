@@ -8,7 +8,13 @@
       "Bash(npm install *)",
       "Bash(npx prisma *)",
       "Bash(npx tsc *)",
-      "Bash(npx jest *)"
+      "Bash(npx jest *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('peerDeps:', d.get\\('peerDependencies', {}\\)\\); print\\('deps with worklets:', {k:v for k,v in d.get\\('dependencies', {}\\).items\\(\\) if 'worklet' in k.lower\\(\\)}\\)\")",
+      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('version:',p.version\\); console.log\\('peerDeps:',JSON.stringify\\(p.peerDependencies||{},null,2\\)\\); console.log\\('deps:',JSON.stringify\\(p.dependencies||{},null,2\\)\\);}\\)\")",
+      "Bash(grep -E \"^react-native-worklets$|^react-native-reanimated$\")",
+      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('peerDeps:', JSON.stringify\\(p.peerDependencies||{},null,2\\)\\); console.log\\('peerMeta:', JSON.stringify\\(p.peerDependenciesMeta||{},null,2\\)\\); console.log\\('optionalDeps:', JSON.stringify\\(p.optionalDependencies||{},null,2\\)\\)}\\);\")",
+      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('version:',p.version\\); console.log\\('peerDeps:', JSON.stringify\\(p.peerDependencies||{},null,2\\)\\);}\\)\")",
+      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('nativewind version:',p.version\\); console.log\\('deps:', JSON.stringify\\(p.dependencies||{},null,2\\)\\);}\\)\")"
     ]
   }
 }

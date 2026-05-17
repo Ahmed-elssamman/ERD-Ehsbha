@@ -7,14 +7,12 @@
     "userInterfaceStyle": "automatic",
     "scheme": "ehsbha",
     "jsEngine": "hermes",
-    "splash": {
-      "backgroundColor": "#0B0F14",
-      "resizeMode": "contain"
-    },
+    "icon": "./assets/icon.png",
     "android": {
       "package": "com.elsamman.ehsbha",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B0F14"
       }
     },
@@ -27,6 +25,15 @@
       "expo-localization",
       "expo-secure-store",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#0B0F14",
+          "resizeMode": "contain",
+          "imageWidth": 200
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -43,7 +50,11 @@
       "typedRoutes": false
     },
     "extra": {
-      "apiUrl": "https://ehsebha.modev.me/api/v1"
+      "apiUrl": "https://ehsebha.modev.me/api/v1",
+      "router": {},
+      "eas": {
+        "projectId": "a09fc4ea-5afb-48a4-baa0-55c0e0d3155a"
+      }
     }
   }
 }

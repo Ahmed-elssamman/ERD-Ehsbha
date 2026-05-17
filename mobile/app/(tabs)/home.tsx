@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -7,19 +7,37 @@ import { Header } from '@/ui/Header';
 import { KpiTile } from '@/ui/KpiTile';
 import { DecisionCard } from '@/ui/DecisionCard';
 import { Button } from '@/ui/Button';
-import { TripRow } from '@/ui/TripRow';
+import { TripRow, TripRowTrip } from '@/ui/TripRow';
 import { EmptyState } from '@/ui/EmptyState';
 import { DailyOdometerCard } from '@/ui/DailyOdometerCard';
+import { RouteDateSheet } from '@/ui/RouteDateSheet';
 import { Analytics, Apps, Recommendations, Score, Trips, Vehicles } from '@/api/endpoints';
 import { formatHours, formatKm, formatMoney } from '@/lib/format';
 import { getLocale, t } from '@/i18n';
 import { useNetwork } from '@/stores/network.store';
 import { go, ROUTES } from '@/constants/routes';
 
+interface EditingTrip {
+  id: string;
+  route: string | null;
+  tripDate: string | null;
+}
+
 export default function HomeScreen(): React.ReactElement {
   const router = useRouter();
   const locale = getLocale();
   const pending = useNetwork((s) => s.pendingMutations);
+  const [editing, setEditing] = useState<EditingTrip | null>(null);
+
+  const openEditRoute = useCallback((trip: TripRowTrip) => {
+    setEditing({
+      id: trip.id,
+      route: trip.route ?? null,
+      tripDate: trip.tripDate ?? null,
+    });
+  }, []);
+
+  const closeEditRoute = useCallback(() => setEditing(null), []);
 
   const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: () => Vehicles.list(), staleTime: 5 * 60_000 });
   const appsQ = useQuery({ queryKey: ['apps', 'me'], queryFn: () => Apps.mine(), staleTime: 5 * 60_000 });
@@ -185,7 +203,12 @@ export default function HomeScreen(): React.ReactElement {
           />
         ) : (
           trips.slice(0, 5).map((trip: any) => (
-            <TripRow key={trip.id} trip={trip} onPress={() => router.push(go(ROUTES.TRIP_DETAIL, { id: trip.id }))} />
+            <TripRow
+              key={trip.id}
+              trip={trip}
+              onPress={() => router.push(go(ROUTES.TRIP_DETAIL, { id: trip.id }))}
+              onEditRoute={openEditRoute}
+            />
           ))
         )}
       </View>
@@ -193,6 +216,14 @@ export default function HomeScreen(): React.ReactElement {
       <View className="mt-4">
         <Button label={t('home.addTrip')} onPress={() => router.push(go(ROUTES.TRIP_NEW))} />
       </View>
+
+      <RouteDateSheet
+        visible={!!editing}
+        tripId={editing?.id ?? null}
+        initialRoute={editing?.route ?? null}
+        initialTripDate={editing?.tripDate ?? null}
+        onClose={closeEditRoute}
+      />
     </Screen>
   );
 }

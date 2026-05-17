@@ -80,15 +80,42 @@ export interface TripInput {
   paidKmMeters: number;
   notes?: string | null;
   clientMutationId?: string;
+  // Optional descriptive fields: route name ("الطريق / القوت") and the
+  // human-facing date the driver assigns to the trip (YYYY-MM-DD).
+  route?: string | null;
+  tripDate?: string | null;
+}
+
+export interface TripListItem {
+  id: string;
+  vehicleId: string;
+  driverAppId: string;
+  areaId: string | null;
+  startedAt: string;
+  endedAt: string;
+  grossPiastres: number;
+  tipPiastres: number;
+  commissionPiastres: number;
+  totalKmMeters: number;
+  paidKmMeters: number;
+  emptyKmMeters: number;
+  notes: string | null;
+  route?: string | null;
+  tripDate?: string | null;
+}
+
+export interface TripsListResponse {
+  items: TripListItem[];
+  nextCursor: string | null;
 }
 
 export const Trips = {
   list: (params?: { from?: string; to?: string; appId?: string; areaId?: string; cursor?: string; limit?: number }) =>
-    api.get('/trips', { params }).then((r) => unwrap<{ items: any[]; nextCursor: string | null }>(r.data)),
-  get: (id: string) => api.get(`/trips/${id}`).then((r) => unwrap<any>(r.data)),
-  create: (body: TripInput) => api.post('/trips', body).then((r) => unwrap<any>(r.data)),
+    api.get('/trips', { params }).then((r) => unwrap<TripsListResponse>(r.data)),
+  get: (id: string) => api.get(`/trips/${id}`).then((r) => unwrap<TripListItem>(r.data)),
+  create: (body: TripInput) => api.post('/trips', body).then((r) => unwrap<TripListItem>(r.data)),
   update: (id: string, body: Partial<TripInput>) =>
-    api.patch(`/trips/${id}`, body).then((r) => unwrap<any>(r.data)),
+    api.patch(`/trips/${id}`, body).then((r) => unwrap<TripListItem>(r.data)),
   remove: (id: string) => api.delete(`/trips/${id}`),
 };
 

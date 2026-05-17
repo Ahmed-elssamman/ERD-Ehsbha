@@ -200,6 +200,8 @@ export default function NewTripScreen(): React.ReactElement {
       qc.invalidateQueries({ queryKey: ['trips'] });
       qc.invalidateQueries({ queryKey: ['analytics'] });
       qc.invalidateQueries({ queryKey: ['decisions'] });
+      qc.invalidateQueries({ queryKey: ['score'] });
+      qc.invalidateQueries({ queryKey: ['goals'] });
       router.back();
     } catch (err) {
       const ue = toUserError(err);
