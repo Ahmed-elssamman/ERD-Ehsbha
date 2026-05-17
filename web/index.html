@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" />
+    <meta name="theme-color" content="#0B0F14" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Ehsbha" />
+
+    <title>Ehsbha — Smart Driver Operating System</title>
+    <meta
+      name="description"
+      content="Ehsbha helps ride-share, delivery and transportation drivers track real profit, fuel, maintenance and operational performance — built for Egypt and MENA."
+    />
+    <meta name="keywords" content="Ehsbha, احسبها, driver, ride-share, delivery, profit, analytics, Egypt, MENA" />
+    <meta name="robots" content="index,follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Ehsbha — Smart Driver Operating System" />
+    <meta property="og:description" content="Know your real profit. Track fuel, maintenance, and operational performance — built for drivers." />
+    <meta property="og:image" content="/icon-512.svg" />
+    <meta property="og:locale" content="ar_EG" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ehsbha — Smart Driver Operating System" />
+    <meta name="twitter:description" content="Know your real profit. Built for ride-share and delivery drivers." />
+    <meta name="twitter:image" content="/icon-512.svg" />
+
+    <link rel="canonical" href="/" />
+    <link rel="alternate" hreflang="ar" href="/" />
+    <link rel="alternate" hreflang="en" href="/" />
+    <link rel="alternate" hreflang="x-default" href="/" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Ehsbha",
+        "alternateName": "احسبها",
+        "url": "/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript. Modern browser (Chrome 90+, Safari 14+, Firefox 90+).",
+        "description": "Smart driver operating system for ride-share, delivery and transportation drivers. Track real profit, fuel, maintenance and operational performance.",
+        "inLanguage": ["ar", "en"],
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EGP"
+        },
+        "audience": {
+          "@type": "Audience",
+          "audienceType": "Ride-share, delivery and transportation drivers"
+        }
+      }
+    </script>
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('ehsbha.theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored || (prefersDark ? 'dark' : 'light');
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          var locale = localStorage.getItem('ehsbha.locale') || 'ar';
+          document.documentElement.setAttribute('lang', locale);
+          document.documentElement.setAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html, body, #root { height: 100%; }
+      body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+      #initial-loader { position: fixed; inset: 0; display: grid; place-items: center; background: #0B0F14; color: #E8ECF1; z-index: 9999; font-family: 'Cairo', system-ui, sans-serif; }
+      html:not(.dark) #initial-loader { background: #FFFFFF; color: #0B0F14; }
+      .il-dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; opacity: .35; animation: il 1.2s infinite ease-in-out; }
+      .il-dots { display: inline-flex; gap: 6px; align-items: center; }
+      .il-dot:nth-child(2) { animation-delay: .15s; }
+      .il-dot:nth-child(3) { animation-delay: .30s; }
+      @keyframes il { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="initial-loader" aria-hidden="true">
+      <div class="il-dots" role="status" aria-label="loading">
+        <span class="il-dot"></span><span class="il-dot"></span><span class="il-dot"></span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

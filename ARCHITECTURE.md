@@ -1,18 +1,23 @@
-# Ehsbha — Final Project Architecture
+# Ehsbha — Project Architecture
 
-**Version 2.0 (Final) · Mobile-First · Practical · Status: Approved**
-Date: 2026-05-16
+**Version 3.0 · Web-First PWA · Status: Approved**
+Date: 2026-05-17
+
+> **What changed in v3.0:** Ehsbha is now a **web-only platform** delivered as an installable PWA. The native React Native / Expo client has been retired. The product principles below are unchanged — only the delivery surface (web instead of mobile-native) and the frontend tech stack have changed. The backend, database schema, business logic, calculations, and analytics engines are preserved as-is.
+>
+> Concrete details about the current web implementation (routes, pages, design system, PWA configuration, build commands) live in [`README.md`](./README.md) and [`web/README.md`](./web/README.md). The remainder of this document is preserved for historical reference and for the parts that remain valid (backend, schema, business rules).
 
 ---
 
 ## 0. Guiding Principles
 
-1. **Mobile UX is the product.** The backend serves the mobile experience — not the other way around.
-2. **Simple beats clever.** No microservices, no CQRS, no event buses, no worker fleets. One NestJS app, one Postgres, that's it.
-3. **Fast and quiet on cheap phones.** Every screen must feel instant on a 2GB Android 9 device on flaky 3G.
-4. **Accurate calculations.** Profit math is correct to the piaster. Money is integers.
-5. **Arabic first, RTL native.** Egyptian drivers are the primary user.
-6. **Add features only when they earn their place.** The MVP is small on purpose.
+1. **The web is the product.** The PWA serves drivers everywhere — installable on Android home screens, usable in any browser, accessible from desktop dashboards.
+2. **Mobile-first responsive UX.** Every page is designed for a small phone first and scales up; large screens are an enhancement, not the primary target.
+3. **Simple beats clever.** No microservices, no CQRS, no event buses, no worker fleets. One NestJS app, one Postgres, one Vite SPA, that's it.
+4. **Fast and quiet on cheap phones.** Every page must feel instant on a 2GB Android 9 device on flaky 3G — small JS chunks, cached API, offline shell.
+5. **Accurate calculations.** Profit math is correct to the piaster. Money is integers.
+6. **Arabic first, RTL native.** Egyptian drivers are the primary user.
+7. **Add features only when they earn their place.** The MVP is small on purpose.
 
 ---
 
@@ -38,26 +43,29 @@ No maps. No live GPS. No AI chatbot. No accounting/VAT. No Google/Firebase/Supab
 
 ---
 
-## 2. Tech Stack (Locked)
+## 2. Tech Stack (Locked, v3.0 web-only)
 
-**Mobile**
-- React Native (Expo)
-- Expo Router
-- TypeScript
-- Zustand (UI/session state)
-- TanStack Query (server cache)
-- NativeWind (Tailwind)
-- React Hook Form + Zod (forms)
-- Reanimated (animations)
-- AsyncStorage (lightweight persistence)
-- expo-localization, expo-secure-store, expo-image
+**Web (PWA)**
+- React 19 + TypeScript 5.7
+- Vite 6 (manual chunks: react / query / forms / motion / charts)
+- TailwindCSS 3 + `tailwindcss-animate` + HSL CSS-var theming (light + dark)
+- Radix UI primitives (Label, Slot, Dropdown, Toast)
+- TanStack Query 5 + persist-client (localStorage)
+- Zustand 4 + persist (auth, theme, locale)
+- React Hook Form 7 + Zod 3
+- Framer Motion 11 (subtle, prefers-reduced-motion aware)
+- Recharts 2 (responsive analytics)
+- `vite-plugin-pwa` (Workbox autoUpdate, NetworkFirst API cache, offline fallback)
+- Custom dotted-path i18n (AR RTL + EN LTR)
 
-**Backend**
-- NestJS (TypeScript)
-- PostgreSQL
-- Prisma ORM
-- JWT (access + refresh)
-- @nestjs/schedule for cron jobs
+**Backend** (unchanged from v2.0)
+- NestJS 11 (TypeScript)
+- PostgreSQL 16 (Neon-hosted in dev)
+- Prisma 6 ORM
+- JWT (HS256) with rotating refresh + reuse detection
+- Argon2id password hashing
+- Zod validation everywhere
+- `@nestjs/schedule` for nightly aggregate cron
 - Zod for validation
 
 That's everything. No Redis, no BullMQ, no message queue, no read replica, no Kafka — none of it. We add infrastructure only when measured pain forces us to.

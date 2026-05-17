@@ -4,9 +4,8 @@
   "private": true,
   "workspaces": [
     "backend",
-    "mobile"
+    "web"
   ],
-  "main": "expo-router/entry",
   "scripts": {
     "backend:dev": "npm --workspace backend run start:dev",
     "backend:build": "npm --workspace backend run build",
@@ -15,8 +14,15 @@
     "backend:prisma:generate": "npm --workspace backend run prisma:generate",
     "backend:prisma:migrate": "npm --workspace backend run prisma:migrate",
     "backend:seed": "npm --workspace backend run seed",
-    "mobile:start": "npm --workspace mobile run start",
-    "mobile:android": "npm --workspace mobile run android",
-    "mobile:typecheck": "npm --workspace mobile run typecheck"
+    "web:dev": "npm --workspace web run dev",
+    "web:build": "npm --workspace web run build",
+    "web:preview": "npm --workspace web run preview",
+    "web:typecheck": "npm --workspace web run typecheck",
+    "dev": "npm-run-all -p backend:dev web:dev",
+    "build": "npm run backend:build && npm run web:build",
+    "typecheck": "npm run backend:typecheck && npm run web:typecheck"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
   }
 }

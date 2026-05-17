@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /register
+Disallow: /trips
+Disallow: /expenses
+Disallow: /maintenance
+Disallow: /vehicle-health
+Disallow: /analytics
+Disallow: /driver-score
+Disallow: /smart-decisions
+Disallow: /work-planner
+Disallow: /best-hours
+Disallow: /profit-simulator
+Disallow: /notifications
+Disallow: /settings
+Disallow: /api/
+
+Sitemap: /sitemap.xml

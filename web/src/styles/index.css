@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 213 28% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 28% 9%;
+
+    --muted: 213 16% 95%;
+    --muted-foreground: 217 11% 45%;
+
+    --primary: 158 64% 52%;
+    --primary-foreground: 158 80% 12%;
+
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 213 16% 95%;
+    --accent-foreground: 213 28% 9%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 64% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 158 64% 52%;
+
+    --radius: 0.75rem;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 213 31% 6%;
+    --foreground: 213 22% 92%;
+
+    --card: 215 25% 9%;
+    --card-foreground: 213 22% 92%;
+
+    --muted: 215 25% 13%;
+    --muted-foreground: 217 14% 65%;
+
+    --primary: 158 64% 52%;
+    --primary-foreground: 158 80% 8%;
+
+    --secondary: 217 91% 65%;
+    --secondary-foreground: 213 31% 6%;
+
+    --accent: 215 25% 14%;
+    --accent-foreground: 213 22% 92%;
+
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 158 64% 52%;
+    --success-foreground: 158 80% 8%;
+
+    --warning: 38 92% 60%;
+    --warning-foreground: 215 25% 9%;
+
+    --border: 215 25% 16%;
+    --input: 215 25% 16%;
+    --ring: 158 64% 52%;
+
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  ::selection {
+    @apply bg-primary/30 text-foreground;
+  }
+
+  /* Better Arabic numeric rendering */
+  .num-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-card/70 backdrop-blur-xl border border-border/60;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden bg-muted rounded-md;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .safe-pt { padding-top: env(safe-area-inset-top); }
+  .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-px { padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); }
+
+  /* Respect users who prefer reduced motion — kill all animation/transition */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+}

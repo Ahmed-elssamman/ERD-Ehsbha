@@ -14,7 +14,22 @@
       "Bash(grep -E \"^react-native-worklets$|^react-native-reanimated$\")",
       "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('peerDeps:', JSON.stringify\\(p.peerDependencies||{},null,2\\)\\); console.log\\('peerMeta:', JSON.stringify\\(p.peerDependenciesMeta||{},null,2\\)\\); console.log\\('optionalDeps:', JSON.stringify\\(p.optionalDependencies||{},null,2\\)\\)}\\);\")",
       "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('version:',p.version\\); console.log\\('peerDeps:', JSON.stringify\\(p.peerDependencies||{},null,2\\)\\);}\\)\")",
-      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('nativewind version:',p.version\\); console.log\\('deps:', JSON.stringify\\(p.dependencies||{},null,2\\)\\);}\\)\")"
+      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const p=JSON.parse\\(d\\); console.log\\('nativewind version:',p.version\\); console.log\\('deps:', JSON.stringify\\(p.dependencies||{},null,2\\)\\);}\\)\")",
+      "Bash(grep -E \"^\\(vite|tsc\\)$\")",
+      "Bash(cmd.exe /c \"..\\\\\\\\node_modules\\\\\\\\.bin\\\\\\\\vite.cmd --version\")",
+      "Bash(npm --workspace web run dev)",
+      "Bash(jobs -p)",
+      "Bash(xargs -r kill)",
+      "Bash(curl -s -o /dev/null -w \"Status: %{http_code}\\\\nTotal time: %{time_total}s\\\\n\" --max-time 5 http://localhost:4000/api/v1/auth/login -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s --max-time 3 http://localhost:5173/)",
+      "Bash(taskkill //F //PID 21356)",
+      "Bash(node dist/src/main.js)",
+      "Bash(echo \"Started PID $!\")",
+      "Bash(curl -s --max-time 2 -o /dev/null http://localhost:4000/api/v1/auth/login)",
+      "Bash(curl -s --max-time 8 -X POST http://localhost:4000/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"phone\":\"+201000000001\",\"password\":\"demo1234\"}')",
+      "Bash(curl -s -o /dev/null -w \"5173 status: %{http_code}\\\\n\" --max-time 3 http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"4000 status: %{http_code}\\\\n\" --max-time 3 http://localhost:4000/api/v1/auth/login -X POST -H \"Content-Type: application/json\" -d \"{}\")",
+      "Bash(git ls-tree *)"
     ]
   }
 }
