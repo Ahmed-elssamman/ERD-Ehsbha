@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Screen } from '@/ui/Screen';
@@ -13,6 +13,7 @@ import { useAuth } from '@/stores/auth.store';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
 import { isValidLocalEgyptPhone, normalizeDigits, toE164 } from '@/lib/phone';
+import { go, ROUTES } from '@/constants/routes';
 
 const Schema = z.object({
   phone: z
@@ -25,7 +26,7 @@ const Schema = z.object({
 });
 type Form = z.infer<typeof Schema>;
 
-export default function LoginScreen() {
+export default function LoginScreen(): React.ReactElement {
   const router = useRouter();
   const setSession = useAuth((s) => s.setSession);
   const [submitting, setSubmitting] = useState(false);
@@ -37,14 +38,14 @@ export default function LoginScreen() {
     mode: 'onSubmit',
   });
 
-  const onInvalid = (errs: any) => {
+  const onInvalid = (errs: FieldErrors<Form>): void => {
     const first = Object.keys(errs)[0];
     if (first === 'phone') setApiError(t('auth.phoneInvalid'));
     else if (first === 'password') setApiError(t('auth.passwordTooShort'));
     else setApiError(t('errors.VALIDATION_ERROR'));
   };
 
-  const onSubmit = async (data: Form) => {
+  const onSubmit = async (data: Form): Promise<void> => {
     setApiError(null);
     const phoneE164 = toE164(data.phone);
     if (!phoneE164) {
@@ -61,12 +62,13 @@ export default function LoginScreen() {
       const result = await Auth.login({ phone: phoneE164, password });
       setApiError(null);
       await setSession(result);
-      router.replace('/(tabs)/home');
-    } catch (err: any) {
-      const code = err?.response?.data?.error?.code;
-      if (code === 'INVALID_CREDENTIALS' || err?.response?.status === 401) {
+      router.replace(go(ROUTES.HOME));
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { error?: { code?: string } } } } | undefined;
+      const code = e?.response?.data?.error?.code;
+      if (code === 'INVALID_CREDENTIALS' || e?.response?.status === 401) {
         setApiError(t('auth.invalidCredentials'));
-      } else if (!err?.response) {
+      } else if (!e?.response) {
         setApiError(t('errors.NETWORK_OFFLINE'));
         showErrorAlert(err);
       } else {
@@ -126,7 +128,7 @@ export default function LoginScreen() {
         <Button label={t('auth.login')} loading={submitting} onPress={handleSubmit(onSubmit, onInvalid)} />
 
         <View className="items-center mt-1">
-          <Text className="text-accent text-sm" onPress={() => router.push('/(auth)/forgot' as any)}>
+          <Text className="text-accent text-sm" onPress={() => router.push(go(ROUTES.FORGOT))}>
             {t('auth.forgotPassword')}
           </Text>
         </View>
@@ -134,7 +136,7 @@ export default function LoginScreen() {
         <View className="items-center mt-2">
           <Text className="text-textMuted text-sm">
             {t('auth.noAccount')}{' '}
-            <Text className="text-accent" onPress={() => router.replace('/(auth)/register')}>
+            <Text className="text-accent" onPress={() => router.replace(go(ROUTES.REGISTER))}>
               {t('auth.createAccount')}
             </Text>
           </Text>

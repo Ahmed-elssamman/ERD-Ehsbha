@@ -14,6 +14,7 @@ import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
 import { fromE164 } from '@/lib/phone';
 import { normalizeIntInput } from '@/lib/numbers';
+import { go, ROUTES } from '@/constants/routes';
 
 const Schema = z
   .object({
@@ -27,7 +28,7 @@ const Schema = z
   });
 type Form = z.infer<typeof Schema>;
 
-export default function ResetPasswordScreen() {
+export default function ResetPasswordScreen(): React.ReactElement {
   const router = useRouter();
   const params = useLocalSearchParams<{ phone?: string; devCode?: string }>();
   const phone = params.phone ?? '';
@@ -44,7 +45,7 @@ export default function ResetPasswordScreen() {
     try {
       await Auth.resetPassword(phone, data.code, data.newPassword);
       Alert.alert(t('auth.resetSuccess'), t('auth.resetSuccessBody'), [
-        { text: t('common.ok'), onPress: () => router.replace('/(auth)/login') },
+        { text: t('common.ok'), onPress: () => router.replace(go(ROUTES.LOGIN)) },
       ]);
     } catch (err) {
       showErrorAlert(err);
@@ -120,7 +121,7 @@ export default function ResetPasswordScreen() {
         />
         <Button label={t('auth.resetSubmit')} loading={submitting} onPress={handleSubmit(onSubmit)} />
         <View className="items-center mt-2">
-          <Text className="text-accent text-sm" onPress={() => router.replace('/(auth)/login')}>
+          <Text className="text-accent text-sm" onPress={() => router.replace(go(ROUTES.LOGIN))}>
             {t('auth.backToLogin')}
           </Text>
         </View>

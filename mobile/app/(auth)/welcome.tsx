@@ -5,8 +5,9 @@ import { Screen } from '@/ui/Screen';
 import { Button } from '@/ui/Button';
 import { ConnectionBanner } from '@/ui/ConnectionBanner';
 import { t } from '@/i18n';
+import { go, ROUTES } from '@/constants/routes';
 
-export default function Welcome() {
+export default function Welcome(): React.ReactElement {
   const router = useRouter();
   return (
     <Screen scrollable={false}>
@@ -20,8 +21,8 @@ export default function Welcome() {
         </View>
 
         <View className="gap-3">
-          <Button label={t('auth.login')} onPress={() => router.push('/(auth)/login')} />
-          <Button label={t('auth.createAccount')} tone="tonal" onPress={() => router.push('/(auth)/register')} />
+          <Button label={t('auth.login')} onPress={() => router.push(go(ROUTES.LOGIN))} />
+          <Button label={t('auth.createAccount')} tone="tonal" onPress={() => router.push(go(ROUTES.REGISTER))} />
           <ConnectionBanner />
         </View>
       </View>

@@ -11,8 +11,9 @@ import { FilterSheet, FilterValue } from '@/ui/FilterSheet';
 import { Pill } from '@/ui/Pill';
 import { Apps, Areas, Trips, Vehicles } from '@/api/endpoints';
 import { t } from '@/i18n';
+import { go, ROUTES } from '@/constants/routes';
 
-export default function TripsScreen() {
+export default function TripsScreen(): React.ReactElement {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterValue>({});
   const [filterOpen, setFilterOpen] = useState(false);
@@ -59,7 +60,7 @@ export default function TripsScreen() {
                 {activeFilterCount > 0 ? <Pill label={String(activeFilterCount)} tone="accent" /> : null}
               </View>
             </Pressable>
-            <Pressable onPress={() => router.push('/trips/new')} hitSlop={12}>
+            <Pressable onPress={() => router.push(go(ROUTES.TRIP_NEW))} hitSlop={12}>
               <View className="w-9 h-9 rounded-full bg-accent items-center justify-center">
                 <Text className="text-bg text-lg font-bold">+</Text>
               </View>
@@ -74,7 +75,7 @@ export default function TripsScreen() {
           title={activeFilterCount > 0 ? t('analytics.noDataForPeriod') : t('home.noTrips')}
           action={
             activeFilterCount === 0 ? (
-              <Button label={t('home.addFirst')} onPress={() => router.push('/trips/new')} fullWidth={false} />
+              <Button label={t('home.addFirst')} onPress={() => router.push(go(ROUTES.TRIP_NEW))} fullWidth={false} />
             ) : (
               <Button label={t('filters.clear')} tone="tonal" onPress={() => setFilter({})} fullWidth={false} />
             )
@@ -89,7 +90,7 @@ export default function TripsScreen() {
               trip={item}
               appName={appMap.get(item.driverAppId)}
               areaName={item.areaId ? areaMap.get(item.areaId) : undefined}
-              onPress={() => router.push(`/trips/${item.id}` as any)}
+              onPress={() => router.push(go(ROUTES.TRIP_DETAIL, { id: item.id }))}
             />
           )}
           ItemSeparatorComponent={() => <View className="h-1" />}

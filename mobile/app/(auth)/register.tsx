@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Screen } from '@/ui/Screen';
@@ -13,6 +13,7 @@ import { useAuth } from '@/stores/auth.store';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
 import { isValidLocalEgyptPhone, normalizeDigits, toE164 } from '@/lib/phone';
+import { go, ROUTES } from '@/constants/routes';
 
 const Schema = z.object({
   displayName: z.string().min(2).max(80),
@@ -24,7 +25,7 @@ const Schema = z.object({
 });
 type Form = z.infer<typeof Schema>;
 
-export default function RegisterScreen() {
+export default function RegisterScreen(): React.ReactElement {
   const router = useRouter();
   const setSession = useAuth((s) => s.setSession);
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +37,7 @@ export default function RegisterScreen() {
 
   const [apiError, setApiError] = React.useState<string | null>(null);
 
-  const onSubmit = async (data: Form) => {
+  const onSubmit = async (data: Form): Promise<void> => {
     setApiError(null);
     const phoneE164 = toE164(data.phone.trim());
     if (!phoneE164) {
@@ -57,12 +58,13 @@ export default function RegisterScreen() {
       });
       setApiError(null);
       await setSession(result);
-      router.replace('/(tabs)/home');
-    } catch (err: any) {
-      const code = err?.response?.data?.error?.code;
+      router.replace(go(ROUTES.HOME));
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: { code?: string } } } } | undefined;
+      const code = e?.response?.data?.error?.code;
       if (code === 'PHONE_TAKEN') {
         setApiError(t('errors.PHONE_TAKEN'));
-      } else if (!err?.response) {
+      } else if (!e?.response) {
         setApiError(t('errors.UNKNOWN'));
         showErrorAlert(err);
       } else {
@@ -132,7 +134,7 @@ export default function RegisterScreen() {
         <Button
           label={t('auth.register')}
           loading={submitting}
-          onPress={handleSubmit(onSubmit, (errs: any) => {
+          onPress={handleSubmit(onSubmit, (errs: FieldErrors<Form>) => {
             const first = Object.keys(errs)[0];
             if (first === 'phone') setApiError(t('auth.phoneInvalid'));
             else if (first === 'password') setApiError(t('auth.passwordTooShort'));
@@ -142,7 +144,7 @@ export default function RegisterScreen() {
         />
         <View className="items-center mt-2">
           <Text className="text-textMuted text-sm">{t('auth.hasAccount')}{' '}
-            <Text className="text-accent" onPress={() => router.replace('/(auth)/login')}>
+            <Text className="text-accent" onPress={() => router.replace(go(ROUTES.LOGIN))}>
               {t('auth.alreadyMember')}
             </Text>
           </Text>

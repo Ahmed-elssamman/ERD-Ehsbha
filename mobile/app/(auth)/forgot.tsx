@@ -13,6 +13,7 @@ import { Auth } from '@/api/endpoints';
 import { t } from '@/i18n';
 import { showErrorAlert } from '@/lib/errors';
 import { isValidLocalEgyptPhone, normalizeDigits, toE164 } from '@/lib/phone';
+import { go, ROUTES } from '@/constants/routes';
 
 const Schema = z.object({
   phone: z
@@ -22,7 +23,7 @@ const Schema = z.object({
 });
 type Form = z.infer<typeof Schema>;
 
-export default function ForgotPasswordScreen() {
+export default function ForgotPasswordScreen(): React.ReactElement {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,13 +42,9 @@ export default function ForgotPasswordScreen() {
     try {
       const result = await Auth.forgotPassword(phoneE164);
       // Always navigate to reset screen — even if the phone doesn't exist (we don't leak).
-      router.push({
-        pathname: '/(auth)/reset',
-        params: {
-          phone: phoneE164,
-          devCode: result.devCode ?? '',
-        },
-      } as any);
+      router.push(
+        go(ROUTES.RESET, { phone: phoneE164, devCode: result.devCode ?? '' }),
+      );
     } catch (err) {
       showErrorAlert(err);
     } finally {

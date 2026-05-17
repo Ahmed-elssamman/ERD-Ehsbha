@@ -19,6 +19,7 @@ import { enqueue } from '@/offline/queue';
 import { useNetwork } from '@/stores/network.store';
 import { showErrorAlert, toUserError } from '@/lib/errors';
 import { normalizeNumberInput, normalizeIntInput } from '@/lib/numbers';
+import { go, ROUTES } from '@/constants/routes';
 
 const TrafficEnum = z.enum(['LIGHT', 'MEDIUM', 'HEAVY', 'STANDSTILL']);
 const WeatherEnum = z.enum(['CLEAR', 'RAIN', 'DUST', 'HOT', 'COLD']);
@@ -47,7 +48,7 @@ const Schema = z.object({
 });
 type Form = z.infer<typeof Schema>;
 
-export default function NewTripScreen() {
+export default function NewTripScreen(): React.ReactElement {
   const router = useRouter();
   const qc = useQueryClient();
   const locale = getLocale();
@@ -229,7 +230,7 @@ export default function NewTripScreen() {
         <View className="mt-8 items-center px-6">
           <Text className="text-text text-lg font-bold mb-2 text-center">{t('vehicles.emptyTitle')}</Text>
           <Text className="text-textMuted text-sm mb-5 text-center">{t('vehicles.emptyBody')}</Text>
-          <Button label={t('vehicles.addFirst')} onPress={() => router.push('/vehicles/new' as any)} fullWidth={false} />
+          <Button label={t('vehicles.addFirst')} onPress={() => router.push(go(ROUTES.VEHICLE_NEW))} fullWidth={false} />
         </View>
       </Screen>
     );
@@ -242,7 +243,7 @@ export default function NewTripScreen() {
         <View className="mt-8 items-center px-6">
           <Text className="text-text text-lg font-bold mb-2 text-center">{t('apps.emptyMine')}</Text>
           <Text className="text-textMuted text-sm mb-5 text-center">{t('apps.emptyMineBody')}</Text>
-          <Button label={t('apps.title')} onPress={() => router.push('/apps' as any)} fullWidth={false} />
+          <Button label={t('apps.title')} onPress={() => router.push(go(ROUTES.APPS))} fullWidth={false} />
         </View>
       </Screen>
     );

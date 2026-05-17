@@ -13,6 +13,7 @@ import { t, getLocale } from '@/i18n';
 import { formatMoney, formatPercent } from '@/lib/format';
 import { showErrorAlert } from '@/lib/errors';
 import { normalizeNumberInput, normalizeIntInput } from '@/lib/numbers';
+import { go, ROUTES } from '@/constants/routes';
 
 interface Form {
   fuelTankCostEgp: string;
@@ -48,7 +49,7 @@ const empty: Form = {
   monthlyAvgKm: '',
 };
 
-export default function VehicleCostsScreen() {
+export default function VehicleCostsScreen(): React.ReactElement {
   const locale = getLocale();
   const qc = useQueryClient();
   const router = useRouter();
@@ -120,7 +121,7 @@ export default function VehicleCostsScreen() {
         <View className="mt-12 items-center px-6">
           <Text className="text-text text-lg font-bold text-center mb-2">{t('vehicles.emptyTitle')}</Text>
           <Text className="text-textMuted text-center text-sm mb-4">{t('vehicles.emptyBody')}</Text>
-          <Button label={t('vehicles.addFirst')} onPress={() => router.push('/vehicles/new' as any)} fullWidth={false} />
+          <Button label={t('vehicles.addFirst')} onPress={() => router.push(go(ROUTES.VEHICLE_NEW))} fullWidth={false} />
         </View>
       </Screen>
     );

@@ -11,8 +11,9 @@ import { useSettings } from '@/stores/settings.store';
 import { Auth, Driver, Goals, Vehicles } from '@/api/endpoints';
 import { formatMoney } from '@/lib/format';
 import { t, getLocale } from '@/i18n';
+import { go, ROUTES } from '@/constants/routes';
 
-export default function ProfileScreen() {
+export default function ProfileScreen(): React.ReactElement {
   const router = useRouter();
   const user = useAuth((s) => s.user);
   const clear = useAuth((s) => s.clear);
@@ -29,7 +30,7 @@ export default function ProfileScreen() {
       if (refreshToken) await Auth.logout(refreshToken);
     } catch {}
     await clear();
-    router.replace('/(auth)/welcome');
+    router.replace(go(ROUTES.WELCOME));
   };
 
   const toggleLocale = async () => {
@@ -55,9 +56,9 @@ export default function ProfileScreen() {
 
       {/* Quick links */}
       <View className="mt-4 gap-2">
-        <RowLink icon="🔧" label={t('maintenance.hub')} onPress={() => router.push('/maintenance' as any)} />
-        <RowLink icon="💰" label={t('vehicleCosts.title')} onPress={() => router.push('/maintenance/costs' as any)} />
-        <RowLink icon="✦" label={t('decisions.title')} onPress={() => router.push('/decisions' as any)} />
+        <RowLink icon="🔧" label={t('maintenance.hub')} onPress={() => router.push(go(ROUTES.MAINTENANCE))} />
+        <RowLink icon="💰" label={t('vehicleCosts.title')} onPress={() => router.push(go(ROUTES.MAINTENANCE_COSTS))} />
+        <RowLink icon="✦" label={t('decisions.title')} onPress={() => router.push(go(ROUTES.DECISIONS))} />
       </View>
 
       {/* Setup: vehicles, apps, areas, goals */}
@@ -69,7 +70,7 @@ export default function ProfileScreen() {
             label={t('vehicles.title')}
             badge={vehicles.length > 0 ? String(vehicles.length) : undefined}
             warn={vehicles.length === 0}
-            onPress={() => router.push('/vehicles/new' as any)}
+            onPress={() => router.push(go(ROUTES.VEHICLE_NEW))}
             secondary={
               vehicles.length === 0
                 ? t('vehicles.emptyTitle')
@@ -79,20 +80,20 @@ export default function ProfileScreen() {
           <SetupRow
             icon="📱"
             label={t('apps.title')}
-            onPress={() => router.push('/apps' as any)}
+            onPress={() => router.push(go(ROUTES.APPS))}
             secondary={t('apps.subtitle')}
           />
           <SetupRow
             icon="📍"
             label={t('areas.title')}
-            onPress={() => router.push('/areas' as any)}
+            onPress={() => router.push(go(ROUTES.AREAS))}
             secondary={t('areas.subtitle')}
           />
           <SetupRow
             icon="🎯"
             label={t('goals.title')}
             badge={activeGoals.length > 0 ? String(activeGoals.length) : undefined}
-            onPress={() => router.push('/goals' as any)}
+            onPress={() => router.push(go(ROUTES.GOALS))}
             secondary={
               activeGoals[0]
                 ? formatMoney(activeGoals[0].targetPiastres, locale)
@@ -121,7 +122,7 @@ export default function ProfileScreen() {
               </View>
             </Card>
           ))}
-          <Pressable onPress={() => router.push('/vehicles/new' as any)}>
+          <Pressable onPress={() => router.push(go(ROUTES.VEHICLE_NEW))}>
             <Card>
               <View className="flex-row items-center justify-center">
                 <Text className="text-accent font-medium">+ {t('vehicles.new')}</Text>

@@ -11,6 +11,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { Maintenance, Vehicles } from '@/api/endpoints';
 import { formatKm, formatMoney } from '@/lib/format';
 import { getLocale, t } from '@/i18n';
+import { go, ROUTES } from '@/constants/routes';
 
 type Status = 'GREEN' | 'AMBER' | 'RED' | 'OVERDUE';
 
@@ -21,7 +22,7 @@ const STATUS_TONE: Record<Status, 'success' | 'warn' | 'danger' | 'default'> = {
   OVERDUE: 'danger',
 };
 
-export default function MaintenanceHubScreen() {
+export default function MaintenanceHubScreen(): React.ReactElement {
   const router = useRouter();
   const locale = getLocale();
 
@@ -65,7 +66,7 @@ export default function MaintenanceHubScreen() {
         <EmptyState
           title={t('vehicles.emptyTitle')}
           body={t('vehicles.emptyBody')}
-          action={<Button label={t('vehicles.addFirst')} onPress={() => router.push('/vehicles/new' as any)} fullWidth={false} />}
+          action={<Button label={t('vehicles.addFirst')} onPress={() => router.push(go(ROUTES.VEHICLE_NEW))} fullWidth={false} />}
         />
       </Screen>
     );
@@ -82,7 +83,7 @@ export default function MaintenanceHubScreen() {
         subtitle={`${vehicle.make ?? ''} ${vehicle.model ?? ''}`.trim() || vehicle.type}
         right={
           <Pressable
-            onPress={() => router.push('/maintenance/new')}
+            onPress={() => router.push(go(ROUTES.MAINTENANCE_NEW))}
             hitSlop={12}
           >
             <View className="w-9 h-9 rounded-full bg-accent items-center justify-center">
@@ -105,7 +106,7 @@ export default function MaintenanceHubScreen() {
       </View>
 
       {/* Cost intelligence link */}
-      <Pressable onPress={() => router.push('/maintenance/costs' as any)} className="mb-4">
+      <Pressable onPress={() => router.push(go(ROUTES.MAINTENANCE_COSTS))} className="mb-4">
         <Card>
           <View className="flex-row items-center justify-between">
             <View className="flex-1">
@@ -173,7 +174,7 @@ export default function MaintenanceHubScreen() {
       )}
 
       <View className="mt-6">
-        <Button label={t('maintenance.addRecord')} onPress={() => router.push('/maintenance/new')} />
+        <Button label={t('maintenance.addRecord')} onPress={() => router.push(go(ROUTES.MAINTENANCE_NEW))} />
       </View>
 
       {/* History */}

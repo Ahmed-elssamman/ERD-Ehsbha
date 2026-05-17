@@ -2,7 +2,7 @@ import 'react-native-gesture-handler';
 import '../global.css';
 
 import React, { useEffect, useState } from 'react';
-import { I18nManager, View } from 'react-native';
+import { I18nManager, View, type ViewStyle } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +18,7 @@ import { useAuth } from '@/stores/auth.store';
 import { useSettings } from '@/stores/settings.store';
 import { useNetwork } from '@/stores/network.store';
 import { startSync } from '@/offline/sync';
+import { go, ROUTES } from '@/constants/routes';
 import {
   StartupErrorBoundary,
   installGlobalErrorHandler,
@@ -62,11 +63,11 @@ onlineManager.setEventListener((setOnline) => {
   });
 });
 
-function onAppStateChange(status: AppStateStatus) {
+function onAppStateChange(status: AppStateStatus): void {
   focusManager.setFocused(status === 'active');
 }
 
-export default function RootLayout() {
+export default function RootLayout(): React.ReactElement {
   return (
     <StartupErrorBoundary>
       <RootLayoutInner />
@@ -74,7 +75,7 @@ export default function RootLayout() {
   );
 }
 
-function RootLayoutInner() {
+function RootLayoutInner(): React.ReactElement {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [asyncError, setAsyncError] = useState<Error | null>(null);
   const hydrateAuth = useAuth((s) => s.hydrate);
@@ -103,7 +104,7 @@ function RootLayoutInner() {
         }
         startSync();
         setBootstrapped(true);
-      } catch (e: any) {
+      } catch (e: unknown) {
         setAsyncError(e instanceof Error ? e : new Error(String(e)));
       }
     })();
@@ -117,7 +118,7 @@ function RootLayoutInner() {
     return <View style={{ flex: 1, backgroundColor: '#0B0F14' }} />;
   }
 
-  const Root = GestureHandlerRootView as unknown as React.ComponentType<{ style?: any; children?: React.ReactNode }>;
+  const Root = GestureHandlerRootView as unknown as React.ComponentType<{ style?: ViewStyle; children?: React.ReactNode }>;
   return (
     <Root style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -131,7 +132,7 @@ function RootLayoutInner() {
   );
 }
 
-function AuthRedirector() {
+function AuthRedirector(): null {
   const segments = useSegments();
   const router = useRouter();
   const user = useAuth((s) => s.user);
@@ -142,11 +143,11 @@ function AuthRedirector() {
     if (!hydrated) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!user && !refresh && !inAuthGroup) {
-      router.replace('/(auth)/welcome');
+      router.replace(go(ROUTES.WELCOME));
     } else if (user && inAuthGroup) {
-      router.replace('/(tabs)/home');
+      router.replace(go(ROUTES.HOME));
     } else if (!user && refresh && !inAuthGroup) {
-      router.replace('/(auth)/welcome');
+      router.replace(go(ROUTES.WELCOME));
     }
   }, [user, refresh, hydrated, segments, router]);
 
