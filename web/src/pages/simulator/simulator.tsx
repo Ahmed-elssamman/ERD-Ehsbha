@@ -22,13 +22,13 @@ interface Inputs {
 }
 
 const DEFAULT: Inputs = {
-  grossEgp: 600,
-  km: 150,
-  hours: 8,
-  daysPerMonth: 26,
-  commissionPct: 20,
-  fuelPerKmEgp: 0.8,
-  otherPerKmEgp: 0.4,
+  grossEgp: 0,
+  km: 0,
+  hours: 0,
+  daysPerMonth: 0,
+  commissionPct: 0,
+  fuelPerKmEgp: 0,
+  otherPerKmEgp: 0,
 };
 
 export function ProfitSimulatorPage() {
@@ -70,14 +70,13 @@ export function ProfitSimulatorPage() {
 
   const fillFromVehicle = () => {
     if (!summaryQ.data) return;
-    // total cost per km includes fuel + other components
     const totalPerKm = summaryQ.data.totalPerKmPiastres / 100;
     const fuelShare = summaryQ.data.components.find((c) => c.key.toLowerCase().includes('fuel'));
-    const fuelPerKm = fuelShare ? fuelShare.perKmPiastres / 100 : totalPerKm * 0.4;
+    const fuelPerKm = fuelShare ? fuelShare.perKmPiastres / 100 : 0;
     setInputs((cur) => ({
       ...cur,
       fuelPerKmEgp: Number(fuelPerKm.toFixed(2)),
-      otherPerKmEgp: Number((totalPerKm - fuelPerKm).toFixed(2)),
+      otherPerKmEgp: Number(Math.max(0, totalPerKm - fuelPerKm).toFixed(2)),
     }));
   };
 

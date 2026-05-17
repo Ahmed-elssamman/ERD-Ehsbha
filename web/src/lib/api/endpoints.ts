@@ -77,8 +77,14 @@ export interface Vehicle {
 
 export interface VehicleCostSummary {
   totalPerKmPiastres: number;
+  monthlyAvgKm?: number;
   completenessBp: number;
-  components: Array<{ key: string; perKmPiastres: number; sharePct: number }>;
+  components: Array<{
+    key: string;
+    perKmPiastres: number;
+    shareBp: number;
+    provided: boolean;
+  }>;
 }
 
 export const VehiclesApi = {
@@ -114,13 +120,26 @@ export interface DriverApp {
   appSource?: AppSource | null;
 }
 
+/** Prisma serialises Decimal as a string ("20"); coerce here so consumers can rely on numbers. */
+const coerceAppSource = (a: AppSource): AppSource => ({
+  ...a,
+  defaultCommissionPct: Number(a.defaultCommissionPct),
+});
+const coerceDriverApp = (a: DriverApp): DriverApp => ({
+  ...a,
+  commissionPct: Number(a.commissionPct),
+  appSource: a.appSource ? coerceAppSource(a.appSource) : a.appSource,
+});
+
 export const AppsApi = {
-  catalog: () => api.get('/apps').then((r) => unwrap<AppSource[]>(r.data)),
-  mine: () => api.get('/drivers/me/apps').then((r) => unwrap<DriverApp[]>(r.data)),
+  catalog: () =>
+    api.get('/apps').then((r) => unwrap<AppSource[]>(r.data).map(coerceAppSource)),
+  mine: () =>
+    api.get('/drivers/me/apps').then((r) => unwrap<DriverApp[]>(r.data).map(coerceDriverApp)),
   add: (body: Partial<DriverApp> & ({ appSourceId: string } | { customName: string })) =>
-    api.post('/drivers/me/apps', body).then((r) => unwrap<DriverApp>(r.data)),
+    api.post('/drivers/me/apps', body).then((r) => coerceDriverApp(unwrap<DriverApp>(r.data))),
   update: (id: string, body: Partial<DriverApp>) =>
-    api.patch(`/drivers/me/apps/${id}`, body).then((r) => unwrap<DriverApp>(r.data)),
+    api.patch(`/drivers/me/apps/${id}`, body).then((r) => coerceDriverApp(unwrap<DriverApp>(r.data))),
   remove: (id: string) => api.delete(`/drivers/me/apps/${id}`),
 };
 

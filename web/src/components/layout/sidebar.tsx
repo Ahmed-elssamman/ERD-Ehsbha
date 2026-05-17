@@ -13,6 +13,7 @@ import {
   Sigma,
   Bell,
   Settings,
+  BookOpen,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -39,6 +40,7 @@ const NAV: NavItem[] = [
   { to: '/best-hours', labelKey: 'nav.bestHours', Icon: Clock },
   { to: '/profit-simulator', labelKey: 'nav.profitSimulator', Icon: Sigma },
   { to: '/notifications', labelKey: 'nav.notifications', Icon: Bell },
+  { to: '/guide', labelKey: 'nav.guide', Icon: BookOpen },
   { to: '/settings', labelKey: 'nav.settings', Icon: Settings },
 ];
 

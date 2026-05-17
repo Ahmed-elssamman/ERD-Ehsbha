@@ -23,6 +23,7 @@ const BestHoursPage = lazy(() => import('@/pages/best-hours/best-hours').then((m
 const ProfitSimulatorPage = lazy(() => import('@/pages/simulator/simulator').then((m) => ({ default: m.ProfitSimulatorPage })));
 const NotificationsPage = lazy(() => import('@/pages/notifications/notifications').then((m) => ({ default: m.NotificationsPage })));
 const SettingsPage = lazy(() => import('@/pages/settings/settings').then((m) => ({ default: m.SettingsPage })));
+const GuidePage = lazy(() => import('@/pages/guide/guide').then((m) => ({ default: m.GuidePage })));
 
 function FullScreenSpinner() {
   return (
@@ -84,6 +85,7 @@ export const router = createBrowserRouter([
       { path: 'best-hours', element: lazyRoute(<BestHoursPage />) },
       { path: 'profit-simulator', element: lazyRoute(<ProfitSimulatorPage />) },
       { path: 'notifications', element: lazyRoute(<NotificationsPage />) },
+      { path: 'guide', element: lazyRoute(<GuidePage />) },
       { path: 'settings', element: lazyRoute(<SettingsPage />) },
     ],
   },

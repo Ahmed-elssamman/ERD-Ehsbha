@@ -73,7 +73,8 @@
     "bestHours": "Best work hours",
     "profitSimulator": "Profit simulator",
     "notifications": "Notifications",
-    "settings": "Settings"
+    "settings": "Settings",
+    "guide": "How to use"
   },
   "theme": { "light": "Light", "dark": "Dark", "toggle": "Toggle theme" },
   "pwa": {
@@ -86,7 +87,32 @@
     "installable": "Install Ehsbha",
     "installBody": "Add Ehsbha to your home screen for an app-like experience.",
     "installAction": "Install",
-    "installDismiss": "Not now"
+    "installDismiss": "Not now",
+    "iosInstallTitle": "Install on iOS",
+    "iosInstallBody": "Tap the Share icon, then choose \"Add to Home Screen\" to install Ehsbha.",
+    "installFailed": "Couldn't open the install dialog. Use your browser menu to install.",
+    "dialog": {
+      "eyebrow": "Take it everywhere",
+      "title": "Install Ehsbha",
+      "subtitle": "Your smart driver companion — one tap away.",
+      "perksTitle": "Why install?",
+      "perk1Title": "Lightning fast",
+      "perk1Body": "Loads instantly. No browser tabs.",
+      "perk2Title": "On your home screen",
+      "perk2Body": "Tap the icon like any app.",
+      "perk3Title": "Works offline",
+      "perk3Body": "View trips and analytics with no signal.",
+      "perk4Title": "Stays signed in",
+      "perk4Body": "No re-login every visit.",
+      "installNow": "Install now",
+      "later": "Maybe later",
+      "iosStep1": "Tap the",
+      "iosShare": "Share button",
+      "iosStep2": "Then choose",
+      "iosAddToHome": "Add to Home Screen",
+      "installed": "You're all set — Ehsbha is now on your home screen.",
+      "openSettings": "Manage install"
+    }
   },
   "language": { "label": "Language", "toggle": "Switch language", "en": "English", "ar": "العربية" },
   "auth": {
@@ -139,7 +165,13 @@
     "currentNet": "Current net",
     "projected": "Projected",
     "confidenceBand": "± confidence",
-    "elapsed": "Day {elapsed} of {total}"
+    "elapsed": "Day {elapsed} of {total}",
+    "viewDetails": "View details",
+    "quickActions": "Quick actions",
+    "addExpense": "Add expense",
+    "logMaintenance": "Log maintenance",
+    "exploreAnalytics": "Explore analytics",
+    "openSimulator": "Open simulator"
   },
   "trips": {
     "title": "Trips",
@@ -182,8 +214,22 @@
     "hint": {
       "received": "Amount that actually credited after platform fee",
       "totalKm": "Total km driven (with + without passenger)",
-      "paidKm": "Km with the passenger only"
+      "paidKm": "Km with the passenger only",
+      "commissionAuto": "Auto-calculated from quoted − received. Tap to edit.",
+      "emptyKmAuto": "Auto: total − paid"
     },
+    "sections": {
+      "required": "Required",
+      "money": "Money",
+      "distance": "Distance",
+      "extras": "Extras (optional)"
+    },
+    "badges": {
+      "required": "Required",
+      "optional": "Optional",
+      "auto": "Auto"
+    },
+    "net": "Net profit (preview)",
     "errors": {
       "endBeforeStart": "End time must be after start time",
       "paidExceedsTotal": "Paid km can't exceed total km",
@@ -256,6 +302,149 @@
     "neverServiced": "Not yet serviced",
     "addVehicleFirst": "Add a vehicle in Settings first"
   },
+  "guide": {
+    "title": "How to use Ehsbha",
+    "subtitle": "A short, friendly tour — from zero to knowing your real profit per kilometer.",
+    "heroEyebrow": "Welcome",
+    "heroLine1": "Know your",
+    "heroLine2": "real profit",
+    "heroLine3": "every single trip.",
+    "heroBody": "Ehsbha turns every trip into clear numbers — profit, cost, hours, distance — so you decide where, when and how to drive smartly.",
+    "ctaStart": "Start tour",
+    "ctaTrips": "Add a trip",
+    "tableOfContents": "What's in this guide",
+    "toc": {
+      "steps": "Quick start in 4 steps",
+      "features": "What every page does",
+      "tips": "Pro tips for accurate numbers",
+      "faq": "Frequently asked questions"
+    },
+    "stepsTitle": "Get started in 4 steps",
+    "stepsSubtitle": "Less than 5 minutes — and your dashboard comes alive.",
+    "steps": {
+      "vehicle": {
+        "title": "Add your vehicle",
+        "body": "Settings → Vehicles → Add. Enter make, model, tank size, and average km/L.",
+        "example": "Example: Toyota Corolla 2018, 45L tank, 12 km/L."
+      },
+      "apps": {
+        "title": "Add your apps",
+        "body": "Settings → Apps → Add. Pick Uber, inDrive, Talabat etc., or add a Custom one.",
+        "example": "Example: Uber 25%, inDrive 10%, Private clients 0%."
+      },
+      "trip": {
+        "title": "Log your first trip",
+        "body": "Trips → Add. Required fields: vehicle, app, start/end time, gross, total/paid km.",
+        "example": "Tip: enter \"Received after fees\" — commission is calculated automatically."
+      },
+      "see": {
+        "title": "See your real numbers",
+        "body": "Dashboard shows today's net profit, profit/km, profit/hour and decisions for tomorrow.",
+        "example": "After 3–7 trips you'll get a driver score and personal tips."
+      }
+    },
+    "featuresTitle": "What every page does",
+    "featuresSubtitle": "Each page solves one question — pick the one you need.",
+    "features": {
+      "dashboard": {
+        "title": "Dashboard",
+        "body": "One screen with today's profit, distance, hours and smart decisions."
+      },
+      "trips": {
+        "title": "Trips",
+        "body": "Log every trip and edit later. Auto-calc for commission and empty km."
+      },
+      "expenses": {
+        "title": "Expenses",
+        "body": "Track rent, fines, food and recurring costs — split by category."
+      },
+      "vehicleHealth": {
+        "title": "Vehicle health",
+        "body": "True cost per km from fuel + oil + tires + brakes + battery + monthly overhead."
+      },
+      "analytics": {
+        "title": "Analytics",
+        "body": "Trends per day/week/month/app/area/hour — find what really pays."
+      },
+      "driverScore": {
+        "title": "Driver score",
+        "body": "Efficiency, profit, safety and consistency. Add a wellness check for better safety."
+      },
+      "decisions": {
+        "title": "Smart decisions",
+        "body": "Personal tips: switch app, change area, take a break — based on your numbers."
+      },
+      "planner": {
+        "title": "Work planner",
+        "body": "Monthly goal tracker — how much per day/hour to hit your target."
+      },
+      "bestHours": {
+        "title": "Best hours",
+        "body": "Which hours earn you the most? Morning/afternoon/evening/night breakdown."
+      },
+      "simulator": {
+        "title": "Profit simulator",
+        "body": "What-if calculator: change km/hours/commission/fuel and see net profit instantly."
+      },
+      "maintenance": {
+        "title": "Maintenance",
+        "body": "Track services done + see what's due next based on your vehicle's km."
+      },
+      "goals": {
+        "title": "Goals",
+        "body": "Set monthly/weekly targets — the planner tells you what's needed daily."
+      }
+    },
+    "tipsTitle": "Pro tips for accurate numbers",
+    "tipsSubtitle": "The cleaner your inputs, the smarter your insights.",
+    "tips": {
+      "daily": "Log trips daily — memory fades and weekly batches lose accuracy.",
+      "received": "Always enter \"Received\" to auto-calc commission correctly.",
+      "kmBoth": "Track both total + paid km — empty km drives true cost analysis.",
+      "expenses": "Add fuel + recurring expenses (rent, insurance) for true net profit.",
+      "vehicleCosts": "Configure vehicle costs (Vehicle health → Configure) — without them, profit/km is overstated.",
+      "wellness": "Fill the wellness check daily — even briefly. Safety score depends on it.",
+      "goals": "Set a realistic monthly goal — the planner suggests daily targets to hit it."
+    },
+    "faqTitle": "Frequently asked questions",
+    "faqSubtitle": "Tap a question to see the answer.",
+    "faq": {
+      "profit": {
+        "q": "How is \"net profit\" calculated?",
+        "a": "Net = Gross + Tips − Commission − Tolls − Parking − Fuel cost (from km × your vehicle's km/L × current price) − Other expenses for the day."
+      },
+      "score": {
+        "q": "Why does my driver score look low?",
+        "a": "Score compares today to your 14-day median. A loss day, missing trips, or short history can drop it. The more trips you log, the more accurate it gets."
+      },
+      "commission": {
+        "q": "Do I have to type the commission for every trip?",
+        "a": "No. Enter \"Received after fees\" and commission is calculated as Gross − Received. Or leave it auto and we use your app's default %."
+      },
+      "vehicleCost": {
+        "q": "What is \"true cost per km\"?",
+        "a": "It's fuel + oil + tires + brakes + (battery, chain for bikes) + monthly overhead, divided by the km those parts last. Configure costs once and it's accurate forever."
+      },
+      "offline": {
+        "q": "Can I use Ehsbha without internet?",
+        "a": "Yes. It's a Progressive Web App — install it from the browser menu (or the install banner), and most pages work offline."
+      },
+      "data": {
+        "q": "Is my data shared with my apps (Uber, inDrive…)?",
+        "a": "No. Your data stays in Ehsbha. We don't have an integration with any ride-share platform — you enter trips yourself."
+      },
+      "language": {
+        "q": "Can I switch language?",
+        "a": "Yes — tap the AR/EN toggle in the top bar, or change it from Settings → Appearance."
+      },
+      "delete": {
+        "q": "How do I delete a trip or expense?",
+        "a": "Open the entry, tap the red Delete button, and confirm. Aggregates and scores update automatically."
+      }
+    },
+    "ctaFooter": "Ready? Log your first trip and watch the numbers light up.",
+    "ctaFooterAction": "Add your first trip"
+  },
   "vehicleHealth": {
     "title": "Vehicle health",
     "subtitle": "True cost per km and component breakdown",
@@ -263,8 +452,28 @@
     "completeness": "Setup completeness",
     "components": "Components",
     "share": "Share of total",
-    "configure": "Configure vehicle costs",
-    "noVehicles": "Add a vehicle in Settings to see health"
+    "configure": "Configure costs",
+    "configureTitle": "Vehicle running costs",
+    "configureSubtitle": "Enter what you know — leave the rest blank.",
+    "emptyHint": "No cost data yet. Tap \"Configure costs\" to add fuel, oil, tires, brakes and more.",
+    "saved": "Costs saved",
+    "noVehicles": "Add a vehicle in Settings to see health",
+    "fields": {
+      "fuelTankCostPiastres": "Full tank cost",
+      "fuelTankKmRange": "Full tank range (km)",
+      "oilCostPiastres": "Oil change cost",
+      "oilIntervalKm": "Oil change every (km)",
+      "tireCostPiastres": "Tires set cost",
+      "tireIntervalKm": "Tires every (km)",
+      "brakesCostPiastres": "Brakes cost",
+      "brakesIntervalKm": "Brakes every (km)",
+      "chainCostPiastres": "Chain cost",
+      "chainIntervalKm": "Chain every (km)",
+      "batteryCostPiastres": "Battery cost",
+      "batteryIntervalMonths": "Battery every (months)",
+      "monthlyMaintCostPiastres": "Monthly maintenance",
+      "monthlyAvgKm": "Average km / month"
+    }
   },
   "analytics": {
     "title": "Analytics",
@@ -291,7 +500,61 @@
     "safety": "Safety",
     "consistency": "Consistency",
     "history": "Recent history",
-    "empty": "No score data yet — drive a few trips first"
+    "empty": "No score data yet — drive a few trips first",
+    "adjusted": "Adjusted with today's wellness",
+    "checkInTitle": "Today's wellness check",
+    "checkInSubtitle": "Helps us factor fatigue into your safety score.",
+    "fields": {
+      "sleepHours": "Sleep hours last night",
+      "continuousMinutes": "Longest continuous drive (min)",
+      "totalHours": "Total hours driven today",
+      "feeling": "Feeling right now",
+      "stress": "Stress level (1–10)",
+      "breaks": "Breaks taken today",
+      "hydration": "Drinking water regularly",
+      "lastMealHours": "Hours since last meal",
+      "weather": "Driving conditions"
+    },
+    "feelings": { "great": "Great", "ok": "OK", "tired": "Tired", "exhausted": "Exhausted" },
+    "weatherOptions": { "clear": "Clear", "rain": "Rain", "heat": "Heat", "traffic": "Heavy traffic" },
+    "yes": "Yes",
+    "no": "No",
+    "moreDetails": "More optional details",
+    "lessDetails": "Less details",
+    "checkInSaved": "Saved on this device",
+    "fatigueLevel": "Fatigue indicator",
+    "fatigue": { "low": "Low", "moderate": "Moderate", "high": "High" },
+    "factors": {
+      "title": "Why these scores",
+      "subtitle": "The numbers driving each component",
+      "profitPerKm": "Profit / km",
+      "profitPerKmVs": "vs your 14-day median",
+      "netToday": "Net today",
+      "netVs": "vs your 14-day median",
+      "lateNight": "Late-night share",
+      "lateNightHint": "Trips between 11pm–5am",
+      "onlineVariance": "Daily hours variance",
+      "onlineVarianceHint": "Lower = more consistent",
+      "emptyRatio": "Empty km ratio",
+      "emptyRatioHint": "Lower = fewer empty trips"
+    },
+    "dataQuality": {
+      "label": "Data quality",
+      "trips": "{count} trips today",
+      "history": "{count} days of history",
+      "low": "Score needs more trips to be reliable"
+    },
+    "tips": {
+      "title": "How to improve",
+      "lowEfficiency": "Try working different areas or hours — your profit/km is below your usual.",
+      "lowProfit": "Check expenses + fuel costs. Net profit is below your typical day.",
+      "lowSafety": "Fatigue is high. Take a 15-min break every 2 hours and avoid driving over 10 hours/day.",
+      "lowConsistency": "Try to keep your shift length similar each day. Big variance lowers consistency.",
+      "lowSleep": "You slept under 6 hours. Aim for 7+ for safer driving.",
+      "tooLong": "You've driven over 3 hours straight without a break.",
+      "noWaterRest": "Drink water every hour and rest if you can.",
+      "good": "Looking solid — keep this pattern."
+    }
   },
   "decisions": {
     "title": "Smart decisions",
@@ -383,7 +646,12 @@
       "commission": "Commission (%)",
       "color": "Color",
       "enabled": "Enabled",
-      "custom": "Custom app"
+      "custom": "Custom",
+      "customName": "Custom name",
+      "customNamePlaceholder": "e.g. Mowassalat",
+      "customNameRequired": "Enter at least 2 characters for the name",
+      "commissionInvalid": "Commission must be between 0 and 60",
+      "allAdded": "You've added every preset app. Use \"Custom\" to add a new one."
     },
     "areaFields": {
       "name": "Area name",

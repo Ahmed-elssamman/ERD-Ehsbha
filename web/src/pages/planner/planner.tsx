@@ -78,14 +78,14 @@ export function WorkPlannerPage() {
   const target = monthlyGoal.targetPiastres;
   const current = progress?.currentNetPiastres ?? 0;
   const remaining = Math.max(0, target - current);
-  const elapsed = forecast?.elapsedDays ?? progress?.elapsedDays ?? 1;
-  const totalDays = forecast?.totalDays ?? progress?.totalDays ?? 30;
-  const remainingDays = Math.max(1, totalDays - elapsed);
-  const neededPerDay = Math.round(remaining / remainingDays);
+  const elapsed = forecast?.elapsedDays ?? progress?.elapsedDays ?? 0;
+  const totalDays = forecast?.totalDays ?? progress?.totalDays ?? 0;
+  const remainingDays = Math.max(0, totalDays - elapsed);
+  const neededPerDay = remainingDays > 0 ? Math.round(remaining / remainingDays) : 0;
 
-  // Use today's profit-per-hour as a baseline (fallback to 5000 piastres/h ~50 EGP/h)
-  const profitPerHour = today?.profitPerHourPiastres ?? 5000;
-  const neededHoursPerDay = profitPerHour > 0 ? remaining / remainingDays / profitPerHour : 0;
+  const profitPerHour = today?.profitPerHourPiastres ?? 0;
+  const neededHoursPerDay =
+    profitPerHour > 0 && remainingDays > 0 ? remaining / remainingDays / profitPerHour : 0;
   const neededPerHour = profitPerHour;
 
   const percent = target > 0 ? Math.min(100, (current / target) * 100) : 0;

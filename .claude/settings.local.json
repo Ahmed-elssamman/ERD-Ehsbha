@@ -41,7 +41,21 @@
       "Bash(ping -n 3 ep-noisy-butterfly-apzsufbp.c-7.us-east-1.aws.neon.tech)",
       "Bash(powershell.exe -Command \"Test-NetConnection -ComputerName ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech -Port 5432 -InformationLevel Quiet -WarningAction SilentlyContinue\")",
       "Bash(powershell.exe -Command \"Test-NetConnection -ComputerName ep-noisy-butterfly-apzsufbp.c-7.us-east-1.aws.neon.tech -Port 5432 -InformationLevel Quiet -WarningAction SilentlyContinue\")",
-      "Bash(echo \"Started backend with new env, PID $!\")"
+      "Bash(echo \"Started backend with new env, PID $!\")",
+      "Bash(curl -s -o nul -w \"%{http_code}\" http://localhost:5174/)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5174 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue })",
+      "Bash(rm -f dev.log)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o nul -w \"HTTP %{http_code}\\\\n\" http://localhost:5174/)",
+      "Bash(curl -s -m 10 -o nul -w \"https /api/v1/health → %{http_code}\\\\n\" https://ehsebha.modev.me/api/v1/health)",
+      "Bash(curl -s -m 10 -o nul -w \"https /api/health → %{http_code}\\\\n\" https://ehsebha.modev.me/api/health)",
+      "Bash(curl -s -m 10 -o nul -w \"https /health → %{http_code}\\\\n\" https://ehsebha.modev.me/health)",
+      "Bash(curl -s -m 10 https://ehsebha.modev.me/api/v1/apps)",
+      "Bash(curl -s -m 10 -X OPTIONS -H \"Origin: http://localhost:5173\" -H \"Access-Control-Request-Method: POST\" -i https://ehsebha.modev.me/api/v1/auth/login)",
+      "Bash(curl -s -m 15 -X POST https://ehsebha.modev.me/api/v1/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"phone\\\\\":\\\\\"+201000000001\\\\\",\\\\\"password\\\\\":\\\\\"demo1234\\\\\"}\")",
+      "Bash(curl -s -m 15 https://ehsebha.modev.me/api/v1/drivers/me/apps -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbXA3cHljenkwMDBncGJicmRhbWhnODcyIiwicGhvbmUiOiIrMjAxMDAwMDAwMDAxIiwiZHJpdmVySWQiOiJjbXA3cHljenkwMDBocGJicmdoaHVrcmt0IiwiaWF0IjoxNzc5MDU3NDUzLCJleHAiOjE3NzkwNTgzNTN9.sbmVGgWUhYFCBJI4fnhFNhMY3VZiLD6zw9UtPOTs1JU')",
+      "Bash(curl -s -m 15 -X POST https://ehsebha.modev.me/api/v1/drivers/me/apps -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbXA3cHljenkwMDBncGJicmRhbWhnODcyIiwicGhvbmUiOiIrMjAxMDAwMDAwMDAxIiwiZHJpdmVySWQiOiJjbXA3cHljenkwMDBocGJicmdoaHVrcmt0IiwiaWF0IjoxNzc5MDU3NDUzLCJleHAiOjE3NzkwNTgzNTN9.sbmVGgWUhYFCBJI4fnhFNhMY3VZiLD6zw9UtPOTs1JU' -H 'Content-Type: application/json' -d '{\"appSourceId\":\"cmp7pybbl0002pbbr2v5bp4ll\",\"commissionPct\":20,\"color\":\"#34D399\",\"enabled\":true}')",
+      "Bash(curl -s -m 15 -X POST https://ehsebha.modev.me/api/v1/drivers/me/apps -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbXA3cHljenkwMDBncGJicmRhbWhnODcyIiwicGhvbmUiOiIrMjAxMDAwMDAwMDAxIiwiZHJpdmVySWQiOiJjbXA3cHljenkwMDBocGJicmdoaHVrcmt0IiwiaWF0IjoxNzc5MDU3NDUzLCJleHAiOjE3NzkwNTgzNTN9.sbmVGgWUhYFCBJI4fnhFNhMY3VZiLD6zw9UtPOTs1JU' -H 'Content-Type: application/json' -d '{\"customName\":\"TestCustom\",\"commissionPct\":15,\"color\":\"#FB7185\",\"enabled\":true}')"
     ]
   }
 }

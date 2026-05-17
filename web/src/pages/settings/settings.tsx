@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   Car,
+  Download,
   LogOut,
   Plus,
   Smartphone,
@@ -33,6 +34,7 @@ import {
   GoalsApi,
   VehiclesApi,
   type Area,
+  type DriverApp,
   type Vehicle,
 } from '@/lib/api/endpoints';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -40,6 +42,9 @@ import { useAuth } from '@/stores/auth.store';
 import { queryClient } from '@/providers/query-provider';
 import { toDateInputValue } from '@/lib/time';
 import { vehicleLabel } from '@/hooks/use-vehicle-selector';
+import { cn } from '@/lib/utils';
+import { readApiError } from '@/lib/api/client';
+import { openInstallDialog } from '@/components/pwa/update-prompt';
 
 export function SettingsPage() {
   const { t, locale, toggleLocale } = useI18n();
@@ -97,6 +102,15 @@ export function SettingsPage() {
             <p className="text-sm font-medium">{t('language.label')}</p>
             <Button variant="outline" size="sm" onClick={toggleLocale}>
               {locale === 'ar' ? 'English' : 'العربية'}
+            </Button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Download className="h-4 w-4 text-primary" aria-hidden />
+              <p className="text-sm font-medium">{t('pwa.installable')}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={openInstallDialog}>
+              {t('pwa.dialog.openSettings')}
             </Button>
           </div>
         </CardContent>
@@ -298,28 +312,51 @@ function VehicleDialog({
   const { t } = useI18n();
   const qc = useQueryClient();
 
-  const defaults: VehicleForm = {
-    type: vehicle?.type ?? 'CAR',
-    make: vehicle?.make ?? '',
-    model: vehicle?.model ?? '',
-    year: vehicle?.year ?? new Date().getFullYear(),
-    fuelType: vehicle?.fuelType ?? 'PETROL_92',
-    tankLiters: vehicle?.tankLiters ?? 45,
-    baselineKmPerLiter: vehicle?.baselineKmPerLiter ?? 12,
-    odometerKm: vehicle ? Math.floor(vehicle.odometerMeters / 1000) : 0,
+  const blankVehicle: VehicleForm = {
+    type: 'CAR',
+    make: '',
+    model: '',
+    year: new Date().getFullYear(),
+    fuelType: 'PETROL_92',
+    tankLiters: 45,
+    baselineKmPerLiter: 12,
+    odometerKm: 0,
   };
+
+  const valuesFor = (v: Vehicle | null): VehicleForm =>
+    v
+      ? {
+          type: v.type,
+          make: v.make ?? '',
+          model: v.model ?? '',
+          year: v.year ?? new Date().getFullYear(),
+          fuelType: v.fuelType,
+          tankLiters: v.tankLiters,
+          baselineKmPerLiter: v.baselineKmPerLiter,
+          odometerKm: Math.floor(v.odometerMeters / 1000),
+        }
+      : blankVehicle;
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<VehicleForm>({ resolver: zodResolver(vehicleSchema), defaultValues: defaults, values: defaults });
+  } = useForm<VehicleForm>({ resolver: zodResolver(vehicleSchema), defaultValues: valuesFor(vehicle) });
+
+  // Re-apply values only when the dialog opens or the target vehicle changes,
+  // not on every render (which would clobber the user's typing).
+  useEffect(() => {
+    if (!open) return;
+    reset(valuesFor(vehicle));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, vehicle?.id]);
 
   const createMut = useMutation({
     mutationFn: VehiclesApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vehicles'] });
+      reset(blankVehicle);
       onClose();
     },
   });
@@ -327,6 +364,7 @@ function VehicleDialog({
     mutationFn: ({ id, body }: { id: string; body: Partial<Vehicle> }) => VehiclesApi.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vehicles'] });
+      reset(blankVehicle);
       onClose();
     },
   });
@@ -350,7 +388,7 @@ function VehicleDialog({
     <Dialog
       open={open}
       onClose={() => {
-        reset(defaults);
+        reset(valuesFor(vehicle));
         onClose();
       }}
       title={vehicle ? t('common.edit') : t('common.add')}
@@ -415,7 +453,8 @@ function AppsSection() {
   const qc = useQueryClient();
   const mineQ = useQuery({ queryKey: ['apps', 'mine'], queryFn: AppsApi.mine });
   const catalogQ = useQuery({ queryKey: ['apps', 'catalog'], queryFn: AppsApi.catalog });
-  const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<DriverApp | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const removeMut = useMutation({
@@ -429,7 +468,7 @@ function AppsSection() {
         <CardTitle className="flex items-center gap-2 text-base">
           <Smartphone className="h-4 w-4 text-primary" aria-hidden /> {t('settings.apps')}
         </CardTitle>
-        <Button size="sm" onClick={() => setOpen(true)} className="gap-1.5">
+        <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
           <Plus className="h-3.5 w-3.5" /> {t('common.add')}
         </Button>
       </CardHeader>
@@ -444,17 +483,24 @@ function AppsSection() {
           <ul className="divide-y divide-border/60">
             {mineQ.data.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditing(a)}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-start hover:bg-accent/40"
+                >
                   <span
                     className="h-9 w-9 shrink-0 rounded-lg"
                     style={{ background: a.color ?? 'hsl(var(--muted))' }}
                     aria-hidden
                   />
-                  <div>
-                    <p className="font-medium">{a.customName ?? a.appSource?.name}</p>
-                    <p className="text-xs text-muted-foreground">{a.commissionPct}% {t('settings.appFields.commission')}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{a.customName ?? a.appSource?.name ?? '—'}</p>
+                    <p className="num-tabular text-xs text-muted-foreground">
+                      {Number(a.commissionPct)}% {t('settings.appFields.commission')}
+                      {a.enabled ? '' : ` · ${t('common.inactive')}`}
+                    </p>
                   </div>
-                </div>
+                </button>
                 <Button variant="ghost" size="icon" onClick={() => setConfirmId(a.id)} aria-label={t('common.delete')}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
@@ -465,10 +511,16 @@ function AppsSection() {
       </CardContent>
 
       <AddAppDialog
-        open={open}
-        onClose={() => setOpen(false)}
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
         catalog={catalogQ.data ?? []}
         myAppIds={new Set((mineQ.data ?? []).map((m) => m.appSourceId).filter(Boolean) as string[])}
+      />
+
+      <EditAppDialog
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        app={editing}
       />
 
       <ConfirmDialog
@@ -486,13 +538,13 @@ function AppsSection() {
   );
 }
 
-const appSchema = z.object({
-  appSourceId: z.string().optional(),
-  customName: z.string().min(2).max(40).optional(),
-  commissionPct: z.coerce.number().min(0).max(60),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-});
-type AppForm = z.input<typeof appSchema>;
+const CUSTOM_SENTINEL = '__custom__';
+
+interface CatalogApp {
+  id: string;
+  name: string;
+  defaultCommissionPct: number | string;
+}
 
 function AddAppDialog({
   open,
@@ -502,61 +554,281 @@ function AddAppDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  catalog: Array<{ id: string; name: string; defaultCommissionPct: number }>;
+  catalog: CatalogApp[];
   myAppIds: Set<string>;
 }) {
   const { t } = useI18n();
   const qc = useQueryClient();
   const availableCatalog = catalog.filter((c) => !myAppIds.has(c.id));
 
-  const defaults: AppForm = {
-    appSourceId: availableCatalog[0]?.id ?? '',
-    customName: '',
-    commissionPct: availableCatalog[0]?.defaultCommissionPct ?? 20,
-    color: '#34D399',
-  };
+  // Fully controlled local state — no react-hook-form for the selection itself.
+  const [selectedId, setSelectedId] = useState<string>('');
+  const [customName, setCustomName] = useState('');
+  const [commissionPct, setCommissionPct] = useState<string>('20');
+  const [color, setColor] = useState('#34D399');
+  const [error, setError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { isSubmitting },
-  } = useForm<AppForm>({ resolver: zodResolver(appSchema), defaultValues: defaults, values: defaults });
+  // Initialize when the dialog opens or when the catalog availability changes.
+  useEffect(() => {
+    if (!open) return;
+    const first = availableCatalog[0];
+    setSelectedId(first ? first.id : CUSTOM_SENTINEL);
+    setCustomName('');
+    setCommissionPct(first ? String(Number(first.defaultCommissionPct ?? 20)) : '20');
+    setColor('#34D399');
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, availableCatalog.length]);
+
+  const pickSource = (id: string) => {
+    setSelectedId(id);
+    setError(null);
+    if (id !== CUSTOM_SENTINEL) {
+      const found = availableCatalog.find((c) => c.id === id);
+      if (found) setCommissionPct(String(Number(found.defaultCommissionPct ?? 20)));
+    }
+  };
 
   const addMut = useMutation({
     mutationFn: AppsApi.add,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['apps'] });
-      reset(defaults);
+      onClose();
+    },
+    onError: (err) => {
+      setError(readApiError(err).message || t('errors.UNKNOWN'));
+    },
+  });
+
+  const isCustom = !selectedId || selectedId === CUSTOM_SENTINEL;
+
+  const submit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError(null);
+
+    const pct = Number(commissionPct);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 60) {
+      setError(t('settings.appFields.commissionInvalid'));
+      return;
+    }
+
+    if (isCustom) {
+      const name = customName.trim();
+      if (name.length < 2) {
+        setError(t('settings.appFields.customNameRequired'));
+        return;
+      }
+      addMut.mutate({
+        customName: name,
+        commissionPct: pct,
+        color,
+        enabled: true,
+      } as Parameters<typeof AppsApi.add>[0]);
+      return;
+    }
+
+    addMut.mutate({
+      appSourceId: selectedId,
+      commissionPct: pct,
+      color,
+      enabled: true,
+    } as Parameters<typeof AppsApi.add>[0]);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={t('settings.apps')}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button onClick={() => submit()} loading={addMut.isPending}>
+            {t('common.save')}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        <div className="space-y-2">
+          <Label>{t('settings.appFields.name')}</Label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {availableCatalog.length === 0 ? (
+              <p className="col-span-full rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+                {t('settings.appFields.allAdded')}
+              </p>
+            ) : (
+              availableCatalog.map((c) => {
+                const isSelected = selectedId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => pickSource(c.id)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-start text-sm transition-colors',
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-foreground ring-2 ring-primary/30'
+                        : 'border-border/60 bg-card hover:bg-accent/40',
+                    )}
+                  >
+                    <span className="truncate font-medium">{c.name}</span>
+                    <span className="num-tabular text-xs text-muted-foreground">
+                      {Number(c.defaultCommissionPct)}%
+                    </span>
+                  </button>
+                );
+              })
+            )}
+            <button
+              key="__custom__"
+              type="button"
+              onClick={() => pickSource(CUSTOM_SENTINEL)}
+              aria-pressed={isCustom}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm transition-colors',
+                isCustom
+                  ? 'border-primary bg-primary/10 text-foreground ring-2 ring-primary/30'
+                  : 'border-border bg-card hover:bg-accent/40',
+              )}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>{t('settings.appFields.custom')}</span>
+            </button>
+          </div>
+        </div>
+
+        {isCustom ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="customName">{t('settings.appFields.customName')}</Label>
+            <Input
+              id="customName"
+              autoFocus
+              placeholder={t('settings.appFields.customNamePlaceholder')}
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="commissionPct">{t('settings.appFields.commission')}</Label>
+            <Input
+              id="commissionPct"
+              type="number"
+              step="0.5"
+              min={0}
+              max={60}
+              dir="ltr"
+              value={commissionPct}
+              onChange={(e) => setCommissionPct(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="color">{t('settings.appFields.color')}</Label>
+            <Input
+              id="color"
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="h-11 p-1"
+            />
+          </div>
+        </div>
+
+        {error ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </form>
+    </Dialog>
+  );
+}
+
+/* -------- Edit app ------------------------------------------------------ */
+
+const editAppSchema = z.object({
+  customName: z.string().min(2).max(40).optional().or(z.literal('')),
+  commissionPct: z.coerce.number().min(0).max(60),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  enabled: z.boolean().default(true),
+});
+type EditAppForm = z.input<typeof editAppSchema>;
+
+function EditAppDialog({
+  open,
+  onClose,
+  app,
+}: {
+  open: boolean;
+  onClose: () => void;
+  app: DriverApp | null;
+}) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+
+  const blank: EditAppForm = { customName: '', commissionPct: 20, color: '#34D399', enabled: true };
+  const valuesFor = (a: DriverApp | null): EditAppForm =>
+    a
+      ? {
+          customName: a.customName ?? '',
+          commissionPct: Number(a.commissionPct),
+          color: a.color ?? '#34D399',
+          enabled: a.enabled,
+        }
+      : blank;
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<EditAppForm>({
+    resolver: zodResolver(editAppSchema),
+    defaultValues: valuesFor(app),
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    reset(valuesFor(app));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, app?.id]);
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Partial<DriverApp> }) => AppsApi.update(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['apps'] });
       onClose();
     },
   });
 
   const submit = handleSubmit((v) => {
-    const useCustom = !v.appSourceId;
-    if (useCustom && !v.customName) return;
-    return addMut.mutateAsync({
-      appSourceId: useCustom ? undefined : v.appSourceId,
-      customName: useCustom ? v.customName : undefined,
-      commissionPct: Number(v.commissionPct),
-      color: v.color,
-      enabled: true,
-    } as Parameters<typeof AppsApi.add>[0]);
+    if (!app) return;
+    return updateMut.mutateAsync({
+      id: app.id,
+      body: {
+        commissionPct: Number(v.commissionPct),
+        color: v.color,
+        enabled: v.enabled,
+        customName: v.customName?.trim() ? v.customName.trim() : null,
+      } as Partial<DriverApp>,
+    });
   });
+
+  const title = app?.customName ?? app?.appSource?.name ?? t('common.edit');
 
   return (
     <Dialog
       open={open}
-      onClose={() => {
-        reset(defaults);
-        onClose();
-      }}
-      title={t('settings.apps')}
+      onClose={onClose}
+      title={title}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={submit} loading={isSubmitting || addMut.isPending}>
+          <Button onClick={submit} loading={isSubmitting || updateMut.isPending}>
             {t('common.save')}
           </Button>
         </>
@@ -564,32 +836,37 @@ function AddAppDialog({
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
         <div className="space-y-1.5">
-          <Label>{t('settings.appFields.name')}</Label>
-          <Select {...register('appSourceId')}>
-            {availableCatalog.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-            <option value="">— {t('settings.appFields.custom')}</option>
-          </Select>
+          <Label htmlFor="edit-customName">{t('settings.appFields.customName')}</Label>
+          <Input
+            id="edit-customName"
+            placeholder={app?.appSource?.name ?? ''}
+            invalid={!!errors.customName}
+            {...register('customName')}
+          />
         </div>
-
-        {!watch('appSourceId') ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="customName">{t('settings.appFields.custom')}</Label>
-            <Input id="customName" {...register('customName')} />
-          </div>
-        ) : null}
-
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="commissionPct">{t('settings.appFields.commission')}</Label>
-            <Input id="commissionPct" type="number" step="0.5" min={0} max={60} dir="ltr" {...register('commissionPct')} />
+            <Label htmlFor="edit-commissionPct">{t('settings.appFields.commission')}</Label>
+            <Input
+              id="edit-commissionPct"
+              type="number"
+              step="0.5"
+              min={0}
+              max={60}
+              dir="ltr"
+              invalid={!!errors.commissionPct}
+              {...register('commissionPct')}
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="color">{t('settings.appFields.color')}</Label>
-            <Input id="color" type="color" {...register('color')} className="h-11 p-1" />
+            <Label htmlFor="edit-color">{t('settings.appFields.color')}</Label>
+            <Input id="edit-color" type="color" {...register('color')} className="h-11 p-1" />
           </div>
         </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" {...register('enabled')} className="h-4 w-4 accent-primary" />
+          <span>{t('settings.appFields.enabled')}</span>
+        </label>
       </form>
     </Dialog>
   );
@@ -676,21 +953,39 @@ function AreasSection() {
 function AreaDialog({ open, onClose, area }: { open: boolean; onClose: () => void; area: Area | null }) {
   const { t } = useI18n();
   const qc = useQueryClient();
-  const defaults: AreaForm = { name: area?.name ?? '', color: area?.color ?? '#60A5FA' };
+
+  const blank: AreaForm = { name: '', color: '#60A5FA' };
+  const valuesFor = (a: Area | null): AreaForm =>
+    a ? { name: a.name, color: a.color ?? '#60A5FA' } : blank;
+
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<AreaForm>({ resolver: zodResolver(areaSchema), defaultValues: defaults, values: defaults });
+  } = useForm<AreaForm>({ resolver: zodResolver(areaSchema), defaultValues: valuesFor(area) });
+
+  useEffect(() => {
+    if (!open) return;
+    reset(valuesFor(area));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, area?.id]);
 
   const createMut = useMutation({
     mutationFn: AreasApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['areas'] }); onClose(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['areas'] });
+      reset(blank);
+      onClose();
+    },
   });
   const updateMut = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<{ name: string; color: string }> }) => AreasApi.update(id, body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['areas'] }); onClose(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['areas'] });
+      reset(blank);
+      onClose();
+    },
   });
 
   const submit = handleSubmit((v) => {
@@ -701,7 +996,7 @@ function AreaDialog({ open, onClose, area }: { open: boolean; onClose: () => voi
   return (
     <Dialog
       open={open}
-      onClose={() => { reset(defaults); onClose(); }}
+      onClose={() => { reset(valuesFor(area)); onClose(); }}
       title={area ? t('common.edit') : t('common.add')}
       footer={
         <>
@@ -807,14 +1102,17 @@ function GoalsSection() {
 function GoalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const qc = useQueryClient();
-  const now = new Date();
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const defaults: GoalForm = {
-    period: 'MONTHLY',
-    targetEgp: 10000,
-    startsOn: toDateInputValue(firstOfMonth),
-    endsOn: toDateInputValue(lastOfMonth),
+
+  const computeDefaults = (): GoalForm => {
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      period: 'MONTHLY',
+      targetEgp: 0,
+      startsOn: toDateInputValue(firstOfMonth),
+      endsOn: toDateInputValue(lastOfMonth),
+    };
   };
 
   const {
@@ -822,11 +1120,17 @@ function GoalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<GoalForm>({ resolver: zodResolver(goalSchema), defaultValues: defaults, values: defaults });
+  } = useForm<GoalForm>({ resolver: zodResolver(goalSchema), defaultValues: computeDefaults() });
+
+  useEffect(() => {
+    if (!open) return;
+    reset(computeDefaults());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const createMut = useMutation({
     mutationFn: GoalsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); reset(defaults); onClose(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); reset(computeDefaults()); onClose(); },
   });
 
   const submit = handleSubmit((v) =>
@@ -841,7 +1145,7 @@ function GoalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Dialog
       open={open}
-      onClose={() => { reset(defaults); onClose(); }}
+      onClose={() => { reset(computeDefaults()); onClose(); }}
       title={t('settings.goals')}
       footer={
         <>

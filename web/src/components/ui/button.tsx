@@ -43,17 +43,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   { className, variant, size, fullWidth, asChild = false, loading = false, children, disabled, ...props },
   ref,
 ) {
-  const Comp = asChild ? Slot : 'button';
+  const mergedClassName = cn(buttonVariants({ variant, size, fullWidth }), className);
+
+  if (asChild) {
+    return (
+      <Slot ref={ref} className={mergedClassName} {...props}>
+        {children}
+      </Slot>
+    );
+  }
+
   return (
-    <Comp
+    <button
       ref={ref}
-      className={cn(buttonVariants({ variant, size, fullWidth }), className)}
+      className={mergedClassName}
       disabled={disabled || loading}
       {...props}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
       {children}
-    </Comp>
+    </button>
   );
 });
 
