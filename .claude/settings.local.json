@@ -29,7 +29,19 @@
       "Bash(curl -s --max-time 8 -X POST http://localhost:4000/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"phone\":\"+201000000001\",\"password\":\"demo1234\"}')",
       "Bash(curl -s -o /dev/null -w \"5173 status: %{http_code}\\\\n\" --max-time 3 http://localhost:5173/)",
       "Bash(curl -s -o /dev/null -w \"4000 status: %{http_code}\\\\n\" --max-time 3 http://localhost:4000/api/v1/auth/login -X POST -H \"Content-Type: application/json\" -d \"{}\")",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Bash(npm --workspace backend run prisma:generate)",
+      "Bash(npm --workspace backend run seed)",
+      "Bash(curl -s -o /dev/null -w \"Status: %{http_code}\\\\n\" --max-time 3 http://localhost:4000/api/v1/auth/login)",
+      "Bash(nslookup ep-noisy-butterfly-apzsufbp.c-7.us-east-1.aws.neon.tech)",
+      "Bash(nslookup ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_RsDUZd4Y8PCx@ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require' DIRECT_URL='postgresql://neondb_owner:npg_RsDUZd4Y8PCx@ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require' npx prisma migrate status)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_RsDUZd4Y8PCx@ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require' DIRECT_URL='postgresql://neondb_owner:npg_RsDUZd4Y8PCx@ep-noisy-butterfly-apzsufbp.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require' npx prisma migrate status)",
+      "Bash(curl -s --max-time 10 -X POST http://localhost:4000/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"phone\":\"+201000000001\",\"password\":\"demo1234\"}')",
+      "Bash(ping -n 3 ep-noisy-butterfly-apzsufbp.c-7.us-east-1.aws.neon.tech)",
+      "Bash(powershell.exe -Command \"Test-NetConnection -ComputerName ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech -Port 5432 -InformationLevel Quiet -WarningAction SilentlyContinue\")",
+      "Bash(powershell.exe -Command \"Test-NetConnection -ComputerName ep-noisy-butterfly-apzsufbp.c-7.us-east-1.aws.neon.tech -Port 5432 -InformationLevel Quiet -WarningAction SilentlyContinue\")",
+      "Bash(echo \"Started backend with new env, PID $!\")"
     ]
   }
 }

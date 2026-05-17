@@ -95,6 +95,21 @@ async function main() {
     });
   }
 
+  // Clear dependents BEFORE driverApps/areas so foreign-key constraints don't fire on re-seed.
+  console.log('Clearing prior operational data…');
+  await prisma.trip.deleteMany({ where: { driverId } });
+  await prisma.session.deleteMany({ where: { driverId } });
+  await prisma.fuelLog.deleteMany({ where: { driverId } });
+  await prisma.expense.deleteMany({ where: { driverId } });
+  await prisma.maintenanceRecord.deleteMany({ where: { driverId } });
+  await prisma.dailyAggregate.deleteMany({ where: { driverId } });
+  await prisma.weeklyAggregate.deleteMany({ where: { driverId } });
+  await prisma.monthlyAggregate.deleteMany({ where: { driverId } });
+  await prisma.appDailyAggregate.deleteMany({ where: { driverId } });
+  await prisma.areaDailyAggregate.deleteMany({ where: { driverId } });
+  await prisma.recommendation.deleteMany({ where: { driverId } });
+  await prisma.scoreSnapshot.deleteMany({ where: { driverId } });
+
   console.log('Driver apps…');
   const appUber = await prisma.appSource.findUniqueOrThrow({ where: { code: 'UBER' } });
   const appInDrive = await prisma.appSource.findUniqueOrThrow({ where: { code: 'INDRIVE' } });
@@ -117,20 +132,6 @@ async function main() {
   const areas = await Promise.all(
     AREAS.map((a) => prisma.area.create({ data: { driverId, ...a } })),
   );
-
-  console.log('Clearing prior operational data…');
-  await prisma.trip.deleteMany({ where: { driverId } });
-  await prisma.session.deleteMany({ where: { driverId } });
-  await prisma.fuelLog.deleteMany({ where: { driverId } });
-  await prisma.expense.deleteMany({ where: { driverId } });
-  await prisma.maintenanceRecord.deleteMany({ where: { driverId } });
-  await prisma.dailyAggregate.deleteMany({ where: { driverId } });
-  await prisma.weeklyAggregate.deleteMany({ where: { driverId } });
-  await prisma.monthlyAggregate.deleteMany({ where: { driverId } });
-  await prisma.appDailyAggregate.deleteMany({ where: { driverId } });
-  await prisma.areaDailyAggregate.deleteMany({ where: { driverId } });
-  await prisma.recommendation.deleteMany({ where: { driverId } });
-  await prisma.scoreSnapshot.deleteMany({ where: { driverId } });
 
   console.log('Maintenance baseline…');
   const oilItem = await prisma.maintenanceItem.findUniqueOrThrow({ where: { code: 'ENGINE_OIL' } });

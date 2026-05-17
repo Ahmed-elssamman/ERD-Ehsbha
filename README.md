@@ -28,17 +28,27 @@ You need **two terminals** running simultaneously.
 **One-time setup**:
 
 ```bash
-# install all workspaces
-npm install --workspaces --legacy-peer-deps
+# 1. install all workspaces
+npm install --legacy-peer-deps
 
-# generate Prisma client (first time, after any schema change, and after a fresh install)
+# 2. configure the backend .env — ONLY if backend/.env doesn't already exist.
+#    DANGER: do NOT blindly `cp .env.example .env` if you already have a working .env —
+#    you'll overwrite your real DATABASE_URL with the placeholder.
+cd backend
+[ -f .env ] || cp .env.example .env
+#    Then open backend/.env and put your real DATABASE_URL + strong JWT secrets.
+#    For Neon: console.neon.tech → project → "Connection string" → "psql" tab.
+#    The Postgres URL starts with `postgresql://` — it is NOT the same as the Neon Data API REST URL.
+
+# 3. generate Prisma client (needed on every fresh install or schema change)
+cd ..
 npm run backend:prisma:generate
 
-# (only on a fresh database) apply migrations + seed demo data
+# 4. (only on a fresh database) apply migrations + seed demo data
 cd backend
-cp .env.example .env             # then put your DATABASE_URL + JWT secrets
-npm run prisma:migrate
-npm run seed                     # populates demo driver + 30 days of data
+npx prisma migrate status        # if "Database schema is up to date" → skip migrate
+npm run prisma:migrate           # otherwise: apply migrations
+npm run seed                     # populates demo driver + 30 days of data (idempotent)
 cd ..
 ```
 
@@ -204,6 +214,8 @@ State: TanStack Query 5 with `localStorage` persistence (instant cold-start UX),
 **"The site loads but login fails"** — Backend isn't running. Open DevTools → Network: if you see `ERR_CONNECTION_REFUSED` on `localhost:4000`, start `npm run backend:dev`.
 
 **"`prisma` errors on backend start"** — Run `npm run backend:prisma:generate`. Needed after a fresh install or any `prisma/schema.prisma` change.
+
+**`P1000: Authentication failed against database server` / "trying localhost:5432"** — Your `backend/.env` has the placeholder `DATABASE_URL` (or got overwritten by `.env.example`). Open `backend/.env` and put your real Postgres connection string. For Neon: console.neon.tech → project → "Connection string" → "psql" tab. The Postgres URL starts with `postgresql://` and is **different from the Neon Data API REST URL** (which has `.apirest.` in the hostname and starts with `https://` — that one does NOT work with Prisma).
 
 **"First login is slow"** — Neon's free-tier DB sleeps after 5 min idle and takes ~5s to wake. Subsequent requests are fast.
 
