@@ -32,7 +32,7 @@
       "typedRoutes": false
     },
     "extra": {
-      "apiUrl": "http://10.0.2.2:4000/api/v1"
+      "apiUrl": "https://ehsebha.modev.me/api/v1"
     }
   }
 }

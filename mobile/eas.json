@@ -11,7 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:4000/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://ehsebha.modev.me/api/v1"
       }
     },
     "preview": {
@@ -20,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.ehsbha.com/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://ehsebha.modev.me/api/v1"
       }
     },
     "production": {
@@ -29,7 +29,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.ehsbha.com/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://ehsebha.modev.me/api/v1"
       }
     }
   },

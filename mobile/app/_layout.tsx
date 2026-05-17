@@ -18,6 +18,13 @@ import { useAuth } from '@/stores/auth.store';
 import { useSettings } from '@/stores/settings.store';
 import { useNetwork } from '@/stores/network.store';
 import { startSync } from '@/offline/sync';
+import {
+  StartupErrorBoundary,
+  installGlobalErrorHandler,
+  useGlobalErrorListener,
+} from '@/lib/startup-error';
+
+installGlobalErrorHandler();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,10 +67,21 @@ function onAppStateChange(status: AppStateStatus) {
 }
 
 export default function RootLayout() {
+  return (
+    <StartupErrorBoundary>
+      <RootLayoutInner />
+    </StartupErrorBoundary>
+  );
+}
+
+function RootLayoutInner() {
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [asyncError, setAsyncError] = useState<Error | null>(null);
   const hydrateAuth = useAuth((s) => s.hydrate);
   const hydrateSettings = useSettings((s) => s.hydrate);
   const setOnline = useNetwork((s) => s.setOnline);
+
+  useGlobalErrorListener(setAsyncError);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', onAppStateChange);
@@ -73,19 +91,27 @@ export default function RootLayout() {
 
   useEffect(() => {
     (async () => {
-      await Promise.all([hydrateAuth(), hydrateSettings()]);
-      const locale = useSettings.getState().locale;
-      if (locale === 'ar' && !I18nManager.isRTL) {
-        I18nManager.allowRTL(true);
-        I18nManager.forceRTL(true);
-      } else if (locale === 'en' && I18nManager.isRTL) {
-        I18nManager.allowRTL(false);
-        I18nManager.forceRTL(false);
+      try {
+        await Promise.all([hydrateAuth(), hydrateSettings()]);
+        const locale = useSettings.getState().locale;
+        if (locale === 'ar' && !I18nManager.isRTL) {
+          I18nManager.allowRTL(true);
+          I18nManager.forceRTL(true);
+        } else if (locale === 'en' && I18nManager.isRTL) {
+          I18nManager.allowRTL(false);
+          I18nManager.forceRTL(false);
+        }
+        startSync();
+        setBootstrapped(true);
+      } catch (e: any) {
+        setAsyncError(e instanceof Error ? e : new Error(String(e)));
       }
-      startSync();
-      setBootstrapped(true);
     })();
   }, [hydrateAuth, hydrateSettings]);
+
+  if (asyncError) {
+    throw asyncError;
+  }
 
   if (!bootstrapped) {
     return <View style={{ flex: 1, backgroundColor: '#0B0F14' }} />;

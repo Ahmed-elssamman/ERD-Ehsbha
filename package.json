@@ -6,6 +6,7 @@
     "backend",
     "mobile"
   ],
+  "main": "expo-router/entry",
   "scripts": {
     "backend:dev": "npm --workspace backend run start:dev",
     "backend:build": "npm --workspace backend run build",
