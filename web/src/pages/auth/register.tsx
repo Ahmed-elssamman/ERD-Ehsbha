@@ -17,12 +17,18 @@ import { readApiError } from '@/lib/api/client';
 import { useAuth } from '@/stores/auth.store';
 import { EGY_PHONE_REGEX, normalizeEgyPhone, toE164Egypt } from '@/lib/phone';
 
-const schema = z.object({
-  displayName: z.string().min(2).max(80),
-  phone: z.string().regex(EGY_PHONE_REGEX),
-  email: z.string().trim().email(),
-  password: z.string().min(8).max(128),
-});
+const schema = z
+  .object({
+    displayName: z.string().min(2).max(80),
+    phone: z.string().regex(EGY_PHONE_REGEX),
+    email: z.string().trim().email(),
+    password: z.string().min(8).max(128),
+    confirmPassword: z.string().min(1),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'password-mismatch',
+  });
 type FormValues = z.infer<typeof schema>;
 
 export function RegisterPage() {
@@ -30,6 +36,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const setSession = useAuth((s) => s.setSession);
   const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -39,15 +46,16 @@ export function RegisterPage() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
-    defaultValues: { displayName: '', phone: '', email: '', password: '' },
+    defaultValues: { displayName: '', phone: '', email: '', password: '', confirmPassword: '' },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo';
+      const { confirmPassword: _confirmPassword, ...registerPayload } = values;
       const result = await AuthApi.register({
-        ...values,
+        ...registerPayload,
         phone: toE164Egypt(values.phone),
         locale,
         timezone,
@@ -165,6 +173,31 @@ export function RegisterPage() {
               </div>
               {errors.password ? (
                 <p className="text-xs text-destructive">{t('auth.passwordTooShort')}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPwd ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  className="pe-10"
+                  invalid={!!errors.confirmPassword}
+                  {...register('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPwd((s) => !s)}
+                  aria-label={showConfirmPwd ? t('auth.hidePassword') : t('auth.showPassword')}
+                  className="absolute end-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {showConfirmPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword ? (
+                <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
               ) : null}
             </div>
 

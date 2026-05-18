@@ -9,6 +9,8 @@ import {
   LoginSchema,
   LogoutDto,
   LogoutSchema,
+  LookupEmailDto,
+  LookupEmailSchema,
   RefreshDto,
   RefreshSchema,
   RegisterDto,
@@ -46,10 +48,16 @@ export class AuthController {
     await this.auth.logout(dto.refreshToken);
   }
 
+  @Post('password/lookup')
+  @HttpCode(HttpStatus.OK)
+  lookupEmail(@Body(new ZodValidationPipe(LookupEmailSchema)) dto: LookupEmailDto) {
+    return this.auth.lookupEmailByPhone(dto.phone);
+  }
+
   @Post('password/forgot')
   @HttpCode(HttpStatus.OK)
   forgot(@Body(new ZodValidationPipe(ForgotPasswordSchema)) dto: ForgotPasswordDto) {
-    return this.auth.forgotPassword({ phone: dto.phone, email: dto.email });
+    return this.auth.forgotPassword({ phone: dto.phone });
   }
 
   @Post('password/reset')

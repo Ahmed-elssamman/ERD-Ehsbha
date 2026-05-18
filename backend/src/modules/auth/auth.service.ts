@@ -169,12 +169,32 @@ export class AuthService {
   }
 
   /**
-   * Begin password reset. Phone identifies the account in the DB; email is
-   * where the OTP is delivered. If the phone is not registered, we surface a
-   * USER_NOT_FOUND error so the UI can prompt the user to register instead —
-   * this is a logged-in self-service reset, not an account-enumeration risk.
+   * Look up the email registered to a phone, returned masked. The UI shows
+   * this in a read-only field so the user can confirm the destination before
+   * we send the OTP — they can't change it (prevents sending the code to an
+   * attacker-controlled address).
    */
-  async forgotPassword(args: { phone: string; email: string }): Promise<{ sent: boolean; channel: 'email'; expiresInMinutes: number; devCode?: string }> {
+  async lookupEmailByPhone(phone: string): Promise<{ phone: string; emailMasked: string }> {
+    const user = await this.prisma.user.findFirst({
+      where: { phone: { in: egyPhoneLookupCandidates(phone) } },
+    });
+    if (!user) {
+      throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'No account is registered with this phone number' });
+    }
+    if (!user.email) {
+      // Account has no email on file — can't reset by email. Surface a
+      // distinct code so the UI shows the right "contact support" copy.
+      throw new NotFoundException({ code: 'NO_EMAIL_ON_FILE', message: 'No recovery email is linked to this account' });
+    }
+    return { phone: user.phone, emailMasked: maskEmail(user.email) };
+  }
+
+  /**
+   * Begin password reset. Phone identifies the account; the OTP goes to the
+   * email already on file (never an attacker-supplied value). If the phone is
+   * not registered we surface USER_NOT_FOUND so the UI can prompt to register.
+   */
+  async forgotPassword(args: { phone: string }): Promise<{ sent: boolean; channel: 'email'; emailMasked: string; expiresInMinutes: number; devCode?: string }> {
     const expiresInMinutes = 15;
     const user = await this.prisma.user.findFirst({
       where: { phone: { in: egyPhoneLookupCandidates(args.phone) } },
@@ -182,6 +202,9 @@ export class AuthService {
 
     if (!user) {
       throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'No account is registered with this phone number' });
+    }
+    if (!user.email) {
+      throw new NotFoundException({ code: 'NO_EMAIL_ON_FILE', message: 'No recovery email is linked to this account' });
     }
 
     await this.prisma.passwordResetToken.updateMany({
@@ -198,7 +221,7 @@ export class AuthService {
       },
     });
 
-    const emailTarget = args.email.toLowerCase().trim();
+    const emailTarget = user.email.toLowerCase().trim();
     const isProd = process.env.NODE_ENV === 'production';
 
     await this.mailer.sendResetCode(emailTarget, code, user.locale === 'en' ? 'en' : 'ar');
@@ -211,6 +234,7 @@ export class AuthService {
     return {
       sent: true,
       channel: 'email',
+      emailMasked: maskEmail(user.email),
       expiresInMinutes,
       ...(isProd ? {} : { devCode: code }),
     };
@@ -317,6 +341,21 @@ function generateNumericCode(digits: number): string {
     n = randomBytes(4).readUInt32BE(0);
   } while (n >= Math.floor(0xFFFFFFFF / max) * max);
   return String(n % max).padStart(digits, '0');
+}
+
+function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return email;
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  // Keep first + last char of local; mask the middle. Short locals (≤2) get
+  // a single visible char prefix only.
+  const visibleHead = local.charAt(0);
+  const visibleTail = local.length > 2 ? local.charAt(local.length - 1) : '';
+  const maskedLocal = visibleTail
+    ? `${visibleHead}***${visibleTail}`
+    : `${visibleHead}***`;
+  return `${maskedLocal}@${domain}`;
 }
 
 function parseDurationMs(s: string): number {

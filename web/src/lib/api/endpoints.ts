@@ -20,9 +20,17 @@ export interface AuthResult {
 export interface ForgotResult {
   sent: boolean;
   channel: 'email' | 'sms' | 'none';
+  /** Masked email the code was sent to (e.g. "m***a@gmail.com"). */
+  emailMasked: string;
   expiresInMinutes: number;
   /** Returned only in dev mode so the flow can be exercised without real email/SMS. */
   devCode?: string;
+}
+
+export interface LookupEmailResult {
+  phone: string;
+  /** Masked email registered to the phone (e.g. "m***a@gmail.com"). */
+  emailMasked: string;
 }
 
 export const AuthApi = {
@@ -39,7 +47,9 @@ export const AuthApi = {
   refresh: (refreshToken: string) =>
     api.post('/auth/refresh', { refreshToken }).then((r) => unwrap<AuthResult>(r.data)),
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
-  forgotPassword: (body: { phone: string; email: string }) =>
+  lookupResetEmail: (body: { phone: string }) =>
+    api.post('/auth/password/lookup', body).then((r) => unwrap<LookupEmailResult>(r.data)),
+  forgotPassword: (body: { phone: string }) =>
     api.post('/auth/password/forgot', body).then((r) => unwrap<ForgotResult>(r.data)),
   resetPassword: (body: { phone: string; code: string; newPassword: string }) =>
     api.post('/auth/password/reset', body).then((r) => unwrap<{ ok: boolean }>(r.data)),

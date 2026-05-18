@@ -29,13 +29,19 @@ export const LogoutSchema = z.object({
 });
 export type LogoutDto = z.infer<typeof LogoutSchema>;
 
-// Forgot password: phone identifies the user in the DB, email is where the OTP is delivered.
-// Both are required.
+// Forgot password: phone identifies the user; the OTP is delivered to the
+// email already on file. The client never picks the destination email.
 export const ForgotPasswordSchema = z.object({
   phone: z.string().regex(phoneRegex, 'Invalid phone number'),
-  email: z.string().email('Invalid email'),
 });
 export type ForgotPasswordDto = z.infer<typeof ForgotPasswordSchema>;
+
+// Lookup the email registered to a phone, returned masked so the UI can show
+// a "we'll send the code to m***@gmail.com" preview before sending the OTP.
+export const LookupEmailSchema = z.object({
+  phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+});
+export type LookupEmailDto = z.infer<typeof LookupEmailSchema>;
 
 // Reset password: phone identifies the user, plus the OTP code and new password.
 export const ResetPasswordSchema = z.object({

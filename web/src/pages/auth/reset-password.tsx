@@ -18,7 +18,6 @@ import { EGY_PHONE_REGEX, normalizeEgyPhone, toE164Egypt } from '@/lib/phone';
 
 const schema = z.object({
   phone: z.string().regex(EGY_PHONE_REGEX),
-  email: z.string().trim().email().optional().or(z.literal('')),
   code: z.string().regex(/^\d{6}$/),
   newPassword: z.string().min(8).max(128),
 });
@@ -35,22 +34,17 @@ export function ResetPasswordPage() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
-  // Accept both new (?phone=&email=) and legacy (?contact=&channel=) query strings
+  // Accept both new (?phone=) and legacy (?contact=&channel=phone) query strings
   // so a bookmarked link doesn't break the form.
   const initialPhoneRaw = params.get('phone') ?? '';
-  const initialEmail = params.get('email') ?? '';
   const legacyContact = params.get('contact') ?? '';
   const legacyChannel = params.get('channel');
-  const initialPhone =
-    initialPhoneRaw || (legacyChannel === 'phone' ? legacyContact : '');
-  const initialEmailFallback =
-    initialEmail || (legacyChannel === 'email' ? legacyContact : '');
+  const initialPhone = initialPhoneRaw || (legacyChannel === 'phone' ? legacyContact : '');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       phone: initialPhone,
-      email: initialEmailFallback,
       code: '',
       newPassword: '',
     },
@@ -77,15 +71,11 @@ export function ResetPasswordPage() {
 
   const handleResend = async () => {
     const phone = form.getValues('phone');
-    const email = form.getValues('email');
-    if (!phone || !email) return;
+    if (!phone) return;
     setResending(true);
     setResent(false);
     try {
-      await AuthApi.forgotPassword({
-        phone: toE164Egypt(phone),
-        email: email.trim().toLowerCase(),
-      });
+      await AuthApi.forgotPassword({ phone: toE164Egypt(phone) });
       setResent(true);
       setTimeout(() => setResent(false), 2500);
     } catch {
@@ -150,25 +140,6 @@ export function ResetPasswordPage() {
               {form.formState.errors.phone ? (
                 <p className="text-xs text-destructive">{t('auth.phoneInvalid')}</p>
               ) : null}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">
-                {t('auth.email')}{' '}
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({t('common.optional')})
-                </span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder={t('auth.emailPlaceholder')}
-                dir="ltr"
-                invalid={!!form.formState.errors.email}
-                {...form.register('email')}
-              />
             </div>
 
             <div className="space-y-1.5">

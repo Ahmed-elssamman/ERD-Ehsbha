@@ -116,10 +116,6 @@ export class MailerService {
   }
 }
 
-function cryptoRandomId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
 /* ─── Shared layout ────────────────────────────────────────────────────── */
 
 function shell({
@@ -128,12 +124,15 @@ function shell({
   body,
   appName,
   appUrl,
+  hero,
 }: {
   locale: Locale;
   preheader: string;
   body: string;
   appName: string;
   appUrl: string;
+  /** "compact" for transactional mails (reset code), "hero" for welcome. */
+  hero?: 'compact' | 'hero';
 }): string {
   const isAr = locale === 'ar';
   const dir = isAr ? 'rtl' : 'ltr';
@@ -142,6 +141,31 @@ function shell({
   const footerNote = isAr
     ? 'تم إرسال هذه الرسالة لأن لديك حساباً نشطاً.'
     : 'You are receiving this because you have an active account.';
+  const logoUrl = `${appUrl.replace(/\/$/, '')}/icon-512.svg`;
+
+  const heroBlock =
+    hero === 'hero'
+      ? `
+              <td style="background:linear-gradient(135deg,#0b1a4a 0%,#1f3b8b 45%,#2563eb 100%);padding:44px 28px 40px;color:#fff;text-align:center;">
+                <!-- brand logo (hosted SVG; falls back gracefully when blocked) -->
+                <img src="${escapeAttr(logoUrl)}" width="84" height="84" alt="${escapeAttr(appName)}" style="display:inline-block;width:84px;height:84px;border-radius:22px;background:rgba(255,255,255,0.10);padding:6px;margin-bottom:18px;border:0;outline:none;" />
+                <div style="font-size:46px;line-height:1;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase;background:linear-gradient(135deg,#ffffff 0%,#bfdbfe 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:#ffffff;">${escapeHtml(appName)}</div>
+                <div style="margin-top:10px;font-size:14px;letter-spacing:0.04em;opacity:0.92;">${escapeHtml(tagline)}</div>
+              </td>`
+      : `
+              <td style="background:linear-gradient(135deg,#1f3b8b 0%,#2563eb 100%);padding:24px 28px;color:#fff;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td>
+                      <div style="display:inline-flex;align-items:center;gap:10px;">
+                        <span style="display:inline-block;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,0.18);text-align:center;line-height:32px;font-weight:700;">${escapeHtml(appName.charAt(0))}</span>
+                        <span style="font-size:18px;font-weight:700;letter-spacing:-0.01em;">${escapeHtml(appName)}</span>
+                      </div>
+                      <div style="margin-top:4px;font-size:12px;opacity:0.85;">${escapeHtml(tagline)}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>`;
 
   return `<!doctype html>
 <html dir="${dir}" lang="${lang}">
@@ -159,20 +183,7 @@ function shell({
       <tr>
         <td align="center" style="padding:32px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;box-shadow:0 1px 3px rgba(15,23,42,0.06),0 8px 24px rgba(15,23,42,0.06);overflow:hidden;">
-            <tr>
-              <td style="background:linear-gradient(135deg,#1f3b8b 0%,#2563eb 100%);padding:24px 28px;color:#fff;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td>
-                      <div style="display:inline-flex;align-items:center;gap:10px;">
-                        <span style="display:inline-block;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,0.18);text-align:center;line-height:32px;font-weight:700;">${escapeHtml(appName.charAt(0))}</span>
-                        <span style="font-size:18px;font-weight:700;letter-spacing:-0.01em;">${escapeHtml(appName)}</span>
-                      </div>
-                      <div style="margin-top:4px;font-size:12px;opacity:0.85;">${escapeHtml(tagline)}</div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
+            <tr>${heroBlock}
             </tr>
             <tr>
               <td style="padding:32px 28px;">${body}</td>
@@ -267,7 +278,7 @@ function renderWelcomeEmail({ displayName, locale, appName, appUrl }: { displayN
   const preheader = isAr
     ? `حسابك جاهز — سجّل أول رحلة وشوف الأرقام بتنطق.`
     : `Your account is ready — log one trip and see the numbers come alive.`;
-  return shell({ locale, preheader, body, appName, appUrl });
+  return shell({ locale, preheader, body, appName, appUrl, hero: 'hero' });
 }
 
 function escapeHtml(s: string): string {
