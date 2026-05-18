@@ -19,7 +19,7 @@ import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface NavItem {
   to: string;
@@ -47,7 +47,9 @@ const NAV: NavItem[] = [
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const t = useT();
   const location = useLocation();
+  const initialPath = useRef(location.pathname);
   useEffect(() => {
+    if (location.pathname === initialPath.current) return;
     onNavigate?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
@@ -60,6 +62,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <NavLink
               to={to}
               end={to === '/'}
+              onClick={() => onNavigate?.()}
               className={({ isActive }) =>
                 cn(
                   'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',

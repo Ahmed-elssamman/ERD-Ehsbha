@@ -5,10 +5,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { loadEnv } from '../../config/env';
+import { MailerModule } from '../mailer/mailer.module';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    MailerModule,
     JwtModule.registerAsync({
       useFactory: () => {
         const env = loadEnv();

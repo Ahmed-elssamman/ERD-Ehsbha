@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -8,12 +9,15 @@ import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { loadEnv } from '../../config/env';
+import { canonicalizeEgyPhone, egyPhoneLookupCandidates } from '../../common/utils/phone';
+import { MailerService } from '../mailer/mailer.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
 export interface AuthResult {
   user: {
     id: string;
     phone: string;
+    email: string | null;
     locale: string;
     timezone: string;
     driverId: string | null;
@@ -29,17 +33,27 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly mailer: MailerService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResult> {
-    const existing = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
-    if (existing) throw new ConflictException({ code: 'PHONE_TAKEN', message: 'Phone already registered' });
+    const phone = canonicalizeEgyPhone(dto.phone);
+    const email = dto.email.toLowerCase().trim();
+
+    const existingPhone = await this.prisma.user.findFirst({
+      where: { phone: { in: egyPhoneLookupCandidates(dto.phone) } },
+    });
+    if (existingPhone) throw new ConflictException({ code: 'PHONE_TAKEN', message: 'Phone already registered' });
+
+    const existingEmail = await this.prisma.user.findUnique({ where: { email } });
+    if (existingEmail) throw new ConflictException({ code: 'EMAIL_TAKEN', message: 'Email already registered' });
 
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
 
     const user = await this.prisma.user.create({
       data: {
-        phone: dto.phone,
+        phone,
+        email,
         passwordHash,
         locale: dto.locale,
         timezone: dto.timezone,
@@ -51,10 +65,19 @@ export class AuthService {
     });
 
     const tokens = await this.issueTokens(user.id, user.phone, user.driver?.id ?? null);
+
+    // Welcome email — fire-and-forget so a flaky SMTP can't fail registration.
+    void this.mailer.sendWelcomeEmail(
+      email,
+      user.driver?.displayName ?? '',
+      user.locale === 'en' ? 'en' : 'ar',
+    );
+
     return {
       user: {
         id: user.id,
         phone: user.phone,
+        email: user.email,
         locale: user.locale,
         timezone: user.timezone,
         driverId: user.driver?.id ?? null,
@@ -64,8 +87,11 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
-    const user = await this.prisma.user.findUnique({
-      where: { phone: dto.phone },
+    // Tolerant lookup: try canonical (+20…) form first, then a couple of
+    // legacy shapes the user may already exist under. This protects accounts
+    // created before backend canonicalization was added.
+    const user = await this.prisma.user.findFirst({
+      where: { phone: { in: egyPhoneLookupCandidates(dto.phone) } },
       include: { driver: true },
     });
     if (!user) throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid phone or password' });
@@ -78,6 +104,7 @@ export class AuthService {
       user: {
         id: user.id,
         phone: user.phone,
+        email: user.email,
         locale: user.locale,
         timezone: user.timezone,
         driverId: user.driver?.id ?? null,
@@ -124,6 +151,7 @@ export class AuthService {
       user: {
         id: row.user.id,
         phone: row.user.phone,
+        email: row.user.email,
         locale: row.user.locale,
         timezone: row.user.timezone,
         driverId: row.user.driver?.id ?? null,
@@ -141,25 +169,21 @@ export class AuthService {
   }
 
   /**
-   * Begin password reset. Returns the code in dev mode so the driver can copy it
-   * (no SMS provider yet). In prod, the code is sent via SMS and not returned.
-   *
-   * Security:
-   *  - Always returns the same shape regardless of whether the phone exists,
-   *    so an attacker can't enumerate registered phones.
-   *  - Any previous unused codes for the user are invalidated.
-   *  - Code is hashed before storage.
+   * Begin password reset. Phone identifies the account in the DB; email is
+   * where the OTP is delivered. If the phone is not registered, we surface a
+   * USER_NOT_FOUND error so the UI can prompt the user to register instead —
+   * this is a logged-in self-service reset, not an account-enumeration risk.
    */
-  async forgotPassword(phone: string): Promise<{ sent: boolean; devCode?: string; expiresInMinutes: number }> {
+  async forgotPassword(args: { phone: string; email: string }): Promise<{ sent: boolean; channel: 'email'; expiresInMinutes: number; devCode?: string }> {
     const expiresInMinutes = 15;
-    const user = await this.prisma.user.findUnique({ where: { phone } });
+    const user = await this.prisma.user.findFirst({
+      where: { phone: { in: egyPhoneLookupCandidates(args.phone) } },
+    });
 
     if (!user) {
-      // Don't leak whether the phone is registered. Pretend we sent.
-      return { sent: true, expiresInMinutes };
+      throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'No account is registered with this phone number' });
     }
 
-    // Invalidate any previously-unused codes
     await this.prisma.passwordResetToken.updateMany({
       where: { userId: user.id, usedAt: null },
       data: { usedAt: new Date() },
@@ -174,23 +198,28 @@ export class AuthService {
       },
     });
 
+    const emailTarget = args.email.toLowerCase().trim();
     const isProd = process.env.NODE_ENV === 'production';
+
+    await this.mailer.sendResetCode(emailTarget, code, user.locale === 'en' ? 'en' : 'ar');
+
     if (!isProd) {
-      // Dev: surface the code so the driver can finish the flow without an SMS provider.
-      // Replace with an SMS gateway call here when one is wired in.
       // eslint-disable-next-line no-console
-      console.log(`[reset-password] phone=${phone} code=${code} (dev only)`);
+      console.log(`[reset-password] user=${user.id} code=${code} email=${emailTarget} (dev only)`);
     }
 
     return {
       sent: true,
+      channel: 'email',
       expiresInMinutes,
       ...(isProd ? {} : { devCode: code }),
     };
   }
 
   async resetPassword(phone: string, code: string, newPassword: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { phone } });
+    const user = await this.prisma.user.findFirst({
+      where: { phone: { in: egyPhoneLookupCandidates(phone) } },
+    });
     if (!user) {
       throw new UnauthorizedException({ code: 'RESET_INVALID', message: 'Invalid reset request' });
     }

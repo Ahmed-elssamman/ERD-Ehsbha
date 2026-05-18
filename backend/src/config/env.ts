@@ -12,6 +12,22 @@ const EnvSchema = z.object({
   JWT_REFRESH_TTL: z.string().default('30d'),
 
   CORS_ORIGINS: z.string().default('*'),
+
+  // SMTP — leave empty in dev to log the code to the console instead of
+  // actually sending an email.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_SECURE: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform((v) => (typeof v === 'string' ? v.toLowerCase() === 'true' : v)),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('Ehsbha <noreply@ehsebha.modev.me>'),
+  SMTP_REPLY_TO: z.string().optional(),
+
+  APP_PUBLIC_NAME: z.string().default('Ehsbha'),
+  APP_PUBLIC_URL: z.string().default('https://ehsebha.modev.me'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

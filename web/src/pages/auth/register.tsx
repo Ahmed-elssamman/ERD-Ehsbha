@@ -20,6 +20,7 @@ import { EGY_PHONE_REGEX, normalizeEgyPhone, toE164Egypt } from '@/lib/phone';
 const schema = z.object({
   displayName: z.string().min(2).max(80),
   phone: z.string().regex(EGY_PHONE_REGEX),
+  email: z.string().trim().email(),
   password: z.string().min(8).max(128),
 });
 type FormValues = z.infer<typeof schema>;
@@ -38,7 +39,7 @@ export function RegisterPage() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
-    defaultValues: { displayName: '', phone: '', password: '' },
+    defaultValues: { displayName: '', phone: '', email: '', password: '' },
   });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -121,6 +122,24 @@ export function RegisterPage() {
               })()}
               {errors.phone ? (
                 <p className="text-xs text-destructive">{t('auth.phoneInvalid')}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">{t('auth.email')}</Label>
+              <Input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder={t('auth.emailPlaceholder')}
+                dir="ltr"
+                invalid={!!errors.email}
+                {...register('email')}
+              />
+              <p className="text-xs text-muted-foreground">{t('auth.emailHint')}</p>
+              {errors.email ? (
+                <p className="text-xs text-destructive">{t('auth.emailInvalid')}</p>
               ) : null}
             </div>
 

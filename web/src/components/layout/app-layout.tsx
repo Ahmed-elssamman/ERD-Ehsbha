@@ -62,7 +62,7 @@ export function AppLayout() {
         {/* Desktop sidebar */}
         <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-e border-border/70 bg-card/40 backdrop-blur lg:block" aria-label="Primary navigation">
           <div className="flex h-16 items-center px-5">
-            <Logo />
+            <Logo to="/" />
           </div>
           <div className="h-[calc(100dvh-4rem)] overflow-y-auto scrollbar-thin">
             <Sidebar />
@@ -95,7 +95,7 @@ export function AppLayout() {
                     )}
                   </motion.span>
                 </Button>
-                <Logo withText={false} />
+                <Logo withText={false} to="/" />
               </div>
               <div className="flex items-center gap-1">
                 <LangToggle />
@@ -148,7 +148,9 @@ export function AppLayout() {
               aria-label="Navigation"
             >
               <div className="flex h-16 shrink-0 items-center justify-between px-4">
-                <Logo />
+                <div onClick={() => setMobileNavOpen(false)}>
+                  <Logo to="/" />
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"

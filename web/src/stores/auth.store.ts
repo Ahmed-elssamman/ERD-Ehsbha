@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export interface AuthUser {
   id: string;
   phone: string;
+  email?: string | null;
   locale: 'ar' | 'en';
   timezone: string;
   driverId: string | null;

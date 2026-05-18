@@ -49,7 +49,7 @@ export class AuthController {
   @Post('password/forgot')
   @HttpCode(HttpStatus.OK)
   forgot(@Body(new ZodValidationPipe(ForgotPasswordSchema)) dto: ForgotPasswordDto) {
-    return this.auth.forgotPassword(dto.phone);
+    return this.auth.forgotPassword({ phone: dto.phone, email: dto.email });
   }
 
   @Post('password/reset')

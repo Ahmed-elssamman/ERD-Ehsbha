@@ -1,10 +1,17 @@
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/i18n';
 
-export function Logo({ className, withText = true }: { className?: string; withText?: boolean }) {
+interface LogoProps {
+  className?: string;
+  withText?: boolean;
+  to?: string;
+}
+
+export function Logo({ className, withText = true, to }: LogoProps) {
   const { t } = useI18n();
-  return (
-    <div className={cn('inline-flex items-center gap-2', className)}>
+  const content = (
+    <>
       <span
         aria-hidden
         className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-soft"
@@ -15,6 +22,25 @@ export function Logo({ className, withText = true }: { className?: string; withT
         </svg>
       </span>
       {withText ? <span className="text-lg font-bold tracking-tight">{t('app.name')}</span> : null}
-    </div>
+    </>
   );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        aria-label={t('app.name')}
+        className={cn(
+          'inline-flex items-center gap-2 rounded-lg',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'transition-opacity hover:opacity-90 active:opacity-80',
+          className,
+        )}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={cn('inline-flex items-center gap-2', className)}>{content}</div>;
 }

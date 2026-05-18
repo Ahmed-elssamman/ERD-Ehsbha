@@ -5,6 +5,7 @@ import { api, unwrap } from './client';
 export interface AuthUser {
   id: string;
   phone: string;
+  email?: string | null;
   locale: 'ar' | 'en';
   timezone: string;
   driverId: string | null;
@@ -16,14 +17,34 @@ export interface AuthResult {
   refreshToken: string;
 }
 
+export interface ForgotResult {
+  sent: boolean;
+  channel: 'email' | 'sms' | 'none';
+  expiresInMinutes: number;
+  /** Returned only in dev mode so the flow can be exercised without real email/SMS. */
+  devCode?: string;
+}
+
 export const AuthApi = {
-  register: (body: { phone: string; password: string; displayName: string; locale?: 'ar' | 'en'; timezone?: string }) =>
-    api.post('/auth/register', body).then((r) => unwrap<AuthResult>(r.data)),
+  register: (body: {
+    phone: string;
+    email: string;
+    password: string;
+    displayName: string;
+    locale?: 'ar' | 'en';
+    timezone?: string;
+  }) => api.post('/auth/register', body).then((r) => unwrap<AuthResult>(r.data)),
   login: (body: { phone: string; password: string; deviceId?: string }) =>
     api.post('/auth/login', body).then((r) => unwrap<AuthResult>(r.data)),
   refresh: (refreshToken: string) =>
     api.post('/auth/refresh', { refreshToken }).then((r) => unwrap<AuthResult>(r.data)),
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
+  forgotPassword: (body: { phone: string; email: string }) =>
+    api.post('/auth/password/forgot', body).then((r) => unwrap<ForgotResult>(r.data)),
+  resetPassword: (body: { phone: string; code: string; newPassword: string }) =>
+    api.post('/auth/password/reset', body).then((r) => unwrap<{ ok: boolean }>(r.data)),
+  updateMe: (body: { email?: string | null; locale?: 'ar' | 'en'; timezone?: string }) =>
+    api.patch('/me', body).then((r) => unwrap<AuthUser>(r.data)),
 };
 
 /* -------- Driver -------------------------------------------------------- */

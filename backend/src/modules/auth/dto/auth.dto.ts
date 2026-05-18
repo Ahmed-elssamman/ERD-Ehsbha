@@ -4,6 +4,7 @@ const phoneRegex = /^\+?\d{8,15}$/;
 
 export const RegisterSchema = z.object({
   phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+  email: z.string().email('Invalid email'),
   password: z.string().min(8).max(128),
   displayName: z.string().min(2).max(80),
   locale: z.enum(['ar', 'en']).default('ar'),
@@ -28,11 +29,15 @@ export const LogoutSchema = z.object({
 });
 export type LogoutDto = z.infer<typeof LogoutSchema>;
 
+// Forgot password: phone identifies the user in the DB, email is where the OTP is delivered.
+// Both are required.
 export const ForgotPasswordSchema = z.object({
   phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+  email: z.string().email('Invalid email'),
 });
 export type ForgotPasswordDto = z.infer<typeof ForgotPasswordSchema>;
 
+// Reset password: phone identifies the user, plus the OTP code and new password.
 export const ResetPasswordSchema = z.object({
   phone: z.string().regex(phoneRegex, 'Invalid phone number'),
   code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),

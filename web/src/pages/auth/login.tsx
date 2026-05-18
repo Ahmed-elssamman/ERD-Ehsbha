@@ -140,13 +140,21 @@ export function LoginPage() {
               {isSubmitting ? t('common.submitting') : t('auth.loginAction')}
             </Button>
 
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="block w-full text-center text-xs text-muted-foreground hover:text-foreground"
-            >
-              {t('auth.useDemo')} <span dir="ltr" className="num-tabular">— {DEMO.phone}</span>
-            </button>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <button
+                type="button"
+                onClick={fillDemo}
+                className="hover:text-foreground"
+              >
+                {t('auth.useDemo')}
+              </button>
+              <Link
+                to="/forgot-password"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {t('auth.forgotPassword')}
+              </Link>
+            </div>
           </form>
         </CardContent>
         <div className="border-t border-border/60 p-5 sm:p-6">

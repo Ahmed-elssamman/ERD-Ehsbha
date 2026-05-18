@@ -7,6 +7,8 @@ import { NotFoundPage } from '@/pages/not-found';
 
 const LoginPage = lazy(() => import('@/pages/auth/login').then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/auth/register').then((m) => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/forgot-password').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/reset-password').then((m) => ({ default: m.ResetPasswordPage })));
 
 const TripsListPage = lazy(() => import('@/pages/trips/trips-list').then((m) => ({ default: m.TripsListPage })));
 const TripNewPage = lazy(() => import('@/pages/trips/trip-new').then((m) => ({ default: m.TripNewPage })));
@@ -59,6 +61,26 @@ export const router = createBrowserRouter([
       <GuestRoute>
         <PageSuspense>
           <RegisterPage />
+        </PageSuspense>
+      </GuestRoute>
+    ),
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <GuestRoute>
+        <PageSuspense>
+          <ForgotPasswordPage />
+        </PageSuspense>
+      </GuestRoute>
+    ),
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <GuestRoute>
+        <PageSuspense>
+          <ResetPasswordPage />
         </PageSuspense>
       </GuestRoute>
     ),
