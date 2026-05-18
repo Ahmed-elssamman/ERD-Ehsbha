@@ -119,7 +119,7 @@
     "welcomeBack": "مرحباً بعودتك",
     "welcomeBackSubtitle": "سجّل دخولك للاستمرار في متابعة ربحك الحقيقي",
     "phone": "رقم الهاتف",
-    "phonePlaceholder": "+201000000000",
+    "phonePlaceholder": "01XXXXXXXXX",
     "password": "كلمة المرور",
     "displayName": "اسمك",
     "displayNamePlaceholder": "مثال: أحمد علي",
@@ -139,7 +139,7 @@
     "phoneTaken": "هذا الرقم مسجّل بالفعل",
     "showPassword": "إظهار كلمة المرور",
     "hidePassword": "إخفاء كلمة المرور",
-    "demo": "تجريبي: +201000000001 / demo1234",
+    "demo": "تجريبي: 01000000001 / demo1234",
     "useDemo": "استخدم الحساب التجريبي",
     "tagline": "نظام تشغيل ذكي للسائقين"
   },

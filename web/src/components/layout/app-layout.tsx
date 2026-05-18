@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -9,15 +9,34 @@ import { LangToggle } from '@/components/controls/lang-toggle';
 import { Sidebar } from './sidebar';
 import { useAuth } from '@/stores/auth.store';
 import { AuthApi } from '@/lib/api/endpoints';
-import { useT } from '@/i18n';
+import { useI18n, useT } from '@/i18n';
 import { queryClient } from '@/providers/query-provider';
 
 export function AppLayout() {
   const t = useT();
+  const { dir } = useI18n();
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const refreshToken = useAuth((s) => s.refreshToken);
   const clear = useAuth((s) => s.clear);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileNavOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [mobileNavOpen]);
+
+  // Drawer is anchored at `end-0` (right in LTR, left in RTL); the slide-in
+  // direction must match that anchor so it doesn't fly across the screen.
+  const drawerOffscreen = dir === 'rtl' ? '-100%' : '100%';
 
   const handleLogout = async () => {
     try {
@@ -58,11 +77,23 @@ export function AppLayout() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Open menu"
+                  aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
                   aria-expanded={mobileNavOpen}
-                  onClick={() => setMobileNavOpen(true)}
+                  onClick={() => setMobileNavOpen((o) => !o)}
                 >
-                  <Menu className="h-5 w-5" aria-hidden />
+                  <motion.span
+                    key={mobileNavOpen ? 'x' : 'menu'}
+                    initial={{ opacity: 0, rotate: -90, scale: 0.85 }}
+                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="inline-flex"
+                  >
+                    {mobileNavOpen ? (
+                      <X className="h-5 w-5" aria-hidden />
+                    ) : (
+                      <Menu className="h-5 w-5" aria-hidden />
+                    )}
+                  </motion.span>
                 </Button>
                 <Logo withText={false} />
               </div>
@@ -100,22 +131,23 @@ export function AppLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+              className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileNavOpen(false)}
               aria-hidden
             />
             <motion.aside
               key="drawer"
-              initial={{ x: '100%' }}
+              initial={{ x: drawerOffscreen }}
               animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-              className="fixed inset-y-0 end-0 z-50 w-72 max-w-[85vw] border-s border-border/70 bg-card shadow-elevated lg:hidden"
+              exit={{ x: drawerOffscreen }}
+              transition={{ type: 'spring', stiffness: 340, damping: 38, mass: 0.7 }}
+              className="fixed inset-y-0 end-0 z-50 flex w-72 max-w-[85vw] flex-col border-s border-border/70 bg-card shadow-elevated lg:hidden"
               role="dialog"
+              aria-modal="true"
               aria-label="Navigation"
             >
-              <div className="flex h-16 items-center justify-between px-4">
+              <div className="flex h-16 shrink-0 items-center justify-between px-4">
                 <Logo />
                 <Button
                   variant="ghost"
@@ -126,7 +158,7 @@ export function AppLayout() {
                   <X className="h-5 w-5" aria-hidden />
                 </Button>
               </div>
-              <div className="h-[calc(100dvh-4rem)] overflow-y-auto scrollbar-thin">
+              <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
                 <Sidebar onNavigate={() => setMobileNavOpen(false)} />
               </div>
             </motion.aside>

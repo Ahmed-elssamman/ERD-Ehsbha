@@ -15,10 +15,11 @@ import { useI18n } from '@/i18n';
 import { AuthApi } from '@/lib/api/endpoints';
 import { readApiError } from '@/lib/api/client';
 import { useAuth } from '@/stores/auth.store';
+import { EGY_PHONE_REGEX, normalizeEgyPhone, toE164Egypt } from '@/lib/phone';
 
 const schema = z.object({
   displayName: z.string().min(2).max(80),
-  phone: z.string().regex(/^\+?\d{8,15}$/),
+  phone: z.string().regex(EGY_PHONE_REGEX),
   password: z.string().min(8).max(128),
 });
 type FormValues = z.infer<typeof schema>;
@@ -44,7 +45,12 @@ export function RegisterPage() {
     setServerError(null);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo';
-      const result = await AuthApi.register({ ...values, locale, timezone });
+      const result = await AuthApi.register({
+        ...values,
+        phone: toE164Egypt(values.phone),
+        locale,
+        timezone,
+      });
       setSession(result);
       navigate('/', { replace: true });
     } catch (err) {
@@ -93,16 +99,26 @@ export function RegisterPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="phone">{t('auth.phone')}</Label>
-              <Input
-                id="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder={t('auth.phonePlaceholder')}
-                dir="ltr"
-                invalid={!!errors.phone}
-                {...register('phone')}
-              />
+              {(() => {
+                const phoneField = register('phone');
+                return (
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    maxLength={11}
+                    placeholder={t('auth.phonePlaceholder')}
+                    dir="ltr"
+                    invalid={!!errors.phone}
+                    {...phoneField}
+                    onChange={(e) => {
+                      e.target.value = normalizeEgyPhone(e.target.value);
+                      void phoneField.onChange(e);
+                    }}
+                  />
+                );
+              })()}
               {errors.phone ? (
                 <p className="text-xs text-destructive">{t('auth.phoneInvalid')}</p>
               ) : null}

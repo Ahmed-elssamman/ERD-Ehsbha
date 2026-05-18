@@ -119,7 +119,7 @@
     "welcomeBack": "Welcome back",
     "welcomeBackSubtitle": "Log in to keep tracking your real profit",
     "phone": "Phone number",
-    "phonePlaceholder": "+201000000000",
+    "phonePlaceholder": "01XXXXXXXXX",
     "password": "Password",
     "displayName": "Your name",
     "displayNamePlaceholder": "e.g. Ahmed Ali",
@@ -139,7 +139,7 @@
     "phoneTaken": "This phone is already registered",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "demo": "Demo: +201000000001 / demo1234",
+    "demo": "Demo: 01000000001 / demo1234",
     "useDemo": "Use demo account",
     "tagline": "The smart driver operating system"
   },
