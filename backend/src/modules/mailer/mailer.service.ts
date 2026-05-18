@@ -37,16 +37,7 @@ export class MailerService {
    *  - Auto-Submitted/X-Auto-Response-Suppress mark the message as automated
    *    so mailbox auto-responders don't bounce back.
    */
-  private commonHeaders(): Record<string, string> {
-    const supportAddr = this.env.SMTP_REPLY_TO ?? this.env.SMTP_USER ?? '';
-    return {
-      'List-Unsubscribe': supportAddr ? `<mailto:${supportAddr}?subject=unsubscribe>` : '',
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      'Auto-Submitted': 'auto-generated',
-      'X-Auto-Response-Suppress': 'All',
-      'X-Entity-Ref-ID': cryptoRandomId(),
-    };
-  }
+
 
   async sendResetCode(to: string, code: string, locale: Locale = 'ar'): Promise<void> {
     const transporter = this.getTransporter();
@@ -76,7 +67,6 @@ export class MailerService {
         subject,
         text,
         html,
-        headers: this.commonHeaders(),
       });
       this.logger.log(`[mailer] reset code sent to ${to}`);
     } catch (err) {
@@ -117,7 +107,6 @@ export class MailerService {
         subject,
         text,
         html,
-        headers: this.commonHeaders(),
       });
       this.logger.log(`[mailer] welcome sent to ${to}`);
     } catch (err) {
