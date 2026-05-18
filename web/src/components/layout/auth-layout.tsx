@@ -3,9 +3,15 @@ import { motion } from 'framer-motion';
 import { Logo } from '@/components/ui/logo';
 import { ThemeToggle } from '@/components/controls/theme-toggle';
 import { LangToggle } from '@/components/controls/lang-toggle';
+import { FeaturedTestimonials } from '@/components/testimonials/featured-testimonials';
 import { useT } from '@/i18n';
 
-export function AuthLayout({ children }: PropsWithChildren) {
+interface AuthLayoutProps {
+  /** Set to false to hide the featured testimonials strip below the form (default true). */
+  showTestimonials?: boolean;
+}
+
+export function AuthLayout({ children, showTestimonials = true }: PropsWithChildren<AuthLayoutProps>) {
   const t = useT();
   return (
     <div className="relative min-h-dvh overflow-hidden bg-background">
@@ -48,6 +54,11 @@ export function AuthLayout({ children }: PropsWithChildren) {
               </li>
             ))}
           </ul>
+          {showTestimonials ? (
+            <div className="mt-10">
+              <FeaturedTestimonials limit={3} variant="compact" />
+            </div>
+          ) : null}
         </motion.section>
 
         <motion.section
@@ -58,6 +69,17 @@ export function AuthLayout({ children }: PropsWithChildren) {
         >
           <div className="w-full max-w-md">{children}</div>
         </motion.section>
+
+        {showTestimonials ? (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut', delay: 0.15 }}
+            className="lg:col-span-2 lg:hidden"
+          >
+            <FeaturedTestimonials limit={3} variant="compact" />
+          </motion.section>
+        ) : null}
       </main>
     </div>
   );

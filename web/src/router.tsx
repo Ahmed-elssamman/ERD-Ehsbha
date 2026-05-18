@@ -26,6 +26,9 @@ const ProfitSimulatorPage = lazy(() => import('@/pages/simulator/simulator').the
 const NotificationsPage = lazy(() => import('@/pages/notifications/notifications').then((m) => ({ default: m.NotificationsPage })));
 const SettingsPage = lazy(() => import('@/pages/settings/settings').then((m) => ({ default: m.SettingsPage })));
 const GuidePage = lazy(() => import('@/pages/guide/guide').then((m) => ({ default: m.GuidePage })));
+const CommunityPage = lazy(() => import('@/pages/community/community').then((m) => ({ default: m.CommunityPage })));
+const ReviewsPage = lazy(() => import('@/pages/reviews/reviews').then((m) => ({ default: m.ReviewsPage })));
+const SupportPage = lazy(() => import('@/pages/support/support').then((m) => ({ default: m.SupportPage })));
 
 function FullScreenSpinner() {
   return (
@@ -108,6 +111,9 @@ export const router = createBrowserRouter([
       { path: 'profit-simulator', element: lazyRoute(<ProfitSimulatorPage />) },
       { path: 'notifications', element: lazyRoute(<NotificationsPage />) },
       { path: 'guide', element: lazyRoute(<GuidePage />) },
+      { path: 'community', element: lazyRoute(<CommunityPage />) },
+      { path: 'reviews', element: lazyRoute(<ReviewsPage />) },
+      { path: 'support', element: lazyRoute(<SupportPage />) },
       { path: 'settings', element: lazyRoute(<SettingsPage />) },
     ],
   },

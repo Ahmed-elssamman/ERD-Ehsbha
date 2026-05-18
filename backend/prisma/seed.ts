@@ -291,6 +291,8 @@ async function main() {
   console.log('Recomputing aggregates…');
   await recomputeAllAggregates(driverId);
 
+  await seedCommunityAndReviews(driverId, passwordHash);
+
   console.log('\n✓ Seed complete');
   console.log(`Demo login:  phone=+201000000001  password=demo1234`);
 }
@@ -523,6 +525,170 @@ async function recomputeAllAggregates(driverId: string) {
       },
     });
   }
+
+  // (community / reviews seeding moved to dedicated function called from main())
+}
+
+async function seedCommunityAndReviews(driverId: string, passwordHash: string) {
+  console.log('Community posts…');
+  const communityPosts = [
+    {
+      category: 'BEST_HOURS',
+      title: 'أفضل وقت للعمل اكتشفته',
+      body: 'لاحظت إن من 4 المغرب لـ 9 بالليل أعلى دخل بفارق كبير عن باقي اليوم. جربوا تركزوا في الفترة دي وراقبوا الفرق.',
+      likes: 42,
+      dislikes: 1,
+      daysAgo: 1,
+    },
+    {
+      category: 'EXPERIENCE_UBER',
+      title: 'تجربتي مع أوبر بعد سنتين',
+      body: 'أوبر بيدّي رحلات أكتر بس العمولة أعلى. الأفضل تشتغل عليه في الأماكن الزحمة، وفي الأطراف جرّب تطبيق ثاني.',
+      likes: 35,
+      dislikes: 4,
+      daysAgo: 2,
+    },
+    {
+      category: 'EXPERIENCE_INDRIVE',
+      title: 'إن درايف للرحلات الطويلة',
+      body: 'إن درايف ممتاز في المسافات الطويلة لأن العمولة أقل، لكن في كيلومترات فاضية أكتر فخلي بالك من حسبة الربح الحقيقي.',
+      likes: 28,
+      dislikes: 2,
+      daysAgo: 3,
+    },
+    {
+      category: 'FUEL_SAVING',
+      title: 'تقليل السرعة وفر بنزين فعلاً',
+      body: 'من يوم ما خفّضت السرعة على الطريق السريع من 120 لـ 90 لقيت كفاءة البنزين تحسنت بحوالي 15%. جربوا أسبوع وقارنوا.',
+      likes: 67,
+      dislikes: 3,
+      daysAgo: 4,
+    },
+    {
+      category: 'MAINTENANCE_ADVICE',
+      title: 'متجاهلش الفرامل أبداً',
+      body: 'الفرامل أهم حاجة. لو حسيت بأي صوت غريب اتجه فوراً للورشة. تأخير ساعة بيكلفك ضعف.',
+      likes: 51,
+      dislikes: 0,
+      daysAgo: 5,
+    },
+    {
+      category: 'EFFICIENCY_TIPS',
+      title: 'تجنب الرحلات الطويلة جداً',
+      body: 'لاحظت إن رحلات أكتر من 30 كم بيكون صافي ربحها أقل لأن الرجوع غالباً فاضي. ركز على الرحلات المتوسطة.',
+      likes: 44,
+      dislikes: 5,
+      daysAgo: 6,
+    },
+    {
+      category: 'SAFETY_ADVICE',
+      title: 'خد راحة كل ساعتين',
+      body: 'لو هتشتغل أكتر من 8 ساعات، خد بريك 10 دقايق كل ساعتين. التركيز بيقل بسرعة والحوادث بتزيد.',
+      likes: 39,
+      dislikes: 1,
+      daysAgo: 7,
+    },
+    {
+      category: 'WEEKLY_LESSON',
+      title: 'درس الأسبوع: تابع أرقامك',
+      body: 'من غير ما تعرف ربحك الحقيقي مش هتقدر تحسّن. سجّل كل رحلة، حتى لو متعبة، النتيجة بعد شهر هتفرق جداً.',
+      likes: 55,
+      dislikes: 2,
+      daysAgo: 8,
+    },
+    {
+      category: 'OPERATIONAL_MISTAKES',
+      title: 'غلطة كلفتني كتير',
+      body: 'كنت بمشي رحلات بعيدة بدون ما أحسب الكيلومتر الفاضي. النتيجة كانت ربح بسيط رغم التعب. دلوقتي بقيس كل حاجة.',
+      likes: 31,
+      dislikes: 1,
+      daysAgo: 9,
+    },
+    {
+      category: 'BEST_APPS',
+      title: 'ترتيبي للتطبيقات بناءً على تجربتي',
+      body: 'بعد 3 شهور تجربة: إن درايف للمسافات الطويلة، أوبر داخل المدن، توصيل الطلبات وقت الفطار والعشا. نوّع.',
+      likes: 47,
+      dislikes: 6,
+      daysAgo: 10,
+    },
+  ] as const;
+
+  for (const p of communityPosts) {
+    const created = new Date(Date.now() - p.daysAgo * 24 * 3600 * 1000);
+    const score = p.likes - p.dislikes - p.daysAgo * 1.5;
+    await prisma.communityPost.create({
+      data: {
+        driverId,
+        category: p.category as any,
+        title: p.title,
+        body: p.body,
+        likeCount: p.likes,
+        dislikeCount: p.dislikes,
+        trendingScore: score,
+        createdAt: created,
+        updatedAt: created,
+      },
+    });
+  }
+
+  console.log('Featured platform reviews…');
+  // Seed a handful of featured reviews by creating throwaway driver accounts.
+  const featuredReviews = [
+    { name: 'محمد عبد الله', city: 'القاهرة', rating: 5, body: 'إحسبها غيّر طريقة شغلي تماماً. لأول مرة بعرف ربحي الحقيقي بدل ما أحسبه بالتقدير.' },
+    { name: 'أحمد سعيد', city: 'الجيزة', rating: 5, body: 'الكيلومترات الفاضية قلّت عندي بشكل واضح بعد ما بدأت أتابع الأرقام يومياً. التطبيق بيستاهل.' },
+    { name: 'كريم حسن', city: 'الإسكندرية', rating: 5, body: 'تنبيهات الصيانة وفّرت عليّ عطل كبير في الموتور. شغل محترم وبسيط.' },
+    { name: 'يوسف إبراهيم', city: 'القاهرة', rating: 4, body: 'أخيراً فهمت تكلفة الكيلومتر الحقيقية على عربيتي، صار قراري في اختيار الرحلات أوضح.' },
+    { name: 'وليد فؤاد', city: 'المنصورة', rating: 5, body: 'أفضل تطبيق سواقين شفته. التحليلات والتوصيات بتساعد فعلاً، مش مجرد أرقام.' },
+    { name: 'طارق محمود', city: 'القاهرة', rating: 5, body: 'الـ Planner ساعدني أعرف هدفي الشهري وأمشي عليه. ربحي زاد 20% في أول شهر.' },
+  ];
+  for (let i = 0; i < featuredReviews.length; i++) {
+    const r = featuredReviews[i];
+    const phone = `+20100000999${(i + 1).toString().padStart(2, '0')}`;
+    const u = await prisma.user.upsert({
+      where: { phone },
+      update: {},
+      create: {
+        phone,
+        passwordHash,
+        locale: 'ar',
+        timezone: 'Africa/Cairo',
+        driver: { create: { displayName: r.name, baseCity: r.city } },
+      },
+      include: { driver: true },
+    });
+    if (u.driver) {
+      await prisma.platformReview.upsert({
+        where: { driverId: u.driver.id },
+        update: {
+          rating: r.rating,
+          body: r.body,
+          isFeatured: true,
+          isApproved: true,
+        },
+        create: {
+          driverId: u.driver.id,
+          rating: r.rating,
+          body: r.body,
+          isFeatured: true,
+          isApproved: true,
+        },
+      });
+    }
+  }
+
+  // Also leave one review for the main demo driver so they see the "edit your review" path.
+  await prisma.platformReview.upsert({
+    where: { driverId },
+    update: {},
+    create: {
+      driverId,
+      rating: 5,
+      body: 'إحسبها بقت جزء من يومي. الأرقام بتفرق فعلاً لما تكون قدامك بوضوح.',
+      isFeatured: true,
+      isApproved: true,
+    },
+  });
 }
 
 main()

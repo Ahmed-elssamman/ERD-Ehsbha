@@ -74,7 +74,10 @@
     "profitSimulator": "Profit simulator",
     "notifications": "Notifications",
     "settings": "Settings",
-    "guide": "How to use"
+    "guide": "How to use",
+    "community": "Community",
+    "reviews": "Reviews",
+    "support": "Help & support"
   },
   "theme": { "light": "Light", "dark": "Dark", "toggle": "Toggle theme" },
   "pwa": {
@@ -708,6 +711,173 @@
     },
     "periods": { "DAILY": "Daily", "WEEKLY": "Weekly", "MONTHLY": "Monthly" }
   },
+  "community": {
+    "title": "Driver community",
+    "subtitle": "Share what works. Learn from drivers like you.",
+    "newPost": "Share a tip",
+    "writePost": "Write a post",
+    "share": "Share",
+    "publish": "Publish",
+    "publishing": "Publishing…",
+    "shareYourTip": "Share something useful",
+    "shareYourTipBody": "Post a tip, lesson or honest experience that could help another driver. Keep it specific.",
+    "guidelinesTitle": "Community rules",
+    "guidelines": {
+      "useful": "Stay useful — share real numbers, real lessons.",
+      "respectful": "Stay respectful — no insults or attacks.",
+      "noSpam": "No promotions, no spam, no personal contact details.",
+      "noReplies": "There are no replies — keep posts self-contained."
+    },
+    "filters": {
+      "all": "All",
+      "category": "Category",
+      "sort": "Sort"
+    },
+    "sort": {
+      "latest": "Latest",
+      "trending": "Trending",
+      "top": "Top rated"
+    },
+    "tabs": {
+      "all": "All posts",
+      "trending": "Trending",
+      "top": "Top rated",
+      "mine": "My posts"
+    },
+    "empty": "No posts here yet — be the first to share.",
+    "emptyMine": "You haven't shared anything yet.",
+    "loadMore": "Load more",
+    "you": "You",
+    "anonymous": "Driver",
+    "likes": "{count} likes",
+    "dislikes": "{count} dislikes",
+    "like": "Like",
+    "dislike": "Dislike",
+    "delete": "Delete post",
+    "deleteConfirm": "Delete this post?",
+    "deleteConfirmBody": "This can't be undone.",
+    "categories": {
+      "BEST_APPS": "Best apps",
+      "EXPERIENCE_UBER": "Experience with Uber",
+      "EXPERIENCE_INDRIVE": "Experience with inDrive",
+      "EXPERIENCE_DIDI": "Experience with DiDi",
+      "EXPERIENCE_OTHER": "Experience with other apps",
+      "FUEL_SAVING": "Fuel-saving tips",
+      "BEST_HOURS": "Best work hours",
+      "MAINTENANCE_ADVICE": "Maintenance advice",
+      "EFFICIENCY_TIPS": "Driving efficiency tips",
+      "OPERATIONAL_MISTAKES": "Operational mistakes",
+      "WEEKLY_LESSON": "Weekly lessons",
+      "SAFETY_ADVICE": "Safety advice",
+      "GENERAL": "General"
+    },
+    "field": {
+      "category": "Category",
+      "title": "Title",
+      "titlePlaceholder": "Short, clear title",
+      "body": "Your insight",
+      "bodyPlaceholder": "Share what worked, what didn't, and what other drivers should know."
+    },
+    "errors": {
+      "titleShort": "Title must be at least 3 characters",
+      "bodyShort": "Tell us a bit more — at least 10 characters"
+    },
+    "trustBadge": "Real drivers, real experiences"
+  },
+  "reviews": {
+    "title": "What drivers say",
+    "subtitle": "Honest reviews from drivers using Ehsbha every day",
+    "averageRating": "Average rating",
+    "totalReviews": "{count} drivers reviewed",
+    "totalReviewsOne": "1 driver reviewed",
+    "writeReview": "Write a review",
+    "editReview": "Edit your review",
+    "yourReview": "Your review",
+    "saveReview": "Save review",
+    "updateReview": "Update review",
+    "saving": "Saving…",
+    "saved": "Thanks for your review!",
+    "deleteReview": "Delete review",
+    "deleteConfirm": "Delete your review?",
+    "rating": "Your rating",
+    "ratingHint": "Tap to choose 1–5 stars",
+    "rateLabel": "Rate {n} of 5 stars",
+    "stars": "{n} stars",
+    "starsOne": "1 star",
+    "field": {
+      "title": "Title (optional)",
+      "titlePlaceholder": "A short headline for your review",
+      "body": "How has Ehsbha helped you?",
+      "bodyPlaceholder": "Share what changed for you — profit, mileage, decisions, anything."
+    },
+    "errors": {
+      "ratingRequired": "Pick a star rating",
+      "bodyShort": "Tell us a bit more — at least 10 characters"
+    },
+    "filterByRating": "Filter by rating",
+    "allRatings": "All ratings",
+    "empty": "No reviews yet",
+    "featuredTitle": "Drivers trust Ehsbha",
+    "featuredSubtitle": "What real drivers say after using it",
+    "viewAll": "View all reviews"
+  },
+  "support": {
+    "title": "Help & support",
+    "subtitle": "Report a bug, request a feature, or send us feedback",
+    "newTicket": "New request",
+    "submit": "Submit",
+    "submitting": "Sending…",
+    "submitted": "Thanks — we've got it. We'll be in touch.",
+    "myTickets": "My requests",
+    "noTickets": "No requests yet",
+    "noTicketsBody": "Found a bug or have an idea? Tell us — every message is read.",
+    "introTitle": "We listen to every message",
+    "introBody": "Ehsbha gets better with your feedback. Bug reports, feature requests, and ideas are all welcome.",
+    "categories": {
+      "BUG": "Bug",
+      "FEATURE_REQUEST": "Feature request",
+      "IMPROVEMENT": "Improvement",
+      "QUESTION": "Question",
+      "OTHER": "Other"
+    },
+    "categoryHints": {
+      "BUG": "Something broken or behaving wrong",
+      "FEATURE_REQUEST": "A new tool or capability you'd love",
+      "IMPROVEMENT": "Make an existing feature better",
+      "QUESTION": "Ask us anything",
+      "OTHER": "Anything else"
+    },
+    "statuses": {
+      "OPEN": "Open",
+      "IN_REVIEW": "In review",
+      "PLANNED": "Planned",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "field": {
+      "category": "Type",
+      "subject": "Subject",
+      "subjectPlaceholder": "Short summary",
+      "body": "Details",
+      "bodyPlaceholder": "What happened, what you expected, and any steps to reproduce."
+    },
+    "errors": {
+      "subjectShort": "Subject must be at least 3 characters",
+      "bodyShort": "Tell us a bit more — at least 10 characters"
+    },
+    "adminNote": "Our note",
+    "close": "Close request",
+    "viewDetails": "View details",
+    "trustNoteTitle": "Your feedback shapes Ehsbha",
+    "trustNoteBody": "Every report and idea goes directly to the team."
+  },
+  "trust": {
+    "growingTitle": "Ehsbha keeps getting better",
+    "growingBody": "We're continuously improving — new tools, sharper insights, and ideas straight from drivers like you. Your feedback shapes the next release.",
+    "shareIdea": "Share an idea",
+    "joinCommunity": "Join the community",
+    "badge": "Continuously evolving"
+  },
   "errors": {
     "VALIDATION_ERROR": "Some fields are invalid",
     "INVALID_CREDENTIALS": "Wrong phone or password",
@@ -725,6 +895,11 @@
     "EXPENSE_NOT_FOUND": "Expense not found",
     "GOAL_NOT_FOUND": "Goal not found",
     "AREA_NOT_FOUND": "Area not found",
+    "POST_NOT_FOUND": "Post not found",
+    "REVIEW_EXISTS": "You already have a review — edit it instead",
+    "REVIEW_NOT_FOUND": "Review not found",
+    "TICKET_NOT_FOUND": "Request not found",
+    "FORBIDDEN": "You don't have permission to do that",
     "UNKNOWN": "Something went wrong"
   }
 }

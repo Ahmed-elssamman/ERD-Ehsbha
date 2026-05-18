@@ -14,6 +14,9 @@ import {
   Bell,
   Settings,
   BookOpen,
+  Users,
+  Star,
+  LifeBuoy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -40,6 +43,9 @@ const NAV: NavItem[] = [
   { to: '/best-hours', labelKey: 'nav.bestHours', Icon: Clock },
   { to: '/profit-simulator', labelKey: 'nav.profitSimulator', Icon: Sigma },
   { to: '/notifications', labelKey: 'nav.notifications', Icon: Bell },
+  { to: '/community', labelKey: 'nav.community', Icon: Users },
+  { to: '/reviews', labelKey: 'nav.reviews', Icon: Star },
+  { to: '/support', labelKey: 'nav.support', Icon: LifeBuoy },
   { to: '/guide', labelKey: 'nav.guide', Icon: BookOpen },
   { to: '/settings', labelKey: 'nav.settings', Icon: Settings },
 ];

@@ -1,4 +1,12 @@
-import { api, unwrap } from './client';
+import axios from 'axios';
+import { api, apiBaseUrl, unwrap } from './client';
+
+/** A vanilla axios instance for endpoints that should not send Authorization. */
+const publicApi = axios.create({
+  baseURL: apiBaseUrl,
+  timeout: 15_000,
+  headers: { 'Content-Type': 'application/json' },
+});
 
 /* -------- Auth ---------------------------------------------------------- */
 
@@ -557,4 +565,176 @@ export const NotificationsApi = {
   list: (params?: { cursor?: string; limit?: number }) =>
     api.get('/notifications', { params }).then((r) => unwrap<{ items: AppNotification[]; nextCursor: string | null }>(r.data)),
   markRead: (id: string) => api.post(`/notifications/${id}/read`),
+};
+
+/* -------- Community ----------------------------------------------------- */
+
+export type CommunityCategory =
+  | 'BEST_APPS'
+  | 'EXPERIENCE_UBER'
+  | 'EXPERIENCE_INDRIVE'
+  | 'EXPERIENCE_DIDI'
+  | 'EXPERIENCE_OTHER'
+  | 'FUEL_SAVING'
+  | 'BEST_HOURS'
+  | 'MAINTENANCE_ADVICE'
+  | 'EFFICIENCY_TIPS'
+  | 'OPERATIONAL_MISTAKES'
+  | 'WEEKLY_LESSON'
+  | 'SAFETY_ADVICE'
+  | 'GENERAL';
+
+export type CommunitySort = 'latest' | 'trending' | 'top';
+export type ReactionKind = 'LIKE' | 'DISLIKE';
+
+export interface CommunityPostAuthor {
+  id: string;
+  displayName: string;
+  baseCity: string | null;
+}
+
+export interface CommunityPost {
+  id: string;
+  category: CommunityCategory;
+  title: string;
+  body: string;
+  likeCount: number;
+  dislikeCount: number;
+  createdAt: string;
+  author: CommunityPostAuthor;
+  myReaction: ReactionKind | null;
+  isOwn: boolean;
+}
+
+export interface CommunityListResponse {
+  items: CommunityPost[];
+  nextCursor: string | null;
+}
+
+export interface CreatePostInput {
+  category: CommunityCategory;
+  title: string;
+  body: string;
+}
+
+export interface ListPostsParams {
+  cursor?: string;
+  limit?: number;
+  category?: CommunityCategory;
+  sort?: CommunitySort;
+  mine?: boolean;
+}
+
+export const CommunityApi = {
+  list: (params?: ListPostsParams) =>
+    api
+      .get('/community/posts', { params })
+      .then((r) => unwrap<CommunityListResponse>(r.data)),
+  create: (body: CreatePostInput) =>
+    api.post('/community/posts', body).then((r) => unwrap<CommunityPost>(r.data)),
+  react: (id: string, kind: ReactionKind) =>
+    api.post(`/community/posts/${id}/react`, { kind }).then((r) => unwrap<CommunityPost>(r.data)),
+  remove: (id: string) => api.delete(`/community/posts/${id}`),
+};
+
+/* -------- Reviews ------------------------------------------------------- */
+
+export interface PlatformReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  createdAt: string;
+  author: {
+    id?: string;
+    displayName: string;
+    baseCity: string | null;
+  };
+}
+
+export interface ReviewsSummary {
+  count: number;
+  averageRating: number;
+  distribution: Record<'1' | '2' | '3' | '4' | '5', number>;
+}
+
+export interface ReviewsListResponse {
+  items: PlatformReview[];
+  nextCursor: string | null;
+}
+
+export interface MyReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertReviewInput {
+  rating: number;
+  title?: string;
+  body: string;
+}
+
+export const ReviewsApi = {
+  list: (params?: { cursor?: string; limit?: number; rating?: number }) =>
+    api.get('/reviews', { params }).then((r) => unwrap<ReviewsListResponse>(r.data)),
+  summary: () => api.get('/reviews/summary').then((r) => unwrap<ReviewsSummary>(r.data)),
+  mine: () => api.get('/reviews/me').then((r) => unwrap<MyReview | null>(r.data)),
+  upsert: (body: UpsertReviewInput) =>
+    api.put('/reviews/me', body).then((r) => unwrap<MyReview>(r.data)),
+  remove: () => api.delete('/reviews/me'),
+};
+
+/** Public testimonial endpoints — used on login/register/marketing surfaces (no auth). */
+export const PublicReviewsApi = {
+  featured: (limit = 6) =>
+    publicApi
+      .get('/public/reviews/featured', { params: { limit } })
+      .then((r) => unwrap<PlatformReview[]>(r.data)),
+  summary: () => publicApi.get('/public/reviews/summary').then((r) => unwrap<ReviewsSummary>(r.data)),
+};
+
+/* -------- Support ------------------------------------------------------- */
+
+export type TicketCategory =
+  | 'BUG'
+  | 'FEATURE_REQUEST'
+  | 'IMPROVEMENT'
+  | 'QUESTION'
+  | 'OTHER';
+
+export type TicketStatus = 'OPEN' | 'IN_REVIEW' | 'PLANNED' | 'RESOLVED' | 'CLOSED';
+
+export interface SupportTicket {
+  id: string;
+  category: TicketCategory;
+  subject: string;
+  body: string;
+  status: TicketStatus;
+  adminNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportTicketListResponse {
+  items: SupportTicket[];
+  nextCursor: string | null;
+}
+
+export interface CreateTicketInput {
+  category: TicketCategory;
+  subject: string;
+  body: string;
+}
+
+export const SupportApi = {
+  list: (params?: { cursor?: string; limit?: number }) =>
+    api.get('/support/tickets', { params }).then((r) => unwrap<SupportTicketListResponse>(r.data)),
+  get: (id: string) => api.get(`/support/tickets/${id}`).then((r) => unwrap<SupportTicket>(r.data)),
+  create: (body: CreateTicketInput) =>
+    api.post('/support/tickets', body).then((r) => unwrap<SupportTicket>(r.data)),
+  close: (id: string) => api.post(`/support/tickets/${id}/close`),
 };

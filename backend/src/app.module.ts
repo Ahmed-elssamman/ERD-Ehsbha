@@ -20,6 +20,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SyncModule } from './modules/sync/sync.module';
 import { HealthModule } from './modules/health/health.module';
 import { OdometerModule } from './modules/odometer/odometer.module';
+import { CommunityModule } from './modules/community/community.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { SupportModule } from './modules/support/support.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { OdometerModule } from './modules/odometer/odometer.module';
     SyncModule,
     HealthModule,
     OdometerModule,
+    CommunityModule,
+    ReviewsModule,
+    SupportModule,
   ],
 })
 export class AppModule {}

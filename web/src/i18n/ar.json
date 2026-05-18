@@ -74,7 +74,10 @@
     "profitSimulator": "محاكي الأرباح",
     "notifications": "الإشعارات",
     "settings": "الإعدادات",
-    "guide": "طريقة الاستخدام"
+    "guide": "طريقة الاستخدام",
+    "community": "المجتمع",
+    "reviews": "التقييمات",
+    "support": "الدعم والمساعدة"
   },
   "theme": { "light": "فاتح", "dark": "داكن", "toggle": "تبديل المظهر" },
   "pwa": {
@@ -708,6 +711,173 @@
     },
     "periods": { "DAILY": "يومي", "WEEKLY": "أسبوعي", "MONTHLY": "شهري" }
   },
+  "community": {
+    "title": "مجتمع السائقين",
+    "subtitle": "شارك تجربتك. واتعلم من سواقين زيّك.",
+    "newPost": "شارك نصيحة",
+    "writePost": "اكتب منشور",
+    "share": "نشر",
+    "publish": "نشر",
+    "publishing": "جاري النشر…",
+    "shareYourTip": "شارك حاجة مفيدة",
+    "shareYourTipBody": "اكتب نصيحة أو درس أو تجربة حقيقية ممكن تفيد سواق تاني. خليها واضحة ومحددة.",
+    "guidelinesTitle": "قواعد المجتمع",
+    "guidelines": {
+      "useful": "خلي كلامك مفيد — أرقام حقيقية ودروس واقعية.",
+      "respectful": "احترم الجميع — بدون إهانات أو هجوم.",
+      "noSpam": "ممنوع الإعلانات أو السبام أو الأرقام الشخصية.",
+      "noReplies": "مفيش ردود على المنشورات — خلّي منشورك مستقل وكامل."
+    },
+    "filters": {
+      "all": "الكل",
+      "category": "التصنيف",
+      "sort": "الترتيب"
+    },
+    "sort": {
+      "latest": "الأحدث",
+      "trending": "الأكثر تفاعلاً",
+      "top": "الأعلى تقييماً"
+    },
+    "tabs": {
+      "all": "كل المنشورات",
+      "trending": "الأكثر تفاعلاً",
+      "top": "الأعلى تقييماً",
+      "mine": "منشوراتي"
+    },
+    "empty": "مفيش منشورات هنا لسه — كن أول واحد يشارك.",
+    "emptyMine": "لسه ما شاركتش حاجة.",
+    "loadMore": "تحميل المزيد",
+    "you": "أنت",
+    "anonymous": "سائق",
+    "likes": "{count} إعجاب",
+    "dislikes": "{count} عدم إعجاب",
+    "like": "إعجاب",
+    "dislike": "عدم إعجاب",
+    "delete": "حذف المنشور",
+    "deleteConfirm": "حذف هذا المنشور؟",
+    "deleteConfirmBody": "لا يمكن التراجع.",
+    "categories": {
+      "BEST_APPS": "أفضل التطبيقات",
+      "EXPERIENCE_UBER": "تجربتي مع أوبر",
+      "EXPERIENCE_INDRIVE": "تجربتي مع إن درايف",
+      "EXPERIENCE_DIDI": "تجربتي مع ديدي",
+      "EXPERIENCE_OTHER": "تجربتي مع تطبيقات أخرى",
+      "FUEL_SAVING": "نصائح توفير البنزين",
+      "BEST_HOURS": "أفضل ساعات العمل",
+      "MAINTENANCE_ADVICE": "نصائح الصيانة",
+      "EFFICIENCY_TIPS": "نصائح كفاءة القيادة",
+      "OPERATIONAL_MISTAKES": "أخطاء تشغيلية",
+      "WEEKLY_LESSON": "دروس الأسبوع",
+      "SAFETY_ADVICE": "نصائح السلامة",
+      "GENERAL": "عام"
+    },
+    "field": {
+      "category": "التصنيف",
+      "title": "العنوان",
+      "titlePlaceholder": "عنوان قصير وواضح",
+      "body": "تجربتك أو نصيحتك",
+      "bodyPlaceholder": "اكتب الحاجة اللي اشتغلت معاك، أو الغلطة اللي ممكن تتفادى، وأي تفصيلة تساعد بقية السواقين."
+    },
+    "errors": {
+      "titleShort": "العنوان لازم 3 أحرف على الأقل",
+      "bodyShort": "وضّح أكتر — 10 أحرف على الأقل"
+    },
+    "trustBadge": "سواقين حقيقيين، تجارب حقيقية"
+  },
+  "reviews": {
+    "title": "آراء السائقين",
+    "subtitle": "تقييمات صادقة من سواقين بيستخدموا إحسبها كل يوم",
+    "averageRating": "متوسط التقييم",
+    "totalReviews": "{count} سائق قيّموا التطبيق",
+    "totalReviewsOne": "سائق واحد قيّم التطبيق",
+    "writeReview": "اكتب تقييمك",
+    "editReview": "تعديل تقييمك",
+    "yourReview": "تقييمك",
+    "saveReview": "حفظ التقييم",
+    "updateReview": "تحديث التقييم",
+    "saving": "جاري الحفظ…",
+    "saved": "شكراً على تقييمك!",
+    "deleteReview": "حذف التقييم",
+    "deleteConfirm": "حذف تقييمك؟",
+    "rating": "تقييمك",
+    "ratingHint": "اضغط لاختيار من 1 لـ 5 نجوم",
+    "rateLabel": "تقييم {n} من 5",
+    "stars": "{n} نجوم",
+    "starsOne": "نجمة واحدة",
+    "field": {
+      "title": "عنوان (اختياري)",
+      "titlePlaceholder": "عنوان قصير لتقييمك",
+      "body": "إحسبها ساعدتك إزاي؟",
+      "bodyPlaceholder": "احكي إيه اللي اتغير بالنسبالك — الأرباح، المسافات، القرارات، أي حاجة."
+    },
+    "errors": {
+      "ratingRequired": "اختر تقييم بالنجوم",
+      "bodyShort": "وضّح أكتر — 10 أحرف على الأقل"
+    },
+    "filterByRating": "فلترة حسب التقييم",
+    "allRatings": "كل التقييمات",
+    "empty": "مفيش تقييمات لسه",
+    "featuredTitle": "السواقين بيثقوا في إحسبها",
+    "featuredSubtitle": "آراء سائقين حقيقيين بعد استخدام التطبيق",
+    "viewAll": "عرض كل التقييمات"
+  },
+  "support": {
+    "title": "الدعم والمساعدة",
+    "subtitle": "أبلغ عن مشكلة، اقترح ميزة، أو شارك ملاحظاتك",
+    "newTicket": "طلب جديد",
+    "submit": "إرسال",
+    "submitting": "جاري الإرسال…",
+    "submitted": "شكراً — وصلنا الطلب وحنرجع لك.",
+    "myTickets": "طلباتي",
+    "noTickets": "مفيش طلبات",
+    "noTicketsBody": "لقيت مشكلة؟ عندك فكرة؟ ابعتها — بنقرأ كل رسالة.",
+    "introTitle": "بنسمع كل رسالة",
+    "introBody": "إحسبها بتتحسّن بملاحظاتك. تقارير الأخطاء، الاقتراحات، والأفكار كلها مرحب بيها.",
+    "categories": {
+      "BUG": "مشكلة",
+      "FEATURE_REQUEST": "طلب ميزة",
+      "IMPROVEMENT": "تحسين",
+      "QUESTION": "سؤال",
+      "OTHER": "أخرى"
+    },
+    "categoryHints": {
+      "BUG": "حاجة مكسورة أو شغالة غلط",
+      "FEATURE_REQUEST": "أداة جديدة أو إمكانية حابب نضيفها",
+      "IMPROVEMENT": "تحسين لميزة موجودة",
+      "QUESTION": "أي سؤال",
+      "OTHER": "أي حاجة تانية"
+    },
+    "statuses": {
+      "OPEN": "جديد",
+      "IN_REVIEW": "تحت المراجعة",
+      "PLANNED": "في الخطة",
+      "RESOLVED": "تم الحل",
+      "CLOSED": "مغلق"
+    },
+    "field": {
+      "category": "النوع",
+      "subject": "العنوان",
+      "subjectPlaceholder": "ملخص قصير",
+      "body": "التفاصيل",
+      "bodyPlaceholder": "إيه اللي حصل، وإيه اللي توقعته، وإزاي نقدر نكرر المشكلة."
+    },
+    "errors": {
+      "subjectShort": "العنوان لازم 3 أحرف على الأقل",
+      "bodyShort": "وضّح أكتر — 10 أحرف على الأقل"
+    },
+    "adminNote": "ردنا",
+    "close": "إغلاق الطلب",
+    "viewDetails": "التفاصيل",
+    "trustNoteTitle": "ملاحظاتك بتشكّل إحسبها",
+    "trustNoteBody": "كل تقرير وكل فكرة بتروح للفريق على طول."
+  },
+  "trust": {
+    "growingTitle": "إحسبها بيتحسّن باستمرار",
+    "growingBody": "بنطوّر التطبيق باستمرار — أدوات جديدة، تحليلات أدق، وأفكار جاية من سواقين زيّك. ملاحظاتك بتشكّل النسخة الجاية.",
+    "shareIdea": "شارك فكرة",
+    "joinCommunity": "انضم للمجتمع",
+    "badge": "في تطوير مستمر"
+  },
   "errors": {
     "VALIDATION_ERROR": "بعض الحقول غير صالحة",
     "INVALID_CREDENTIALS": "رقم الهاتف أو كلمة المرور غير صحيحة",
@@ -725,6 +895,11 @@
     "EXPENSE_NOT_FOUND": "المصروف غير موجود",
     "GOAL_NOT_FOUND": "الهدف غير موجود",
     "AREA_NOT_FOUND": "المنطقة غير موجودة",
+    "POST_NOT_FOUND": "المنشور غير موجود",
+    "REVIEW_EXISTS": "عندك تقييم بالفعل — عدّله بدل ما تضيف جديد",
+    "REVIEW_NOT_FOUND": "التقييم غير موجود",
+    "TICKET_NOT_FOUND": "الطلب غير موجود",
+    "FORBIDDEN": "ليس لديك صلاحية للقيام بهذا",
     "UNKNOWN": "حدث خطأ ما"
   }
 }

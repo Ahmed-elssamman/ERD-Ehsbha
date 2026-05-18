@@ -35,6 +35,8 @@ import { ForecastCard } from './forecast-card';
 import { ScoreCard } from './score-card';
 import { RecentTrips } from './recent-trips';
 import { AnimatedNumber } from './animated-number';
+import { FeaturedTestimonials } from '@/components/testimonials/featured-testimonials';
+import { GrowingBanner } from '@/components/trust/growing-banner';
 
 export function DashboardPage() {
   const { t, locale } = useI18n();
@@ -232,6 +234,10 @@ export function DashboardPage() {
           <ScoreCard data={scoreQuery.data} loading={scoreQuery.isLoading} />
         </div>
       </section>
+
+      <FeaturedTestimonials limit={3} />
+
+      <GrowingBanner />
     </div>
   );
 }
