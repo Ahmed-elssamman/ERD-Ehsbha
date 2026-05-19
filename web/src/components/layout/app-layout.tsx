@@ -34,9 +34,9 @@ export function AppLayout() {
     };
   }, [mobileNavOpen]);
 
-  // Drawer is anchored at `end-0` (right in LTR, left in RTL); the slide-in
-  // direction must match that anchor so it doesn't fly across the screen.
-  const drawerOffscreen = dir === 'rtl' ? '-100%' : '100%';
+  // Drawer is anchored at `start-0` (left in LTR, right in RTL) — same side
+  // as the hamburger trigger, so it slides in from where the user tapped.
+  const drawerOffscreen = dir === 'rtl' ? '100%' : '-100%';
 
   const handleLogout = async () => {
     try {
@@ -56,11 +56,11 @@ export function AppLayout() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground focus:shadow-elevated"
       >
-        Skip to content
+        {t('common.skipToContent')}
       </a>
       <div className="flex min-h-dvh">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-e border-border/70 bg-card/40 backdrop-blur lg:block" aria-label="Primary navigation">
+        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-e border-border/70 bg-card/40 backdrop-blur lg:block" aria-label={t('common.primaryNavigation')}>
           <div className="flex h-16 items-center px-5">
             <Logo to="/" />
           </div>
@@ -77,7 +77,7 @@ export function AppLayout() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+                  aria-label={mobileNavOpen ? t('common.closeMenu') : t('common.openMenu')}
                   aria-expanded={mobileNavOpen}
                   onClick={() => setMobileNavOpen((o) => !o)}
                 >
@@ -142,10 +142,10 @@ export function AppLayout() {
               animate={{ x: 0 }}
               exit={{ x: drawerOffscreen }}
               transition={{ type: 'spring', stiffness: 340, damping: 38, mass: 0.7 }}
-              className="fixed inset-y-0 end-0 z-50 flex w-72 max-w-[85vw] flex-col border-s border-border/70 bg-card shadow-elevated lg:hidden"
+              className="fixed inset-y-0 start-0 z-50 flex w-72 max-w-[85vw] flex-col border-e border-border/70 bg-card shadow-elevated lg:hidden"
               role="dialog"
               aria-modal="true"
-              aria-label="Navigation"
+              aria-label={t('common.navigation')}
             >
               <div className="flex h-16 shrink-0 items-center justify-between px-4">
                 <div onClick={() => setMobileNavOpen(false)}>
@@ -154,7 +154,7 @@ export function AppLayout() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Close menu"
+                  aria-label={t('common.closeMenu')}
                   onClick={() => setMobileNavOpen(false)}
                 >
                   <X className="h-5 w-5" aria-hidden />

@@ -44,6 +44,11 @@
     "clear": "مسح",
     "close": "إغلاق",
     "open": "فتح",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "skipToContent": "تخطّي إلى المحتوى",
+    "primaryNavigation": "التنقل الرئيسي",
+    "navigation": "التنقل",
     "confirm": "تأكيد",
     "confirmDelete": "هل تريد الحذف؟",
     "confirmDeleteBody": "لا يمكن التراجع عن هذا الإجراء.",
@@ -345,7 +350,30 @@
     "kmSince": "كم منذ آخر صيانة",
     "daysSince": "يوم منذ آخر صيانة",
     "neverServiced": "لم يتم صيانته بعد",
-    "addVehicleFirst": "أضف مركبة من الإعدادات أولاً"
+    "addVehicleFirst": "أضف مركبة من الإعدادات أولاً",
+    "catalog": {
+      "ENGINE_OIL": "زيت المحرك",
+      "OIL_FILTER": "فلتر الزيت",
+      "AIR_FILTER": "فلتر الهواء",
+      "FUEL_FILTER": "فلتر البنزين",
+      "CABIN_FILTER": "فلتر مكيف المقصورة",
+      "BRAKES_FRONT": "فرامل أمامية",
+      "BRAKES_REAR": "فرامل خلفية",
+      "BRAKE_FLUID": "زيت الفرامل",
+      "TIRES": "الإطارات",
+      "TIRE_ROTATION": "تدوير الإطارات",
+      "WHEEL_ALIGNMENT": "ضبط زوايا الإطارات",
+      "CHAIN": "الجنزير",
+      "BATTERY": "البطارية",
+      "COOLANT": "ماء الردياتير (الكولانت)",
+      "SPARK_PLUGS": "البوجيهات",
+      "TIMING_BELT": "طقم الكتينة",
+      "TRANSMISSION_FLUID": "زيت الفتيس",
+      "AC_SERVICE": "صيانة المكيف",
+      "WIPERS": "مساحات الزجاج",
+      "SUSPENSION": "العفشة (المساعدات)",
+      "ALTERNATOR": "الدينمو"
+    }
   },
   "guide": {
     "title": "طريقة استخدام احسبها",
@@ -900,6 +928,12 @@
     "REVIEW_NOT_FOUND": "التقييم غير موجود",
     "TICKET_NOT_FOUND": "الطلب غير موجود",
     "FORBIDDEN": "ليس لديك صلاحية للقيام بهذا",
-    "UNKNOWN": "حدث خطأ ما"
+    "UNKNOWN": "حدث خطأ ما",
+    "routeTitle": "حدث خطأ أثناء تحميل هذه الصفحة",
+    "routeBody": "تعذّر تحميل هذا الجزء من التطبيق. تحقق من اتصالك ثم حاول مجدداً.",
+    "routeRetry": "حاول مجدداً",
+    "routeHome": "العودة للرئيسية",
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundBody": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها."
   }
 }

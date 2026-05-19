@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { useI18n } from '@/i18n';
+import { useI18n, useMaintenanceItemLabel } from '@/i18n';
 import { MaintenanceApi } from '@/lib/api/endpoints';
 import { formatDate, formatKm, formatMoney, formatNumber } from '@/lib/format';
 import { toDateInputValue } from '@/lib/time';
@@ -41,6 +41,7 @@ type RecordForm = z.input<typeof recordSchema>;
 
 export function MaintenancePage() {
   const { t, locale } = useI18n();
+  const itemLabel = useMaintenanceItemLabel();
   const { vehicles, selectedId, setSelectedId, selected, isLoading: vehLoading } = useVehicleSelector();
   const [openLog, setOpenLog] = useState(false);
 
@@ -117,7 +118,7 @@ export function MaintenancePage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{row.item.name}</span>
+                      <span className="font-medium">{itemLabel(row.item)}</span>
                       <Badge className={cn(STATUS_STYLES[row.status])}>
                         {t(`maintenance.status.${row.status}`)}
                       </Badge>
@@ -156,7 +157,7 @@ export function MaintenancePage() {
               {recordsQ.data.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div>
-                    <p className="font-medium">{r.maintenanceItem?.name ?? '—'}</p>
+                    <p className="font-medium">{itemLabel(r.maintenanceItem) || '—'}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(r.performedAt, locale)} · {formatKm(Number(r.odometerMeters), locale)} km
                     </p>
@@ -191,6 +192,7 @@ function RecordDialog({
   currentOdoKm: number;
 }) {
   const { t } = useI18n();
+  const itemLabel = useMaintenanceItemLabel();
   const qc = useQueryClient();
   const itemsQ = useQuery({ queryKey: ['maintenance', 'items'], queryFn: MaintenanceApi.items, enabled: open });
 
@@ -252,11 +254,14 @@ function RecordDialog({
             <Label htmlFor="maintenanceItemId">{t('maintenance.field.item')}</Label>
             <Select id="maintenanceItemId" {...register('maintenanceItemId')} invalid={!!errors.maintenanceItemId}>
               <option value="" disabled>—</option>
-              {itemsQ.data?.map((it) => (
-                <option key={it.id} value={it.id}>
-                  {it.name}
-                </option>
-              ))}
+              {itemsQ.data
+                ?.slice()
+                .sort((a, b) => itemLabel(a).localeCompare(itemLabel(b)))
+                .map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {itemLabel(it)}
+                  </option>
+                ))}
             </Select>
           </div>
           <div className="space-y-1.5">

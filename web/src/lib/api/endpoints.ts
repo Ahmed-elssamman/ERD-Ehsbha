@@ -325,7 +325,9 @@ export const FuelApi = {
 
 export interface MaintenanceItem {
   id: string;
-  key: string;
+  /** Stable identifier (e.g. ENGINE_OIL) used as the i18n key for the display name. */
+  code: string;
+  /** English fallback name from the backend catalog. */
   name: string;
   defaultIntervalKm: number | null;
   defaultIntervalDays: number | null;

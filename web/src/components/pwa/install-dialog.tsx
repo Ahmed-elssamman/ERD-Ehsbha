@@ -134,7 +134,7 @@ export function InstallAppDialog({
           {/* Backdrop */}
           <motion.button
             type="button"
-            aria-label="Close"
+            aria-label={t('common.close')}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

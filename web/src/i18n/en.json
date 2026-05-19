@@ -44,6 +44,11 @@
     "clear": "Clear",
     "close": "Close",
     "open": "Open",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skipToContent": "Skip to content",
+    "primaryNavigation": "Primary navigation",
+    "navigation": "Navigation",
     "confirm": "Confirm",
     "confirmDelete": "Delete this?",
     "confirmDeleteBody": "This action cannot be undone.",
@@ -345,7 +350,30 @@
     "kmSince": "km since last",
     "daysSince": "days since",
     "neverServiced": "Not yet serviced",
-    "addVehicleFirst": "Add a vehicle in Settings first"
+    "addVehicleFirst": "Add a vehicle in Settings first",
+    "catalog": {
+      "ENGINE_OIL": "Engine oil",
+      "OIL_FILTER": "Oil filter",
+      "AIR_FILTER": "Air filter",
+      "FUEL_FILTER": "Fuel filter",
+      "CABIN_FILTER": "Cabin filter",
+      "BRAKES_FRONT": "Front brakes",
+      "BRAKES_REAR": "Rear brakes",
+      "BRAKE_FLUID": "Brake fluid",
+      "TIRES": "Tires",
+      "TIRE_ROTATION": "Tire rotation",
+      "WHEEL_ALIGNMENT": "Wheel alignment",
+      "CHAIN": "Chain",
+      "BATTERY": "Battery",
+      "COOLANT": "Coolant",
+      "SPARK_PLUGS": "Spark plugs",
+      "TIMING_BELT": "Timing belt",
+      "TRANSMISSION_FLUID": "Transmission fluid",
+      "AC_SERVICE": "A/C service",
+      "WIPERS": "Wiper blades",
+      "SUSPENSION": "Suspension",
+      "ALTERNATOR": "Alternator"
+    }
   },
   "guide": {
     "title": "How to use Ehsbha",
@@ -900,6 +928,12 @@
     "REVIEW_NOT_FOUND": "Review not found",
     "TICKET_NOT_FOUND": "Request not found",
     "FORBIDDEN": "You don't have permission to do that",
-    "UNKNOWN": "Something went wrong"
+    "UNKNOWN": "Something went wrong",
+    "routeTitle": "Something went wrong loading this page",
+    "routeBody": "We couldn't load this part of the app. Check your connection, then try again.",
+    "routeRetry": "Try again",
+    "routeHome": "Go home",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you're looking for doesn't exist or has been moved."
   }
 }

@@ -143,6 +143,7 @@ export class RecommendationsService {
     });
     const maintenance = activeVehicle
       ? (await this.maintenance.risk(driverId, activeVehicle.id)).map((m) => ({
+          code: m.item.code,
           name: m.item.name,
           status: m.status,
           risk: m.risk,

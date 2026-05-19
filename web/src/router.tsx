@@ -1,34 +1,36 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/app-layout';
 import { ProtectedRoute, GuestRoute } from '@/routes/protected-route';
 import { DashboardPage } from '@/pages/dashboard/dashboard';
 import { NotFoundPage } from '@/pages/not-found';
+import { RouteErrorBoundary } from '@/components/error-boundary';
+import { lazyWithRetry } from '@/lib/lazy-with-retry';
 
-const LoginPage = lazy(() => import('@/pages/auth/login').then((m) => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('@/pages/auth/register').then((m) => ({ default: m.RegisterPage })));
-const ForgotPasswordPage = lazy(() => import('@/pages/auth/forgot-password').then((m) => ({ default: m.ForgotPasswordPage })));
-const ResetPasswordPage = lazy(() => import('@/pages/auth/reset-password').then((m) => ({ default: m.ResetPasswordPage })));
+const LoginPage = lazyWithRetry(() => import('@/pages/auth/login').then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazyWithRetry(() => import('@/pages/auth/register').then((m) => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazyWithRetry(() => import('@/pages/auth/forgot-password').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazyWithRetry(() => import('@/pages/auth/reset-password').then((m) => ({ default: m.ResetPasswordPage })));
 
-const TripsListPage = lazy(() => import('@/pages/trips/trips-list').then((m) => ({ default: m.TripsListPage })));
-const TripNewPage = lazy(() => import('@/pages/trips/trip-new').then((m) => ({ default: m.TripNewPage })));
-const TripDetailPage = lazy(() => import('@/pages/trips/trip-detail').then((m) => ({ default: m.TripDetailPage })));
+const TripsListPage = lazyWithRetry(() => import('@/pages/trips/trips-list').then((m) => ({ default: m.TripsListPage })));
+const TripNewPage = lazyWithRetry(() => import('@/pages/trips/trip-new').then((m) => ({ default: m.TripNewPage })));
+const TripDetailPage = lazyWithRetry(() => import('@/pages/trips/trip-detail').then((m) => ({ default: m.TripDetailPage })));
 
-const ExpensesPage = lazy(() => import('@/pages/expenses/expenses').then((m) => ({ default: m.ExpensesPage })));
-const MaintenancePage = lazy(() => import('@/pages/maintenance/maintenance').then((m) => ({ default: m.MaintenancePage })));
-const VehicleHealthPage = lazy(() => import('@/pages/vehicle-health/vehicle-health').then((m) => ({ default: m.VehicleHealthPage })));
-const AnalyticsPage = lazy(() => import('@/pages/analytics/analytics').then((m) => ({ default: m.AnalyticsPage })));
-const DriverScorePage = lazy(() => import('@/pages/driver-score/driver-score').then((m) => ({ default: m.DriverScorePage })));
-const DecisionsPage = lazy(() => import('@/pages/decisions/decisions').then((m) => ({ default: m.DecisionsPage })));
-const WorkPlannerPage = lazy(() => import('@/pages/planner/planner').then((m) => ({ default: m.WorkPlannerPage })));
-const BestHoursPage = lazy(() => import('@/pages/best-hours/best-hours').then((m) => ({ default: m.BestHoursPage })));
-const ProfitSimulatorPage = lazy(() => import('@/pages/simulator/simulator').then((m) => ({ default: m.ProfitSimulatorPage })));
-const NotificationsPage = lazy(() => import('@/pages/notifications/notifications').then((m) => ({ default: m.NotificationsPage })));
-const SettingsPage = lazy(() => import('@/pages/settings/settings').then((m) => ({ default: m.SettingsPage })));
-const GuidePage = lazy(() => import('@/pages/guide/guide').then((m) => ({ default: m.GuidePage })));
-const CommunityPage = lazy(() => import('@/pages/community/community').then((m) => ({ default: m.CommunityPage })));
-const ReviewsPage = lazy(() => import('@/pages/reviews/reviews').then((m) => ({ default: m.ReviewsPage })));
-const SupportPage = lazy(() => import('@/pages/support/support').then((m) => ({ default: m.SupportPage })));
+const ExpensesPage = lazyWithRetry(() => import('@/pages/expenses/expenses').then((m) => ({ default: m.ExpensesPage })));
+const MaintenancePage = lazyWithRetry(() => import('@/pages/maintenance/maintenance').then((m) => ({ default: m.MaintenancePage })));
+const VehicleHealthPage = lazyWithRetry(() => import('@/pages/vehicle-health/vehicle-health').then((m) => ({ default: m.VehicleHealthPage })));
+const AnalyticsPage = lazyWithRetry(() => import('@/pages/analytics/analytics').then((m) => ({ default: m.AnalyticsPage })));
+const DriverScorePage = lazyWithRetry(() => import('@/pages/driver-score/driver-score').then((m) => ({ default: m.DriverScorePage })));
+const DecisionsPage = lazyWithRetry(() => import('@/pages/decisions/decisions').then((m) => ({ default: m.DecisionsPage })));
+const WorkPlannerPage = lazyWithRetry(() => import('@/pages/planner/planner').then((m) => ({ default: m.WorkPlannerPage })));
+const BestHoursPage = lazyWithRetry(() => import('@/pages/best-hours/best-hours').then((m) => ({ default: m.BestHoursPage })));
+const ProfitSimulatorPage = lazyWithRetry(() => import('@/pages/simulator/simulator').then((m) => ({ default: m.ProfitSimulatorPage })));
+const NotificationsPage = lazyWithRetry(() => import('@/pages/notifications/notifications').then((m) => ({ default: m.NotificationsPage })));
+const SettingsPage = lazyWithRetry(() => import('@/pages/settings/settings').then((m) => ({ default: m.SettingsPage })));
+const GuidePage = lazyWithRetry(() => import('@/pages/guide/guide').then((m) => ({ default: m.GuidePage })));
+const CommunityPage = lazyWithRetry(() => import('@/pages/community/community').then((m) => ({ default: m.CommunityPage })));
+const ReviewsPage = lazyWithRetry(() => import('@/pages/reviews/reviews').then((m) => ({ default: m.ReviewsPage })));
+const SupportPage = lazyWithRetry(() => import('@/pages/support/support').then((m) => ({ default: m.SupportPage })));
 
 function FullScreenSpinner() {
   return (
@@ -57,6 +59,7 @@ export const router = createBrowserRouter([
         </PageSuspense>
       </GuestRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: '/register',
@@ -67,6 +70,7 @@ export const router = createBrowserRouter([
         </PageSuspense>
       </GuestRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: '/forgot-password',
@@ -77,6 +81,7 @@ export const router = createBrowserRouter([
         </PageSuspense>
       </GuestRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: '/reset-password',
@@ -87,6 +92,7 @@ export const router = createBrowserRouter([
         </PageSuspense>
       </GuestRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: '/',
@@ -95,6 +101,7 @@ export const router = createBrowserRouter([
         <AppLayout />
       </ProtectedRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'trips', element: lazyRoute(<TripsListPage />) },
@@ -115,8 +122,9 @@ export const router = createBrowserRouter([
       { path: 'reviews', element: lazyRoute(<ReviewsPage />) },
       { path: 'support', element: lazyRoute(<SupportPage />) },
       { path: 'settings', element: lazyRoute(<SettingsPage />) },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
   { path: '/404', element: <NotFoundPage /> },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);

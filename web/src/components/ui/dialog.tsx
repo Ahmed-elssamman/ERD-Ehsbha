@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
+import { useT } from '@/i18n';
 
 interface DialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface DialogProps {
 }
 
 export function Dialog({ open, onClose, title, description, children, footer, className }: DialogProps) {
+  const t = useT();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -68,7 +70,7 @@ export function Dialog({ open, onClose, title, description, children, footer, cl
                     <p className="mt-1 text-sm text-muted-foreground">{description}</p>
                   ) : null}
                 </div>
-                <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose}>
+                <Button variant="ghost" size="icon" aria-label={t('common.close')} onClick={onClose}>
                   <X className="h-4 w-4" aria-hidden />
                 </Button>
               </div>

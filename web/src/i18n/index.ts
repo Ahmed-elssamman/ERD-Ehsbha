@@ -23,15 +23,40 @@ function applyDocumentDir(locale: Locale) {
   document.documentElement.setAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
 }
 
-function translate(locale: Locale, key: string, vars?: Record<string, string | number>): string {
+function resolve(locale: Locale, key: string): string | undefined {
   const parts = key.split('.');
   let cur: unknown = dicts[locale];
   for (const p of parts) {
     if (cur == null || typeof cur !== 'object') break;
     cur = (cur as Record<string, unknown>)[p];
   }
-  let value: string = typeof cur === 'string' ? cur : key;
+  return typeof cur === 'string' ? cur : undefined;
+}
+
+function translate(locale: Locale, key: string, vars?: Record<string, string | number>): string {
+  let value: string = resolve(locale, key) ?? key;
   if (vars) {
+    for (const k of Object.keys(vars)) {
+      value = value.replace(new RegExp(`\\{${k}\\}`, 'g'), String(vars[k]));
+    }
+  }
+  return value;
+}
+
+/**
+ * Translates `key`. If missing, returns `fallback` instead of the raw key —
+ * useful for content sourced from the backend (e.g. maintenance item codes)
+ * where the dictionary is only authoritative when it contains the entry.
+ */
+function translateWithFallback(
+  locale: Locale,
+  key: string,
+  fallback: string,
+  vars?: Record<string, string | number>,
+): string {
+  const resolved = resolve(locale, key);
+  let value: string = resolved ?? fallback;
+  if (vars && resolved !== undefined) {
     for (const k of Object.keys(vars)) {
       value = value.replace(new RegExp(`\\{${k}\\}`, 'g'), String(vars[k]));
     }
@@ -44,6 +69,8 @@ interface I18nContextValue {
   setLocale: (l: Locale) => void;
   toggleLocale: () => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
+  /** Translates `key`, falling back to `fallback` when the key is missing. */
+  tf: (key: string, fallback: string, vars?: Record<string, string | number>) => string;
   dir: 'rtl' | 'ltr';
 }
 
@@ -69,6 +96,7 @@ export function I18nProvider({ children }: PropsWithChildren) {
       setLocale: setLocaleState,
       toggleLocale: () => setLocaleState((cur) => (cur === 'ar' ? 'en' : 'ar')),
       t: (key, vars) => translate(locale, key, vars),
+      tf: (key, fallback, vars) => translateWithFallback(locale, key, fallback, vars),
     };
   }, [locale]);
 
@@ -83,4 +111,16 @@ export function useI18n(): I18nContextValue {
 
 export function useT() {
   return useI18n().t;
+}
+
+/** Returns the translated maintenance item display name, with backend fallback. */
+export function useMaintenanceItemLabel() {
+  const { tf } = useI18n();
+  return (item: { code?: string | null; name?: string | null } | null | undefined): string => {
+    if (!item) return '';
+    const code = item.code ?? '';
+    const fallback = item.name ?? '';
+    if (!code) return fallback;
+    return tf(`maintenance.catalog.${code}`, fallback);
+  };
 }

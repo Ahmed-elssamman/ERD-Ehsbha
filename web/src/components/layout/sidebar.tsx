@@ -61,7 +61,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, [location.pathname]);
 
   return (
-    <nav aria-label="Primary" className="h-full">
+    <nav aria-label={t('common.primaryNavigation')} className="h-full">
       <ul className="flex flex-col gap-0.5 p-3">
         {NAV.map(({ to, labelKey, Icon }) => (
           <li key={to}>

@@ -32,7 +32,7 @@ export interface RecoContext {
     profitPerHourPiastres: number;
     onlineMinutes: number;
   }>;
-  maintenance: Array<{ name: string; status: string; risk: number }>;
+  maintenance: Array<{ code?: string; name: string; status: string; risk: number }>;
   fatigue: { score: number; level: 'SAFE' | 'TIRED' | 'HIGH' };
   monthlyGoal?: {
     targetPiastres: number;
@@ -42,6 +42,45 @@ export interface RecoContext {
 }
 
 const T = (locale: 'ar' | 'en', ar: string, en: string) => (locale === 'ar' ? ar : en);
+
+/**
+ * Arabic display names for known maintenance item codes. Keep aligned with
+ * `web/src/i18n/ar.json#maintenance.catalog`. Falls back to the English name
+ * from the catalog when the code is missing.
+ */
+const MAINTENANCE_NAMES_AR: Record<string, string> = {
+  ENGINE_OIL: 'زيت المحرك',
+  OIL_FILTER: 'فلتر الزيت',
+  AIR_FILTER: 'فلتر الهواء',
+  FUEL_FILTER: 'فلتر البنزين',
+  CABIN_FILTER: 'فلتر مكيف المقصورة',
+  BRAKES_FRONT: 'الفرامل الأمامية',
+  BRAKES_REAR: 'الفرامل الخلفية',
+  BRAKE_FLUID: 'زيت الفرامل',
+  TIRES: 'الإطارات',
+  TIRE_ROTATION: 'تدوير الإطارات',
+  WHEEL_ALIGNMENT: 'ضبط زوايا الإطارات',
+  CHAIN: 'الجنزير',
+  BATTERY: 'البطارية',
+  COOLANT: 'ماء الردياتير',
+  SPARK_PLUGS: 'البوجيهات',
+  TIMING_BELT: 'طقم الكتينة',
+  TRANSMISSION_FLUID: 'زيت الفتيس',
+  AC_SERVICE: 'صيانة المكيف',
+  WIPERS: 'مساحات الزجاج',
+  SUSPENSION: 'العفشة',
+  ALTERNATOR: 'الدينمو',
+};
+
+function maintenanceLabel(
+  locale: 'ar' | 'en',
+  item: { code?: string; name: string },
+): string {
+  if (locale === 'ar' && item.code && MAINTENANCE_NAMES_AR[item.code]) {
+    return MAINTENANCE_NAMES_AR[item.code];
+  }
+  return item.name;
+}
 
 export function generateRecommendations(ctx: RecoContext): RecommendationCandidate[] {
   const out: RecommendationCandidate[] = [];
@@ -86,12 +125,13 @@ export function generateRecommendations(ctx: RecoContext): RecommendationCandida
   const redItems = ctx.maintenance.filter((m) => m.status === 'RED' || m.status === 'OVERDUE');
   if (redItems.length > 0) {
     const top = redItems.sort((a, b) => b.risk - a.risk)[0];
+    const label = maintenanceLabel(loc, top);
     out.push({
       type: 'maintenance_imminent',
       title: T(loc, 'صيانة قربت', 'Maintenance due'),
-      body: T(loc, `${top.name} محتاجة صيانة قريب جداً.`, `${top.name} needs service soon.`),
+      body: T(loc, `${label} محتاجة صيانة قريب جداً.`, `${label} needs service soon.`),
       score: 0.9,
-      payload: { item: top.name, status: top.status },
+      payload: { code: top.code ?? null, item: label, status: top.status },
       ttlMinutes: 60 * 48,
     });
   }
