@@ -23,6 +23,10 @@ import {
 import { toDatetimeLocalValue } from '@/lib/time';
 import { formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import type { OcrPlatform } from '@/lib/api/ocr.api';
+import { deriveClientMutationId, type PrefilledFormValues } from '@/lib/ocr/parsed-to-form';
+import { OcrConfidenceBadge } from '@/components/ocr/ocr-confidence-badge';
+import { OcrWarningList } from '@/components/ocr/ocr-warning-list';
 
 const schema = z
   .object({
@@ -56,12 +60,45 @@ type FormValues = z.input<typeof schema>;
 const egpToPiastres = (egp: number) => Math.round(egp * 100);
 const piastresToEgp = (p: number) => p / 100;
 
+export interface OcrPrefill {
+  values: PrefilledFormValues;
+  confidences: Record<string, number>;
+  imageHashes: string[];
+  platform: OcrPlatform | null;
+  warnings: string[];
+}
+
 interface Props {
   trip?: TripItem | null;
   onDone: (id: string) => void;
+  initialFromOcr?: OcrPrefill | null;
 }
 
-export function TripForm({ trip, onDone }: Props) {
+const OCR_TO_FIELD: Record<string, keyof FormValues> = {
+  grossEgp: 'grossEgp',
+  receivedEgp: 'receivedEgp',
+  tipEgp: 'tipEgp',
+  commissionEgp: 'commissionEgp',
+  tollEgp: 'tollEgp',
+  parkingEgp: 'parkingEgp',
+  totalKm: 'totalKm',
+  paidKm: 'paidKm',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+};
+
+function fieldConfidence(ocr: OcrPrefill | null | undefined, field: keyof FormValues): number | null {
+  if (!ocr) return null;
+  for (const [src, dst] of Object.entries(OCR_TO_FIELD)) {
+    if (dst === field) {
+      const v = ocr.confidences[src];
+      return typeof v === 'number' ? v : null;
+    }
+  }
+  return null;
+}
+
+export function TripForm({ trip, onDone, initialFromOcr }: Props) {
   const { t, locale } = useI18n();
   const qc = useQueryClient();
   const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: VehiclesApi.list });
@@ -90,7 +127,7 @@ export function TripForm({ trip, onDone }: Props) {
         notes: trip.notes ?? '',
       };
     }
-    return {
+    const base: FormValues = {
       vehicleId: '',
       driverAppId: '',
       areaId: '',
@@ -107,7 +144,26 @@ export function TripForm({ trip, onDone }: Props) {
       paidKm: 0,
       notes: '',
     };
-  }, [trip]);
+    if (initialFromOcr) {
+      const v = initialFromOcr.values;
+      return {
+        ...base,
+        ...(v.startedAt ? { startedAt: v.startedAt } : {}),
+        ...(v.endedAt ? { endedAt: v.endedAt } : {}),
+        ...(v.grossEgp != null ? { grossEgp: v.grossEgp } : {}),
+        ...(v.receivedEgp != null ? { receivedEgp: v.receivedEgp } : {}),
+        ...(v.tipEgp != null ? { tipEgp: v.tipEgp } : {}),
+        ...(v.commissionEgp != null ? { commissionEgp: v.commissionEgp } : {}),
+        ...(v.commissionAuto != null ? { commissionAuto: v.commissionAuto } : {}),
+        ...(v.tollEgp != null ? { tollEgp: v.tollEgp } : {}),
+        ...(v.parkingEgp != null ? { parkingEgp: v.parkingEgp } : {}),
+        ...(v.totalKm != null ? { totalKm: v.totalKm } : {}),
+        ...(v.paidKm != null ? { paidKm: v.paidKm } : {}),
+        ...(v.notes ? { notes: v.notes } : {}),
+      };
+    }
+    return base;
+  }, [trip, initialFromOcr]);
 
   const {
     register,
@@ -126,7 +182,9 @@ export function TripForm({ trip, onDone }: Props) {
     reset(defaultValues);
   }, [defaultValues, reset]);
 
-  // Auto-default vehicle/app/app commission when data arrives
+  // Auto-default vehicle/app: pick the first item from each list whenever the
+  // currently-selected id is empty. This runs on initial data arrival AND
+  // whenever the form resets (e.g. after OCR prefill clears vehicleId).
   useEffect(() => {
     if (!watch('vehicleId') && vehiclesQ.data?.[0]) {
       setValue('vehicleId', vehiclesQ.data[0].id);
@@ -135,7 +193,7 @@ export function TripForm({ trip, onDone }: Props) {
       setValue('driverAppId', appsQ.data[0].id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehiclesQ.data, appsQ.data]);
+  }, [vehiclesQ.data, appsQ.data, initialFromOcr, trip]);
 
   // Auto-calc commission from gross − received when auto is enabled
   const grossEgp = Number(watch('grossEgp') || 0);
@@ -191,6 +249,13 @@ export function TripForm({ trip, onDone }: Props) {
   });
 
   const submit = handleSubmit(async (v) => {
+    const ocrTagged =
+      initialFromOcr && initialFromOcr.imageHashes.length > 0
+        ? `ocrImageHashes=${initialFromOcr.imageHashes.join(',')}`
+        : null;
+    const userNotes = v.notes?.trim() || '';
+    const mergedNotes = [userNotes, ocrTagged].filter(Boolean).join('\n').slice(0, 500) || null;
+
     const body: CreateTripInput = {
       vehicleId: v.vehicleId,
       driverAppId: v.driverAppId,
@@ -208,8 +273,11 @@ export function TripForm({ trip, onDone }: Props) {
       parkingPiastres: egpToPiastres(Number(v.parkingEgp || 0)),
       totalKmMeters: Math.round(Number(v.totalKm || 0) * 1000),
       paidKmMeters: Math.round(Number(v.paidKm || 0) * 1000),
-      notes: v.notes?.trim() || null,
+      notes: mergedNotes,
     };
+    if (initialFromOcr && initialFromOcr.imageHashes.length > 0 && !trip) {
+      body.clientMutationId = await deriveClientMutationId(initialFromOcr.imageHashes);
+    }
     try {
       if (trip) {
         await updateMut.mutateAsync({ id: trip.id, body });
@@ -227,6 +295,9 @@ export function TripForm({ trip, onDone }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
+      {initialFromOcr && initialFromOcr.warnings.length > 0 ? (
+        <OcrWarningList warnings={initialFromOcr.warnings} />
+      ) : null}
       {noVehicles ? (
         <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
           {t('trips.selectVehicleFirst')}
@@ -272,7 +343,12 @@ export function TripForm({ trip, onDone }: Props) {
           </Select>
         </Field>
 
-        <Field label={t('trips.field.startedAt')} htmlFor="startedAt" required>
+        <Field
+          label={t('trips.field.startedAt')}
+          htmlFor="startedAt"
+          required
+          confidence={fieldConfidence(initialFromOcr, 'startedAt')}
+        >
           <Input id="startedAt" type="datetime-local" {...register('startedAt')} invalid={!!errors.startedAt} />
         </Field>
 
@@ -280,6 +356,7 @@ export function TripForm({ trip, onDone }: Props) {
           label={t('trips.field.endedAt')}
           htmlFor="endedAt"
           required
+          confidence={fieldConfidence(initialFromOcr, 'endedAt')}
           error={errors.endedAt?.message === 'end-before-start' ? t('trips.errors.endBeforeStart') : null}
         >
           <Input id="endedAt" type="datetime-local" {...register('endedAt')} invalid={!!errors.endedAt} />
@@ -288,7 +365,12 @@ export function TripForm({ trip, onDone }: Props) {
 
       {/* Money */}
       <Section title={t('trips.sections.money')}>
-        <Field label={t('trips.field.gross')} htmlFor="grossEgp" required>
+        <Field
+          label={t('trips.field.gross')}
+          htmlFor="grossEgp"
+          required
+          confidence={fieldConfidence(initialFromOcr, 'grossEgp')}
+        >
           <Input
             id="grossEgp"
             type="number"
@@ -306,6 +388,7 @@ export function TripForm({ trip, onDone }: Props) {
           htmlFor="receivedEgp"
           optional
           hint={t('trips.hint.received')}
+          confidence={fieldConfidence(initialFromOcr, 'receivedEgp')}
         >
           <Input
             id="receivedEgp"
@@ -323,6 +406,7 @@ export function TripForm({ trip, onDone }: Props) {
           htmlFor="commissionEgp"
           auto={commissionAuto}
           hint={commissionAuto ? t('trips.hint.commissionAuto') : undefined}
+          confidence={fieldConfidence(initialFromOcr, 'commissionEgp')}
           right={
             commissionAuto ? null : (
               <button
@@ -369,6 +453,7 @@ export function TripForm({ trip, onDone }: Props) {
           htmlFor="totalKm"
           required
           hint={t('trips.hint.totalKm')}
+          confidence={fieldConfidence(initialFromOcr, 'totalKm')}
         >
           <Input
             id="totalKm"
@@ -387,6 +472,7 @@ export function TripForm({ trip, onDone }: Props) {
           htmlFor="paidKm"
           required
           hint={t('trips.hint.paidKm')}
+          confidence={fieldConfidence(initialFromOcr, 'paidKm')}
           error={errors.paidKm?.message === 'paid-exceeds-total' ? t('trips.errors.paidExceedsTotal') : null}
         >
           <Input
@@ -480,6 +566,7 @@ function Field({
   hint,
   error,
   right,
+  confidence,
   children,
 }: {
   label: string;
@@ -490,6 +577,7 @@ function Field({
   hint?: string | null;
   error?: string | null;
   right?: React.ReactNode;
+  confidence?: number | null;
   children: React.ReactNode;
 }) {
   const { t } = useI18n();
@@ -501,6 +589,7 @@ function Field({
           {required ? <RequiredBadge t={t} /> : null}
           {optional ? <OptionalBadge t={t} /> : null}
           {auto ? <AutoBadge t={t} /> : null}
+          {confidence != null ? <OcrConfidenceBadge confidence={confidence} /> : null}
         </Label>
         {right}
       </div>

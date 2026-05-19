@@ -28,6 +28,12 @@ const EnvSchema = z.object({
 
   APP_PUBLIC_NAME: z.string().default('Ehsbha'),
   APP_PUBLIC_URL: z.string().default('https://ehsebha.modev.me'),
+
+  // OCR — provider auto-selects "anthropic" when ANTHROPIC_API_KEY is set,
+  // otherwise falls back to "tesseract" (offline, lower Arabic accuracy).
+  OCR_PROVIDER: z.enum(['auto', 'anthropic', 'tesseract']).default('auto'),
+  OCR_ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  ANTHROPIC_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { loadEnv } from './config/env';
 import { GlobalExceptionFilter } from './common/filters/exception.filter';
@@ -19,6 +20,9 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ limit: '1mb', extended: true }));
 
   const origins = env.CORS_ORIGINS === '*' ? true : env.CORS_ORIGINS.split(',').map((s) => s.trim());
   app.enableCors({

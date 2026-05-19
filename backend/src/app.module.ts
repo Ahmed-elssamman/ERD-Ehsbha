@@ -8,6 +8,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { AppsModule } from './modules/apps/apps.module';
 import { AreasModule } from './modules/areas/areas.module';
 import { TripsModule } from './modules/trips/trips.module';
+import { OcrModule } from './modules/ocr/ocr.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { FuelModule } from './modules/fuel/fuel.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
@@ -35,6 +36,7 @@ import { SupportModule } from './modules/support/support.module';
     AppsModule,
     AreasModule,
     TripsModule,
+    OcrModule,
     SessionsModule,
     FuelModule,
     ExpensesModule,
