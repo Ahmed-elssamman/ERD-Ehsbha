@@ -1,11 +1,10 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { OcrController } from './ocr.controller';
 import { OcrService } from './ocr.service';
 import { SharpProcessor } from './image-processing/sharp.processor';
-import { TesseractPool } from './engines/tesseract-pool';
-import { TesseractOcrProvider } from './engines/tesseract.provider';
-import { AnthropicVisionProvider } from './engines/anthropic-vision.provider';
-import { OCR_PROVIDER, OcrProvider } from './engines/ocr-provider.interface';
+import { AzureVisionClient } from './azure/azure-vision.client';
+import { AzureDocumentIntelligenceClient } from './azure/azure-document-intelligence.client';
+import { AzureVisionProvider } from './azure/azure-vision.provider';
 import { PlatformDetector } from './detectors/platform.detector';
 import { UberParser } from './parsers/uber.parser';
 import { IndriveParser } from './parsers/indrive.parser';
@@ -15,40 +14,31 @@ import { SemanticNormalizer } from './semantic/normalizer';
 import { MultiScreenshotMerger } from './merge/multi-screenshot.merger';
 import { ConfidenceScorer } from './confidence/scorer';
 import { TripValidator } from './validation/trip-validator';
-import { loadEnv } from '../../config/env';
 
-const ocrProviderFactory = {
-  provide: OCR_PROVIDER,
-  useFactory: (pool: TesseractPool): OcrProvider => {
-    const env = loadEnv();
-    const log = new Logger('OcrProviderFactory');
-    const preferAnthropic =
-      env.OCR_PROVIDER === 'anthropic' ||
-      (env.OCR_PROVIDER === 'auto' && !!env.ANTHROPIC_API_KEY);
-    if (preferAnthropic) {
-      if (!env.ANTHROPIC_API_KEY) {
-        log.warn('OCR_PROVIDER=anthropic but ANTHROPIC_API_KEY is missing — falling back to tesseract');
-      } else {
-        log.log(`OCR provider: anthropic (${env.OCR_ANTHROPIC_MODEL})`);
-        return new AnthropicVisionProvider(env.ANTHROPIC_API_KEY, env.OCR_ANTHROPIC_MODEL);
-      }
-    }
-    log.log('OCR provider: tesseract');
-    // Fire-and-forget warm-up so the first request doesn't pay the ~2s
-    // download cost. Failures are logged inside warmUp() but never thrown.
-    void pool.warmUp();
-    return new TesseractOcrProvider(pool);
-  },
-  inject: [TesseractPool],
-};
-
+/**
+ * OCR feature module — Azure AI Vision-backed pipeline.
+ *
+ * Components:
+ *   - SharpProcessor:                 image preprocessing
+ *   - AzureVisionClient:              Image Analysis 4.0 Read OCR
+ *   - AzureDocumentIntelligenceClient prebuilt-receipt structured fields
+ *   - AzureVisionProvider:            orchestrator (Read + DI in parallel)
+ *   - SemanticNormalizer + dictionary letter/digit/synonym folding
+ *   - PlatformDetector:               brand + label heuristics
+ *   - Platform parsers (UBER/INDRIVE/DIDI/CAREEM):
+ *                                     positional + receipt-aware extraction
+ *   - MultiScreenshotMerger:          fuse across uploaded screenshots
+ *   - ConfidenceScorer:               OCR × platform × parser confidence
+ *   - TripValidator:                  sanity-check parsed values
+ */
 @Module({
   controllers: [OcrController],
   providers: [
     OcrService,
     SharpProcessor,
-    TesseractPool,
-    ocrProviderFactory,
+    AzureVisionClient,
+    AzureDocumentIntelligenceClient,
+    AzureVisionProvider,
     PlatformDetector,
     SemanticNormalizer,
     UberParser,

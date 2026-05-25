@@ -102,6 +102,10 @@ export const DICTIONARY: DictEntry[] = [
   ]},
 
   // ---------------- Commission (service fee, sometimes inc. VAT) ----------------
+  // The brief lists these as canonical commission synonyms (AR + EN):
+  //   رسوم الخدمة · رسوم المنصة · العمولة · Service Fee · Platform Fee
+  // All five are covered below plus app-specific variants we've seen in
+  // the wild (Uber/Careem/DiDi/inDrive labels).
   { field: 'commission', weight: 1.0, patterns: [
     re('عموله\\s*المنصه'),
     re('عموله\\s*اوبر'),
@@ -111,12 +115,14 @@ export const DICTIONARY: DictEntry[] = [
     re('رسوم\\s*الخدمه'),
     re('رسوم\\s*المنصه'),
     re('خصم\\s*التطبيق'),
+    re('العموله'),
     re('عموله'),
     re('service\\s+fee'),
     re('platform\\s+fee'),
     re('booking\\s+fee'),
     re('careem\\s+fee'),
     re('uber\\s+fee'),
+    re('app\\s+fee'),
     re('commission'),
   ]},
   // Careem: total deduction (service fee + VAT bundled) is "إجمالي المدفوع"

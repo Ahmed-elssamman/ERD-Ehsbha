@@ -7,7 +7,7 @@ import { useOcrExtract } from '@/hooks/use-ocr-extract';
 import type { OcrExtractResponseDto } from '@/lib/api/ocr.api';
 import { OcrDropzone } from './ocr-dropzone';
 import { OcrProgress } from './ocr-progress';
-import { OcrExtractedSummary } from './ocr-extracted-summary';
+import { OcrReviewForm } from './ocr-review-form';
 
 interface Props {
   open: boolean;
@@ -47,9 +47,8 @@ export function OcrUploadDialog({ open, onOpenChange, onParsed }: Props) {
     }
   };
 
-  const apply = () => {
-    if (!result) return;
-    onParsed(result);
+  const apply = (edited: OcrExtractResponseDto) => {
+    onParsed(edited);
     onOpenChange(false);
   };
 
@@ -76,7 +75,7 @@ export function OcrUploadDialog({ open, onOpenChange, onParsed }: Props) {
       }
     >
       {result ? (
-        <OcrExtractedSummary
+        <OcrReviewForm
           result={result}
           onApply={apply}
           onDiscard={() => {

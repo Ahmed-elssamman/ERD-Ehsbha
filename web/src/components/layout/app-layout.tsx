@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { LogOut, Menu, X } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 import { Button } from '@/components/ui/button';
@@ -11,14 +11,24 @@ import { useAuth } from '@/stores/auth.store';
 import { AuthApi } from '@/lib/api/endpoints';
 import { useI18n, useT } from '@/i18n';
 import { queryClient } from '@/providers/query-provider';
+import { cn } from '@/lib/utils';
 
 export function AppLayout() {
   const t = useT();
   const { dir } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const refreshToken = useAuth((s) => s.refreshToken);
   const clear = useAuth((s) => s.clear);
+
+  // Close drawer atomically on every route change. This is the single source
+  // of truth — clicks anywhere (NavLink, programmatic navigate, back button)
+  // all funnel through here, so the drawer can never be left open over the
+  // header after navigation.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -122,51 +132,52 @@ export function AppLayout() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {mobileNavOpen ? (
-          <>
-            <motion.div
-              key="overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-              className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden"
-              onClick={() => setMobileNavOpen(false)}
-              aria-hidden
-            />
-            <motion.aside
-              key="drawer"
-              initial={{ x: drawerOffscreen }}
-              animate={{ x: 0 }}
-              exit={{ x: drawerOffscreen }}
-              transition={{ type: 'spring', stiffness: 340, damping: 38, mass: 0.7 }}
-              className="fixed inset-y-0 start-0 z-50 flex w-72 max-w-[85vw] flex-col border-e border-border/70 bg-card shadow-elevated lg:hidden"
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('common.navigation')}
-            >
-              <div className="flex h-16 shrink-0 items-center justify-between px-4">
-                <div onClick={() => setMobileNavOpen(false)}>
-                  <Logo to="/" />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t('common.closeMenu')}
-                  onClick={() => setMobileNavOpen(false)}
-                >
-                  <X className="h-5 w-5" aria-hidden />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
-                <Sidebar onNavigate={() => setMobileNavOpen(false)} />
-              </div>
-            </motion.aside>
-          </>
-        ) : null}
-      </AnimatePresence>
+      {/* Mobile drawer — always mounted, toggled via animate + pointer-events.
+          Avoids the AnimatePresence mount/unmount race that left the overlay
+          stuck on top of the header during lazy-route Suspense transitions on
+          installed mobile PWAs. */}
+      <motion.div
+        initial={false}
+        animate={{ opacity: mobileNavOpen ? 1 : 0 }}
+        transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+        onClick={() => setMobileNavOpen(false)}
+        aria-hidden
+        className={cn(
+          'fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden',
+          mobileNavOpen ? 'pointer-events-auto' : 'pointer-events-none',
+        )}
+      />
+      <motion.aside
+        initial={false}
+        animate={{ x: mobileNavOpen ? 0 : drawerOffscreen }}
+        transition={{ type: 'spring', stiffness: 340, damping: 38, mass: 0.7 }}
+        role="dialog"
+        aria-modal={mobileNavOpen}
+        aria-hidden={!mobileNavOpen}
+        aria-label={t('common.navigation')}
+        className={cn(
+          'fixed inset-y-0 start-0 z-50 flex w-72 max-w-[85vw] flex-col border-e border-border/70 bg-card shadow-elevated lg:hidden',
+          mobileNavOpen ? 'pointer-events-auto' : 'pointer-events-none',
+        )}
+      >
+        <div className="flex h-16 shrink-0 items-center justify-between px-4">
+          <div onClick={() => setMobileNavOpen(false)}>
+            <Logo to="/" />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('common.closeMenu')}
+            onClick={() => setMobileNavOpen(false)}
+            tabIndex={mobileNavOpen ? 0 : -1}
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
+          <Sidebar onNavigate={() => setMobileNavOpen(false)} />
+        </div>
+      </motion.aside>
     </div>
   );
 }

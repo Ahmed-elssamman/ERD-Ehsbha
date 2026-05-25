@@ -9,18 +9,24 @@ import { MultiScreenshotMerger } from './merge/multi-screenshot.merger';
 import { ConfidenceScorer } from './confidence/scorer';
 import { TripValidator } from './validation/trip-validator';
 import { SemanticNormalizer } from './semantic/normalizer';
-import { OcrProvider, OcrStructuredResult } from './engines/ocr-provider.interface';
+import { AzureVisionProvider } from './azure/azure-vision.provider';
+import type { OcrResult } from './types';
+import type { RawParsed } from './parsers/base.parser';
 
-describe('OcrService.assembleStructured', () => {
+/**
+ * Tests `OcrService.assemble` — the pure pipeline stage that receives the
+ * per-image evidence array and returns the response DTO. The Azure calls are
+ * not exercised here (they're tested in azure-vision.client.spec.ts /
+ * azure-document-intelligence.client.spec.ts).
+ */
+describe('OcrService.assemble', () => {
   const normalizer = new SemanticNormalizer();
-  const fakeProvider: OcrProvider = {
-    recognize: async () => ({ text: '', words: [], meanConfidence: 0 }),
-    warmUp: async () => undefined,
-    dispose: async () => undefined,
-  };
+  const fakeAzure = {
+    analyze: async () => ({ read: emptyRead(), receipt: null }),
+  } as unknown as AzureVisionProvider;
 
   const svc = new OcrService(
-    fakeProvider,
+    fakeAzure,
     new SharpProcessor(),
     new PlatformDetector(normalizer),
     new MultiScreenshotMerger(),
@@ -32,59 +38,68 @@ describe('OcrService.assembleStructured', () => {
     new CareemParser(normalizer),
   );
 
-  const sample: OcrStructuredResult = {
-    text: '',
-    parsed: {
-      vehicleType: 'scooter',
-      appHint: 'UBER',
-      startedAt: '2026-05-18T22:46:00.000Z',
-      endedAt: null,
-      durationSec: 701,
-      grossEgp: 27.04,
-      receivedEgp: 28.0,
-      tipEgp: null,
-      commissionEgp: null,
-      tollEgp: null,
-      parkingEgp: null,
-      waitingFeeEgp: 0.96,
-      totalKm: 5.7,
-      paidKm: 5.7,
-      pickup: 'Nasr City 4455020 EG',
-      destination: 'Ahmed El-Zomor Nasr City 11765 EG',
-      paymentMethod: 'cash',
-      notes: 'Waiting fee detected',
-    },
-    platform: 'UBER',
-    platformConfidence: 0.95,
-    fieldConfidences: { grossEgp: 0.94, totalKm: 0.95, startedAt: 0.9, receivedEgp: 0.92 },
-    meanConfidence: 0.93,
-  };
+  function ev(text: string, parsed: Partial<RawParsed>): { read: OcrResult; parsed: RawParsed } {
+    const read: OcrResult = {
+      text,
+      lines: text.split('\n').map((t) => ({
+        text: t,
+        bbox: { x: 0, y: 0, w: 100, h: 20 },
+        words: [],
+        meanConfidence: 0.92,
+      })),
+      words: [],
+      meanConfidence: 0.92,
+    };
+    return {
+      read,
+      parsed: {
+        fields: parsed.fields ?? {},
+        perField: parsed.perField ?? {},
+        warnings: parsed.warnings ?? [],
+      },
+    };
+  }
 
-  it('preserves LLM-extracted fields', () => {
-    const r = svc.assembleStructured([sample], ['a'.repeat(64)]);
-    expect(r.parsed.grossEgp).toBe(27.04);
-    expect(r.parsed.receivedEgp).toBe(28.0);
-    expect(r.parsed.totalKm).toBe(5.7);
-    expect(r.parsed.startedAt).toBe('2026-05-18T22:46:00.000Z');
+  it('returns the platform and confidence-scored fields from a single image', () => {
+    const r = svc.assemble(
+      [
+        ev('Uber\nالأجرة 31.81\nالدخل 27.04', {
+          fields: { grossEgp: 31.81, receivedEgp: 27.04, totalKm: 5.7 },
+          perField: { grossEgp: 0.94, receivedEgp: 0.93, totalKm: 0.95 },
+        }),
+      ],
+      ['a'.repeat(64)],
+    );
     expect(r.platform).toBe('UBER');
-  });
-
-  it('passes confidences through scorer', () => {
-    const r = svc.assembleStructured([sample], ['a'.repeat(64)]);
+    expect(r.parsed.grossEgp).toBe(31.81);
+    expect(r.parsed.receivedEgp).toBe(27.04);
     expect(r.fieldConfidences.grossEgp).toBeGreaterThan(0.7);
   });
 
-  it('merges multiple structured results', () => {
-    const a = { ...sample };
-    const b = { ...sample, fieldConfidences: { ...sample.fieldConfidences, grossEgp: 0.99 }, parsed: { ...sample.parsed, grossEgp: 27.04 } };
-    const r = svc.assembleStructured([a, b], ['a'.repeat(64), 'b'.repeat(64)]);
-    expect(r.parsed.grossEgp).toBe(27.04);
-    expect(r.fieldConfidences.grossEgp).toBeGreaterThan(0.85);
+  it('merges multiple screenshots with the same fields', () => {
+    const a = ev('Uber\nالأجرة 31.81', {
+      fields: { grossEgp: 31.81 },
+      perField: { grossEgp: 0.9 },
+    });
+    const b = ev('Uber\nالأجرة 31.81', {
+      fields: { grossEgp: 31.81 },
+      perField: { grossEgp: 0.95 },
+    });
+    const r = svc.assemble([a, b], ['a'.repeat(64), 'b'.repeat(64)]);
+    expect(r.parsed.grossEgp).toBe(31.81);
+    expect(r.fieldConfidences.grossEgp).toBeGreaterThan(0.8);
   });
 
-  it('flags unknown platform', () => {
-    const noPlatform = { ...sample, platform: null, platformConfidence: 0 };
-    const r = svc.assembleStructured([noPlatform], ['a'.repeat(64)]);
+  it('emits OCR_PLATFORM_UNKNOWN when the brand cannot be identified', () => {
+    const r = svc.assemble(
+      [ev('mystery app\n42.00', { fields: { grossEgp: 42 }, perField: { grossEgp: 0.5 } })],
+      ['a'.repeat(64)],
+    );
+    expect(r.platform).toBeNull();
     expect(r.warnings).toContain('OCR_PLATFORM_UNKNOWN');
   });
 });
+
+function emptyRead(): OcrResult {
+  return { text: '', lines: [], words: [], meanConfidence: 0 };
+}

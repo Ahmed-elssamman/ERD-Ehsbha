@@ -29,11 +29,22 @@ const EnvSchema = z.object({
   APP_PUBLIC_NAME: z.string().default('Ehsbha'),
   APP_PUBLIC_URL: z.string().default('https://ehsebha.modev.me'),
 
-  // OCR — provider auto-selects "anthropic" when ANTHROPIC_API_KEY is set,
-  // otherwise falls back to "tesseract" (offline, lower Arabic accuracy).
-  OCR_PROVIDER: z.enum(['auto', 'anthropic', 'tesseract']).default('auto'),
-  OCR_ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5-20251001'),
-  ANTHROPIC_API_KEY: z.string().optional(),
+  // Azure AI Vision (OCR). Required.
+  AZURE_VISION_ENDPOINT: z.string().url(),
+  AZURE_VISION_KEY: z.string().min(20),
+  AZURE_VISION_REGION: z.string().default('eastus'),
+
+  // Document Intelligence is OPTIONAL. A single-service "Computer Vision"
+  // resource does NOT include Document Intelligence — calls would 401.
+  // To enable: either (a) provision a separate "Document Intelligence" resource
+  // and set the endpoint/key explicitly below, or (b) re-create the AI resource
+  // as a multi-service "Azure AI services" SKU and reuse AZURE_VISION_*.
+  AZURE_DOC_INTELLIGENCE_ENABLED: z
+    .union([z.boolean(), z.string()])
+    .default(false)
+    .transform((v) => (typeof v === 'string' ? v.toLowerCase() === 'true' : v)),
+  AZURE_DOC_INTELLIGENCE_ENDPOINT: z.string().url().optional(),
+  AZURE_DOC_INTELLIGENCE_KEY: z.string().min(20).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -51,4 +62,9 @@ export function loadEnv(): Env {
   }
   cached = parsed.data;
   return cached;
+}
+
+// Test-only: reset the memoized env so tests can swap process.env between cases.
+export function resetEnvForTests(): void {
+  cached = null;
 }

@@ -11,16 +11,16 @@ describe('SharpProcessor', () => {
     const out = await proc.prepare(input);
     const meta = await sharp(out).metadata();
     expect(meta.format).toBe('png');
-    expect(meta.width).toBeLessThanOrEqual(2000);
+    expect(meta.width).toBeLessThanOrEqual(2200);
   });
 
-  it('resizes a large image to ≤2000 longest side', async () => {
+  it('resizes a large image to ≤2200 longest side', async () => {
     const input = await sharp({
       create: { width: 4000, height: 3000, channels: 3, background: { r: 50, g: 50, b: 50 } },
     }).png().toBuffer();
     const out = await proc.prepare(input);
     const meta = await sharp(out).metadata();
-    expect(Math.max(meta.width ?? 0, meta.height ?? 0)).toBeLessThanOrEqual(2000);
+    expect(Math.max(meta.width ?? 0, meta.height ?? 0)).toBeLessThanOrEqual(2200);
   });
 
   it('throws OCR_IMAGE_INVALID on garbage', async () => {

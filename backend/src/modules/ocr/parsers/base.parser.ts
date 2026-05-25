@@ -1,5 +1,5 @@
 import { EMPTY_PARSED, OcrParsedTripDto, OcrPaymentMethod, OcrPlatform } from '../dto/ocr.dto';
-import { OcrWord } from '../engines/ocr-provider.interface';
+import { OcrLine, OcrWord, ParseContext } from '../types';
 import { normalizeNumeric, parseAmount, stripBidi } from '../semantic/digit-normalizer';
 import { SemanticNormalizer } from '../semantic/normalizer';
 import { findFieldsOnLine } from '../semantic/dictionary';
@@ -37,12 +37,15 @@ export abstract class BaseParser {
 
   constructor(protected readonly normalizer: SemanticNormalizer) {}
 
-  parse(text: string, words: OcrWord[]): RawParsed {
+  parse(text: string, words: OcrWord[], ctx?: Partial<ParseContext>): RawParsed {
     const fields: Partial<OcrParsedTripDto> = {};
     const perField: Partial<Record<keyof OcrParsedTripDto, number>> = {};
     const warnings: string[] = [];
 
-    const lines = this.splitLines(text);
+    const positionalLines: OcrLine[] | undefined = ctx?.lines;
+    const lines = positionalLines && positionalLines.length > 0
+      ? positionalLines.map((l) => l.text.trim()).filter(Boolean)
+      : this.splitLines(text);
     const normalizedLines = lines.map((l) => this.normalizer.normalizeText(l));
     // Fully normalized (letter folding + digit translation) — used by
     // pattern-based extractors so Arabic-Indic digits and ة/ه variants
@@ -73,7 +76,57 @@ export abstract class BaseParser {
       warnings.push('OCR_DURATION_FROM_TIMESTAMPS');
     }
 
+    if (ctx?.receipt) {
+      this.applyReceiptHints(fields, perField, ctx.receipt);
+    }
+
     return { fields, perField, warnings };
+  }
+
+  /**
+   * Cross-checks parsed regex output against Azure Document Intelligence's
+   * prebuilt-receipt fields. DI gives high-precision values for the total /
+   * subtotal / transaction-date — when DI's confidence beats the regex
+   * parser's confidence for that field, prefer the DI value.
+   *
+   * DI returns ride-receipt "Total" as what the customer paid → grossEgp.
+   * Subtotal (when present) maps to receivedEgp on apps that show both.
+   */
+  protected applyReceiptHints(
+    fields: Partial<OcrParsedTripDto>,
+    perField: Partial<Record<keyof OcrParsedTripDto, number>>,
+    receipt: NonNullable<ParseContext['receipt']>,
+  ): void {
+    if (!receipt.isReceipt) return;
+
+    const diConf = Math.max(0, Math.min(1, receipt.meanConfidence));
+    const beats = (existing: number | undefined, threshold: number): boolean =>
+      diConf > (existing ?? 0) + 0.05 && diConf >= threshold;
+
+    if (receipt.total != null && beats(perField.grossEgp, 0.6)) {
+      fields.grossEgp = receipt.total;
+      perField.grossEgp = Math.max(perField.grossEgp ?? 0, diConf);
+    }
+    if (receipt.subtotal != null && beats(perField.receivedEgp, 0.6)) {
+      fields.receivedEgp = receipt.subtotal;
+      perField.receivedEgp = Math.max(perField.receivedEgp ?? 0, diConf);
+    }
+    if (receipt.tip != null && fields.tipEgp == null) {
+      fields.tipEgp = receipt.tip;
+      perField.tipEgp = diConf * 0.9;
+    }
+    if (receipt.transactionDate && receipt.transactionTime && fields.startedAt == null) {
+      const iso = `${receipt.transactionDate}T${receipt.transactionTime}.000Z`;
+      const d = new Date(iso);
+      if (!Number.isNaN(d.getTime())) {
+        fields.startedAt = d.toISOString();
+        perField.startedAt = diConf * 0.85;
+      }
+    } else if (receipt.transactionDate && fields.startedAt == null) {
+      const iso = `${receipt.transactionDate}T00:00:00.000Z`;
+      fields.startedAt = iso;
+      perField.startedAt = diConf * 0.7;
+    }
   }
 
   protected splitLines(text: string): string[] {
