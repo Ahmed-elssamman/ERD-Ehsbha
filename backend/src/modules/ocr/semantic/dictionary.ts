@@ -52,11 +52,12 @@ export const DICTIONARY: DictEntry[] = [
     re('fare\\b'),
   ]},
   // Standalone "الأجرة" as a line label (the most common Uber/Careem layout).
-  // Requires whitespace or end-of-line after so it doesn't fire on
-  // "الأجرة×15%" (a percentage-calc note) or "أجرة المشوار" (DiDi-specific
-  // driver-share line, which has no "ال" prefix and is intentionally not gross).
+  // Anchored to BOTH start AND end so it doesn't fire on the percentage
+  // breakdown note "الأجرة × 15%" (which Azure may emit with spaces around
+  // the multiplication sign) or "أجرة المشوار" (DiDi-specific driver-share
+  // line, which has no "ال" prefix and is handled by the Didi override).
   { field: 'fare', weight: 1.05, patterns: [
-    re('^الاجره(?=\\s|$)'),
+    re('^الاجره$'),
   ]},
   { field: 'fare', weight: 1.05, platforms: ['CAREEM'], patterns: [
     re('customer\\s+pays'),
@@ -70,8 +71,11 @@ export const DICTIONARY: DictEntry[] = [
   ]},
 
   // ---------------- Received (income / what driver keeps) ----------------
+  // NOTE: "المبلغ النقدي الذي تم تحصيله" intentionally NOT here — on Uber it
+  // is the *cash collected* line, which can be more OR less than the
+  // driver's actual income (الدخل) depending on adjustments. It's mapped
+  // only to paymentCash below.
   { field: 'received', weight: 1.0, patterns: [
-    re('المبلغ\\s*النقدي\\s*الذي\\s*تم\\s*تحصيله'),
     re('المبلغ\\s*المحصل'),
     re('المبلغ\\s*المستلم'),
     re('صافي\\s*الارباح'),
@@ -89,10 +93,26 @@ export const DICTIONARY: DictEntry[] = [
   { field: 'received', weight: 1.15, platforms: ['CAREEM'], patterns: [
     re('^دخلي(?=$|\\s|[^\\u0600-\\u06FF])'),
   ]},
-  // DiDi-specific: "أرباحك" / "ارباحك" big top-card income number.
-  { field: 'received', weight: 1.15, platforms: ['DIDI'], patterns: [
+  // DiDi-specific: per user spec the driver's "income" is the CASH the rider
+  // handed over (`المدفوع من الراكب`), NOT the post-commission `أرباحك` card
+  // value. We therefore give `المدفوع من الراكب` the highest weight; `أرباحك`
+  // is kept as a lower-weight fallback that only fires if the rider-side
+  // line is missing (e.g. cropped screenshots).
+  { field: 'received', weight: 1.25, platforms: ['DIDI'], patterns: [
+    re('المدفوع\\s*من\\s*الراكب'),
+  ]},
+  { field: 'received', weight: 0.95, platforms: ['DIDI'], patterns: [
     re('^ا?رباحك(?=$|\\s|[^\\u0600-\\u06FF])'),
     re('^أرباحك(?=$|\\s|[^\\u0600-\\u06FF])'),
+    // "تم استلام النقد" appears on the top driver card with the cash amount.
+    re('تم\\s*استلام\\s*النقد'),
+  ]},
+  // InDrive-specific: rider's total payment line — the closest equivalent
+  // to Uber/DiDi's "amount-paid" anchor. "استلمت" section labels it as
+  // "إجمالي المستلم".
+  { field: 'received', weight: 1.2, platforms: ['INDRIVE'], patterns: [
+    re('إجمالي\\s*المستلم'),
+    re('اجمالي\\s*المستلم'),
   ]},
   // Uber-specific: "الدخل" appears as a label in the earnings breakdown. We
   // anchor to start-of-line so the SAME pattern doesn't match the related but
@@ -125,20 +145,24 @@ export const DICTIONARY: DictEntry[] = [
     re('app\\s+fee'),
     re('commission'),
   ]},
-  // Careem: total deduction (service fee + VAT bundled) is "إجمالي المدفوع"
-  // inside the "دفعت" section — most accurate single number. Highest weight
-  // so it overrides individual deduction lines.
-  { field: 'commission', weight: 1.2, platforms: ['CAREEM'], patterns: [
+  // Careem + InDrive both use "إجمالي المدفوع" as the bundled
+  // (service-fee + VAT) deduction inside the "دفعت" section — most accurate
+  // single number. Highest weight so it overrides individual deduction lines.
+  { field: 'commission', weight: 1.2, platforms: ['CAREEM', 'INDRIVE'], patterns: [
     re('^اجمالي\\s*المدفوع'),
+    re('^إجمالي\\s*المدفوع'),
   ]},
-  // Partial Careem deduction lines — lower weight, used as fallback when the
-  // total line isn't visible.
-  { field: 'commission', weight: 1.05, platforms: ['CAREEM'], patterns: [
+  // Partial Careem/InDrive deduction lines — lower weight, used as fallback
+  // when the total line isn't visible.
+  { field: 'commission', weight: 1.05, platforms: ['CAREEM', 'INDRIVE'], patterns: [
     re('مدفوعات\\s*قيمه\\s*الخدمه'),
   ]},
-  // DiDi: explicit "service fee incl. VAT" line — single best signal.
+  // DiDi: explicit "service fee incl. VAT" line — single best signal. Also
+  // mapped from the section header "مستحقات دي دي المقدرة" when the line
+  // following has the value.
   { field: 'commission', weight: 1.2, platforms: ['DIDI'], patterns: [
     re('رسوم\\s*الخدمه\\s*شامله\\s*ضريبه'),
+    re('مستحقات\\s*دي\\s*دي'),
   ]},
   // Uber: "رسوم الخدمة" inside the breakdown with a percentage tag.
   { field: 'commission', weight: 1.15, platforms: ['UBER'], patterns: [
@@ -267,6 +291,25 @@ export const DICTIONARY: DictEntry[] = [
     re('الدفع\\s*نقدا'),
     re('\\bcash\\b'),
   ]},
+  // Explicit "الدفع نقدًا" / "الدفع نقدا" line on InDrive's earnings
+  // screen — stronger than the generic adverbial match because the layout
+  // also contains "السداد عبر الهاتف المحمول" (which used to win as a
+  // wallet signal and flipped the payment method incorrectly to "wallet").
+  { field: 'paymentCash', weight: 1.3, patterns: [
+    re('الدفع\\s*نقدا'),
+    re('الدفع\\s*نقدًا'),
+  ]},
+  // DiDi: "تم استلام النقد" implies cash was physically received from the
+  // rider — promotes paymentMethod=cash with high weight.
+  { field: 'paymentCash', weight: 1.2, platforms: ['DIDI'], patterns: [
+    re('تم\\s*استلام\\s*النقد'),
+  ]},
+  // Uber: the "المبلغ النقدي الذي تم تحصيله" line indicates cash was
+  // collected (amount may be 0 for non-cash trips, but a non-empty cash
+  // line is a strong cash signal).
+  { field: 'paymentCash', weight: 1.1, platforms: ['UBER'], patterns: [
+    re('المبلغ\\s*النقدي\\s*الذي\\s*تم\\s*تحصيله'),
+  ]},
   { field: 'paymentCard', weight: 1.0, patterns: [
     re('(?:^|\\s|[^\\u0600-\\u06FF])بطاقه(?=$|\\s|[^\\u0600-\\u06FF])'),
     re('(?:^|\\s|[^\\u0600-\\u06FF])فيزا(?=$|\\s|[^\\u0600-\\u06FF])'),
@@ -276,14 +319,26 @@ export const DICTIONARY: DictEntry[] = [
     re('credit'),
     re('debit'),
   ]},
+  // DiDi-specific: "الدفع الإلكتروني" / "الدفع الالكتروني" is DiDi's label
+  // for non-cash (card / digital wallet) payment.
+  { field: 'paymentCard', weight: 1.2, platforms: ['DIDI'], patterns: [
+    re('الدفع\\s*الالكتروني'),
+    re('الدفع\\s*الإلكتروني'),
+  ]},
   { field: 'paymentWallet', weight: 1.0, patterns: [
     re('(?:^|\\s|[^\\u0600-\\u06FF])محفظه(?=$|\\s|[^\\u0600-\\u06FF])'),
     re('كريم\\s*باي'),
     re('\\bfawry\\b'),
     re('\\bwallet\\b'),
     re('careem\\s*pay'),
-    re('السداد\\s*عبر\\s*الهاتف'),
     re('mobile\\s+payment'),
+  ]},
+  // "السداد عبر الهاتف المحمول" appears on InDrive's payment screen alongside
+  // the cash label — for InDrive it does NOT mean wallet (the actual payment
+  // method is described by "الدفع نقدًا"). Restrict the wallet match to
+  // Careem where this phrase actually means mobile-wallet.
+  { field: 'paymentWallet', weight: 1.0, platforms: ['CAREEM'], patterns: [
+    re('السداد\\s*عبر\\s*الهاتف'),
   ]},
 
   // ---------------- Vehicle ----------------

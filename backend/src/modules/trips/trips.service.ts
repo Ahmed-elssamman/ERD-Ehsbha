@@ -1,10 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
 import { CreateTripDto, ListTripsDto, UpdateTripDto } from './dto/trips.dto';
 
 @Injectable()
 export class TripsService {
+  private readonly logger = new Logger(TripsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aggregates: AggregatesService,
@@ -152,6 +155,88 @@ export class TripsService {
 
       return updated;
     });
+  }
+
+  /**
+   * Bulk-create N trips for a driver in ONE request. Each item is processed
+   * inside its own transaction so a single failure (FK violation, validation
+   * error, …) doesn't roll back the others. We deliberately run sequentially
+   * — not Promise.all — because the aggregates upsert hits the same
+   * `(driver, day, app)` row that all cards from the same screenshot would
+   * map to, and concurrent transactions on that row contend on the unique
+   * index and intermittently raise P2034 / P2002.
+   *
+   * Returns the successfully created trips plus a per-index error array so
+   * the client can surface "saved X of N, Y failed" without ambiguity.
+   */
+  async createBatch(driverId: string, items: CreateTripDto[]) {
+    const created: Awaited<ReturnType<TripsService['create']>>[] = [];
+    const errors: Array<{ index: number; code: string; message: string }> = [];
+
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const trip = await this.create(driverId, items[i]);
+        created.push(trip);
+      } catch (err) {
+        const mapped = this.classifyError(err);
+        errors.push({ index: i, ...mapped });
+        this.logger.warn(
+          `createBatch item ${i} failed: ${mapped.code} ${mapped.message}`,
+        );
+      }
+    }
+
+    return { created, errors };
+  }
+
+  /**
+   * Bulk-delete N trips. Same sequential-transaction rationale as
+   * `createBatch` — concurrent aggregate decrements race on the same
+   * counter row.
+   */
+  async removeBatch(driverId: string, ids: string[]) {
+    const deleted: string[] = [];
+    const errors: Array<{ id: string; code: string; message: string }> = [];
+
+    // Dedupe; preserve input order so the client can correlate.
+    const seen = new Set<string>();
+    const ordered = ids.filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
+
+    for (const id of ordered) {
+      try {
+        await this.remove(driverId, id);
+        deleted.push(id);
+      } catch (err) {
+        const mapped = this.classifyError(err);
+        errors.push({ id, ...mapped });
+        this.logger.warn(
+          `removeBatch trip ${id} failed: ${mapped.code} ${mapped.message}`,
+        );
+      }
+    }
+
+    return { deleted, errors };
+  }
+
+  private classifyError(err: unknown): { code: string; message: string } {
+    if (err instanceof NotFoundException) {
+      return { code: 'TRIP_NOT_FOUND', message: 'Trip not found' };
+    }
+    if (err instanceof ConflictException) {
+      const r = err.getResponse() as { code?: string; message?: string };
+      return { code: r?.code ?? 'CONFLICT', message: r?.message ?? 'Conflict' };
+    }
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') return { code: 'DUPLICATE', message: 'Already exists' };
+      if (err.code === 'P2025') return { code: 'NOT_FOUND', message: 'Resource not found' };
+      if (err.code === 'P2003') return { code: 'FOREIGN_KEY', message: 'Related resource missing' };
+      return { code: `PRISMA_${err.code}`, message: err.message };
+    }
+    if (err instanceof Prisma.PrismaClientValidationError) {
+      return { code: 'PRISMA_VALIDATION', message: err.message };
+    }
+    if (err instanceof Error) return { code: 'UNKNOWN', message: err.message };
+    return { code: 'UNKNOWN', message: 'Unknown error' };
   }
 
   async remove(driverId: string, id: string) {

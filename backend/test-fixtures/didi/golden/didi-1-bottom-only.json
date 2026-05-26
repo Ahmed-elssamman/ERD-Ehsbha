@@ -1,0 +1,20 @@
+{
+  "platform": "DIDI",
+  "grossEgp": 24.40,
+  "receivedEgp": 20.00,
+  "commissionEgp": 3.44,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": null,
+  "totalKm": null,
+  "durationSec": null,
+  "startedAt": "2026-05-16T20:09:00.000Z",
+  "endedAt": null,
+  "paymentMethod": "unknown",
+  "vehicleType": null,
+  "pickup": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+  "destination": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+  "$notes": {
+    "comment": "Bottom half only — has rider breakdown + addresses + date but no top header (distance/duration/vehicle/payment method)."
+  }
+}

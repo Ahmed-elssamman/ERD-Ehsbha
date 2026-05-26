@@ -1,0 +1,41 @@
+{
+  "platform": "UBER",
+  "kind": "multi-trip",
+  "trips": [
+    {
+      "grossEgp": null,
+      "receivedEgp": 27.04,
+      "commissionEgp": null,
+      "tipEgp": null,
+      "waitingFeeEgp": null,
+      "paidKm": 5.70,
+      "totalKm": 5.70,
+      "durationSec": 701,
+      "startedAt": null,
+      "endedAt": null,
+      "paymentMethod": "cash",
+      "vehicleType": "scooter",
+      "pickup": "Nasr City 4455020 EG",
+      "destination": "Ahmed El-Zomor Nasr City 11765 EG",
+      "$notes": { "timeOnCard": "10:46 PM", "cashCollected": 28.00, "surge": "زادت قيمة الأجرة" }
+    },
+    {
+      "grossEgp": null,
+      "receivedEgp": 27.52,
+      "commissionEgp": null,
+      "tipEgp": null,
+      "waitingFeeEgp": null,
+      "paidKm": 2.72,
+      "totalKm": 2.72,
+      "durationSec": 836,
+      "startedAt": null,
+      "endedAt": null,
+      "paymentMethod": "cash",
+      "vehicleType": "scooter",
+      "pickup": "مدينة نصر عبد المنعم رياض EG",
+      "destination": "مدينة نصر المهندس 4455022 EG",
+      "$notes": { "timeOnCard": "10:22 PM", "cashCollected": 28.00 }
+    }
+  ],
+  "$notes": { "dateOnHeader": "الاثنين 18 مايو" }
+}

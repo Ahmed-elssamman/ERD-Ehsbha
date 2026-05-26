@@ -139,16 +139,25 @@ export abstract class BaseParser {
   protected findCurrencyOnLine(line: string): { amount: number; raw: string } | null {
     const norm = normalizeNumeric(line);
     // amount before currency: "27.04 ج.م"
-    const after = norm.match(new RegExp(`(\\d[\\d.,]*)\\s*${CURRENCY_RX.source}`, 'i'));
+    // The optional `-?` between the digits and the currency unit handles
+    // Arabic accounting convention where the minus sign trails the number
+    // (e.g. "4.77- ج.م." on Uber's commission line). The minus is purely a
+    // sign indicator — we return the magnitude here and let the field
+    // assignment decide what sign it actually represents.
+    const after = norm.match(new RegExp(`(-?\\d[\\d.,]*)\\s*-?\\s*${CURRENCY_RX.source}`, 'i'));
     if (after) {
       const a = parseAmount(after[1]);
-      if (a != null) return { amount: a, raw: after[0] };
+      // Return magnitude — OCR-driven fields (fare, commission, etc.) are
+      // always non-negative in our data model. Whether the value represents
+      // a deduction or a credit is determined by the matching label, not by
+      // the OCR sign convention.
+      if (a != null) return { amount: Math.abs(a), raw: after[0] };
     }
     // currency before amount: "EGP 27.04"
-    const before = norm.match(new RegExp(`${CURRENCY_RX.source}\\s*(\\d[\\d.,]*)`, 'i'));
+    const before = norm.match(new RegExp(`${CURRENCY_RX.source}\\s*(-?\\d[\\d.,]*)`, 'i'));
     if (before) {
       const a = parseAmount(before[1]);
-      if (a != null) return { amount: a, raw: before[0] };
+      if (a != null) return { amount: Math.abs(a), raw: before[0] };
     }
     return null;
   }
@@ -186,14 +195,33 @@ export abstract class BaseParser {
       const entries = findFieldsOnLine(normalizedLines[i]);
       if (entries.length === 0) continue;
       const inlineAmount = this.findCurrencyOnLine(lines[i])?.amount;
-      // Only borrow the next-line amount if the next line has NO label of its
-      // own — otherwise we'd misattribute (e.g. a section header "الدخل"
-      // followed by "الأجرة 31.81" would incorrectly grab the fare).
+      // In Arabic RTL UIs, values are visually to the LEFT of labels which
+      // means OCR (top-to-bottom + left-to-right within a row) emits the
+      // value's line ABOVE the label's line. We therefore prefer the
+      // previous line first, then fall back to the next line for the few
+      // layouts (Uber's first breakdown row, Didi's "تم استلام النقد") where
+      // the value follows the label.
       let nearbyAmount: number | undefined = inlineAmount;
+      let sourceConfMultiplier = 0.85;
+      if (nearbyAmount == null && i > 0) {
+        const prevHasLabel = findFieldsOnLine(normalizedLines[i - 1]).length > 0;
+        if (!prevHasLabel) {
+          const prevAmount = this.findCurrencyOnLine(lines[i - 1])?.amount;
+          if (prevAmount != null) {
+            nearbyAmount = prevAmount;
+          }
+        }
+      }
       if (nearbyAmount == null && i + 1 < normalizedLines.length) {
         const nextHasLabel = findFieldsOnLine(normalizedLines[i + 1]).length > 0;
         if (!nextHasLabel) {
-          nearbyAmount = this.findCurrencyOnLine(lines[i + 1])?.amount;
+          const nextAmount = this.findCurrencyOnLine(lines[i + 1])?.amount;
+          if (nextAmount != null) {
+            nearbyAmount = nextAmount;
+            // Next-line lookup is now the secondary path — give it a slightly
+            // lower confidence so a same-line or prev-line match wins on ties.
+            sourceConfMultiplier = 0.8;
+          }
         }
       }
       if (nearbyAmount == null) continue;
@@ -202,10 +230,11 @@ export abstract class BaseParser {
         if (entry.platforms && !entry.platforms.includes(this.platform)) continue;
         const fieldKey = this.mapDictFieldToParsedKey(entry.field);
         if (!fieldKey) continue;
+        const newWeight = entry.weight * sourceConfMultiplier;
         const existing = fields[fieldKey];
-        if (existing != null && (perField[fieldKey] ?? 0) >= entry.weight * 0.85) continue;
+        if (existing != null && (perField[fieldKey] ?? 0) >= newWeight) continue;
         (fields as Record<string, unknown>)[fieldKey] = nearbyAmount;
-        perField[fieldKey] = entry.weight * 0.85;
+        perField[fieldKey] = newWeight;
       }
     }
 
@@ -297,18 +326,6 @@ export abstract class BaseParser {
         }
       }
 
-      m = norm.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-      if (m) {
-        const h = Number(m[1]);
-        const mn = Number(m[2]);
-        const s = Number(m[3] ?? '0');
-        if (h < 13 && mn < 60 && s < 60) {
-          fields.durationSec = h * 3600 + mn * 60 + s;
-          perField.durationSec = 0.6;
-          return;
-        }
-      }
-
       m = norm.match(/(\d{1,3})\s*(?:دقيقه|دقا[يئ]ق)(?=$|\s|[^؀-ۿ])/i);
       if (!m) m = norm.match(/(\d{1,3})\s*min(?:utes?)?\b/i);
       if (m) {
@@ -370,8 +387,13 @@ export abstract class BaseParser {
       }
 
       if (!timePart) {
-        // Suffix variant: "10:46 م" / "08:45 PM" / "08:43 ص"
-        const mT = line.match(/(\d{1,2}):(\d{2})\s*(ص|م|AM|PM|am|pm)?/);
+        // Suffix variant: "10:46 م" / "08:45 PM" / "08:43 ص" — and also the
+        // RTL-scrambled order Azure occasionally returns ("08:09.2026/05/16 م"
+        // when the source was "2026/05/16، 08:09 م"). The non-capturing group
+        // between the time and the suffix absorbs digits, dots, slashes,
+        // commas, hyphens, and Arabic commas, so the suffix is still
+        // associated with the time.
+        const mT = line.match(/(\d{1,2}):(\d{2})(?:[\s.,/،\-\d]*(ص|م|AM|PM|am|pm))?/);
         if (mT) {
           const h = Number(mT[1]);
           const m = Number(mT[2]);
@@ -460,7 +482,23 @@ export abstract class BaseParser {
     fields: Partial<OcrParsedTripDto>,
     perField: Partial<Record<keyof OcrParsedTripDto, number>>,
   ): void {
-    const addressLike = lines.filter((l) => /[A-Za-z][\w\s\-]+(\bEG\b|\d{4,5})/.test(l));
+    // Uber's pickup/destination lines reliably contain the Egypt country
+    // code "EG" (from the embedded Google address). The script + arrangement
+    // varies a lot — Azure may emit any of:
+    //   - Latin-only:           "Nasr City 4455020 EG"
+    //   - Arabic-then-EG:       "مدينة نصر عبد المنعم رياض EG"
+    //   - RTL-scrambled:        "4442441 EG مدينة نصر محور المشير محمد علي"
+    //                            (postal + EG appear BEFORE the Arabic text)
+    // We therefore accept any line containing a word-boundary "EG" with
+    // enough surrounding context (>= 10 chars + at least one letter glyph).
+    const addressLike = lines.filter((l) => {
+      const trimmed = l.trim();
+      if (trimmed.length < 10) return false;
+      if (!/\bEG\b/.test(trimmed)) return false;
+      // Must contain at least one letter — Arabic or Latin — so we don't
+      // pick up stray "EG" tokens floating between digit-only rows.
+      return /[A-Za-z؀-ۿ]{2,}/.test(trimmed);
+    });
     if (addressLike.length >= 1) {
       fields.pickup = addressLike[0].trim();
       perField.pickup = 0.6;

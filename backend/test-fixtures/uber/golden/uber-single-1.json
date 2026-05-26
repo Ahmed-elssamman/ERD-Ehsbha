@@ -1,0 +1,22 @@
+{
+  "platform": "UBER",
+  "grossEgp": 20.00,
+  "receivedEgp": 17.00,
+  "commissionEgp": 3.00,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 1.61,
+  "totalKm": 1.61,
+  "durationSec": 341,
+  "startedAt": null,
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "El-Nasr Rd Nasr City 4450233 EG",
+  "destination": "Abbas El Akkad Nasr City 4450143 EG",
+  "$notes": {
+    "cashCollected": 18.00,
+    "balance": -1.00,
+    "comment": "uber-1Trip-AR-1.jpeg is the same file (same MD5) as didi-AR-4.jpeg — kept as separate case IDs but with identical golden content."
+  }
+}

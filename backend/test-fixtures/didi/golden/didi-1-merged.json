@@ -1,0 +1,24 @@
+{
+  "platform": "DIDI",
+  "grossEgp": 24.40,
+  "receivedEgp": 20.00,
+  "commissionEgp": 3.44,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 2.8,
+  "totalKm": 2.8,
+  "durationSec": 542,
+  "startedAt": "2026-05-16T20:09:00.000Z",
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": "Tayaran",
+  "pickup": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+  "destination": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+  "$notes": {
+    "incomeRule": "receivedEgp = المدفوع من الراكب (per user rule); ignore أرباحك = 20.96",
+    "grossRule": "grossEgp = أجرة المشوار from rider section (24.40)",
+    "commissionRule": "commissionEgp = مستحقات دي دي = 3.44",
+    "discountRider": -4.40,
+    "earningsLine": 20.96
+  }
+}

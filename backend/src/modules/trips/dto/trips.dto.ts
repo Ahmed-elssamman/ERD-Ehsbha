@@ -36,6 +36,25 @@ export type CreateTripDto = z.infer<typeof CreateTripSchema>;
 export const UpdateTripSchema = CreateTripSchema.innerType().partial();
 export type UpdateTripDto = z.infer<typeof UpdateTripSchema>;
 
+/**
+ * Bulk create. Up to 20 trips in one request — sized so a driver who
+ * scans an Uber "ملخص الدخل" with 10-15 cards still fits in one round-trip,
+ * but small enough that any single failure surface stays digestible.
+ *
+ * The server processes each item sequentially (NOT in parallel) so the
+ * downstream aggregate-counter upserts don't race on the same
+ * driver/day/app row.
+ */
+export const BatchCreateTripsSchema = z.object({
+  items: z.array(CreateTripSchema).min(1).max(20),
+});
+export type BatchCreateTripsDto = z.infer<typeof BatchCreateTripsSchema>;
+
+export const BatchDeleteTripsSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(200),
+});
+export type BatchDeleteTripsDto = z.infer<typeof BatchDeleteTripsSchema>;
+
 export const ListTripsSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),

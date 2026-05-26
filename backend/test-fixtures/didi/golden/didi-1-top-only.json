@@ -1,0 +1,22 @@
+{
+  "platform": "DIDI",
+  "grossEgp": 24.40,
+  "receivedEgp": 20.00,
+  "commissionEgp": null,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 2.8,
+  "totalKm": 2.8,
+  "durationSec": 542,
+  "startedAt": null,
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": "Tayaran",
+  "pickup": null,
+  "destination": null,
+  "$notes": {
+    "comment": "Top half only — has driver income breakdown + rider breakdown but no مستحقات دي دي line and no addresses/date.",
+    "earningsLine": 20.96,
+    "cashReceivedLine": 20.00
+  }
+}

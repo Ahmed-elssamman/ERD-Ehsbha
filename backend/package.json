@@ -18,7 +18,8 @@
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
     "smoke": "ts-node scripts/smoke.ts",
-    "smoke:ocr": "ts-node -r dotenv/config scripts/smoke-azure-ocr.ts"
+    "smoke:ocr": "ts-node -r dotenv/config scripts/smoke-azure-ocr.ts",
+    "benchmark:ocr": "ts-node -r dotenv/config scripts/ocr-benchmark.ts"
   },
   "dependencies": {
     "@azure-rest/ai-document-intelligence": "^1.1.0",

@@ -6,6 +6,7 @@ import { IndriveParser } from './parsers/indrive.parser';
 import { DidiParser } from './parsers/didi.parser';
 import { CareemParser } from './parsers/careem.parser';
 import { MultiScreenshotMerger } from './merge/multi-screenshot.merger';
+import { MultiTripSplitter } from './merge/multi-trip.splitter';
 import { ConfidenceScorer } from './confidence/scorer';
 import { TripValidator } from './validation/trip-validator';
 import { SemanticNormalizer } from './semantic/normalizer';
@@ -30,6 +31,7 @@ describe('OcrService.assemble', () => {
     new SharpProcessor(),
     new PlatformDetector(normalizer),
     new MultiScreenshotMerger(),
+    new MultiTripSplitter(),
     new ConfidenceScorer(),
     new TripValidator(),
     new UberParser(normalizer),

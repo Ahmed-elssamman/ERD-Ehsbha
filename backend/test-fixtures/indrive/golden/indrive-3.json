@@ -1,0 +1,23 @@
+{
+  "platform": "INDRIVE",
+  "grossEgp": 104.00,
+  "receivedEgp": 104.00,
+  "commissionEgp": 12.84,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 30.5,
+  "totalKm": 30.5,
+  "durationSec": 1800,
+  "startedAt": "2026-05-15T19:27:00.000Z",
+  "endedAt": "2026-05-15T19:57:00.000Z",
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "Al Methak",
+  "destination": "Dr Ali Hassan 16009",
+  "$notes": {
+    "incomeLine": 91.16,
+    "vat": 1.58,
+    "serviceFee": 11.26,
+    "rider": "Hozaifa"
+  }
+}

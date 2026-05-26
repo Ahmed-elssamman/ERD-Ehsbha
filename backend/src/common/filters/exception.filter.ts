@@ -40,6 +40,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = mapped.status;
       code = mapped.code;
       message = mapped.message;
+      // Always surface the Prisma code + meta in logs — without it
+      // "DB_ERROR" tells the operator nothing about which constraint /
+      // column / table actually failed.
+      this.logger.error(
+        `Prisma ${exception.code} on ${req.method} ${req.url}: ${exception.message}`,
+        JSON.stringify(exception.meta ?? {}),
+      );
+    } else if (exception instanceof Prisma.PrismaClientValidationError) {
+      status = 400;
+      code = 'PRISMA_VALIDATION';
+      message = 'Invalid data sent to the database';
+      this.logger.error(`Prisma validation error on ${req.method} ${req.url}`, exception.message);
     } else if (exception instanceof Error) {
       message = exception.message;
     }

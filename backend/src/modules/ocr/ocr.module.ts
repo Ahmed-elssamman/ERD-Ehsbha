@@ -12,6 +12,7 @@ import { DidiParser } from './parsers/didi.parser';
 import { CareemParser } from './parsers/careem.parser';
 import { SemanticNormalizer } from './semantic/normalizer';
 import { MultiScreenshotMerger } from './merge/multi-screenshot.merger';
+import { MultiTripSplitter } from './merge/multi-trip.splitter';
 import { ConfidenceScorer } from './confidence/scorer';
 import { TripValidator } from './validation/trip-validator';
 
@@ -46,6 +47,7 @@ import { TripValidator } from './validation/trip-validator';
     DidiParser,
     CareemParser,
     MultiScreenshotMerger,
+    MultiTripSplitter,
     ConfidenceScorer,
     TripValidator,
   ],

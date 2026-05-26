@@ -1,0 +1,21 @@
+{
+  "platform": "UBER",
+  "grossEgp": 32.38,
+  "receivedEgp": 27.52,
+  "commissionEgp": 4.86,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 2.72,
+  "totalKm": 2.72,
+  "durationSec": 836,
+  "startedAt": null,
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "مدينة نصر عبد المنعم رياض EG",
+  "destination": "مدينة نصر المهندس 4455022 EG",
+  "$notes": {
+    "cashCollected": 28.00,
+    "balance": -0.48
+  }
+}

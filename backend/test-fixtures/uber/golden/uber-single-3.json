@@ -1,0 +1,21 @@
+{
+  "platform": "UBER",
+  "grossEgp": 42.98,
+  "receivedEgp": 36.53,
+  "commissionEgp": 6.45,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 8.16,
+  "totalKm": 8.16,
+  "durationSec": 766,
+  "startedAt": null,
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "Al Mazloum Nasr City 4453113 EG",
+  "destination": "Nasr City 4440510 EG",
+  "$notes": {
+    "cashCollected": 15.00,
+    "balance": 21.53
+  }
+}

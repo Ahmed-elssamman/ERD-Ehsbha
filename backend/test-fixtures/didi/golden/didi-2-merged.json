@@ -1,0 +1,22 @@
+{
+  "platform": "DIDI",
+  "grossEgp": 23.82,
+  "receivedEgp": 23.50,
+  "commissionEgp": 3.31,
+  "tipEgp": null,
+  "waitingFeeEgp": 0.32,
+  "paidKm": 3.6,
+  "totalKm": 3.6,
+  "durationSec": 598,
+  "startedAt": "2026-05-16T20:29:00.000Z",
+  "endedAt": null,
+  "paymentMethod": "card",
+  "vehicleType": "Tayaran",
+  "pickup": "عماره 4145 زهراء مدينة نصر, Al Hay Al Asher Nasr City Cairo Governorate 4444110 Egypt",
+  "destination": "جاردينيا كافيه, سوق السيارات الحي العاشر مدينة نصر محافظة القاهرة 4442401 مصر",
+  "$notes": {
+    "paymentLabel": "الدفع الإلكتروني (electronic / card)",
+    "discountRider": -0.32,
+    "earningsLine": 20.51
+  }
+}

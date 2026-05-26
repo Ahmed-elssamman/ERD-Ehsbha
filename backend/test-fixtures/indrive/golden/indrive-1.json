@@ -1,0 +1,24 @@
+{
+  "platform": "INDRIVE",
+  "grossEgp": 65.00,
+  "receivedEgp": 65.00,
+  "commissionEgp": 8.03,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 18.4,
+  "totalKm": 18.4,
+  "durationSec": 1200,
+  "startedAt": "2026-05-15T18:14:00.000Z",
+  "endedAt": "2026-05-15T18:34:00.000Z",
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "Orouba Axis",
+  "destination": "استاد القاهرة الدولي المصرى",
+  "$notes": {
+    "incomeLine": 57.97,
+    "vat": 0.99,
+    "serviceFee": 7.04,
+    "rider": "Mazen",
+    "dateOnHeader": "الجمعة، 15 مايو 2026"
+  }
+}

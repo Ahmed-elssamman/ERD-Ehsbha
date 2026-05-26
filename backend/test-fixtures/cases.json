@@ -1,0 +1,159 @@
+{
+  "$comment": "Manifest of OCR benchmark cases. Each case maps one or more input image files to a golden expected output. The benchmark runs the full pipeline per case and diffs against the golden.",
+  "cases": [
+    {
+      "id": "uber-single-1",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["uber/uber-1Trip-AR-1.jpeg"],
+      "golden": "uber/golden/uber-single-1.json"
+    },
+    {
+      "id": "uber-single-2",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["uber/uber-1Trip-AR-2.jpeg"],
+      "golden": "uber/golden/uber-single-2.json"
+    },
+    {
+      "id": "uber-single-3",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["uber/uber-1Trip-AR-3.jpeg"],
+      "golden": "uber/golden/uber-single-3.json"
+    },
+    {
+      "id": "uber-single-4-scrolled",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["uber/uber-1Trip-AR-4.jpeg"],
+      "golden": "uber/golden/uber-single-4-scrolled.json",
+      "$comment": "Scrolled-down view of the same trip as uber-single-3 — distance/duration not visible."
+    },
+    {
+      "id": "uber-single-5",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["uber/uber-1Trip-AR-5.jpeg"],
+      "golden": "uber/golden/uber-single-5.json"
+    },
+    {
+      "id": "uber-single-6",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["uber/uber-1Trip-AR-6.jpeg"],
+      "golden": "uber/golden/uber-single-6.json"
+    },
+    {
+      "id": "uber-misfiled-as-didi-5",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-5.jpeg"],
+      "golden": "uber/golden/uber-misfiled-as-didi-5.json",
+      "$comment": "File is in didi/ folder but is actually an Uber 'تفاصيل المشوار' screen — same content as uber-single-2."
+    },
+    {
+      "id": "uber-misfiled-as-didi-7",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-7.jpeg"],
+      "golden": "uber/golden/uber-misfiled-as-didi-7.json",
+      "$comment": "File is in didi/ folder but is actually an Uber screen — same content as uber-single-3."
+    },
+    {
+      "id": "uber-multi-1",
+      "platform": "UBER",
+      "kind": "multi-trip",
+      "files": ["uber/uber-2-Trip-AR-1.jpeg"],
+      "golden": "uber/golden/uber-multi-1.json"
+    },
+    {
+      "id": "uber-multi-2",
+      "platform": "UBER",
+      "kind": "multi-trip",
+      "files": ["uber/uber-2-Trip-AR-2.jpeg"],
+      "golden": "uber/golden/uber-multi-2.json"
+    },
+    {
+      "id": "uber-multi-3",
+      "platform": "UBER",
+      "kind": "multi-trip",
+      "files": ["uber/uber-2-Trip-AR-3.jpeg"],
+      "golden": "uber/golden/uber-multi-3.json"
+    },
+    {
+      "id": "didi-1-merged",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-1.1.jpeg", "didi/didi-AR-1.jpeg"],
+      "golden": "didi/golden/didi-1-merged.json",
+      "$comment": "Two screenshots of the same Didi trip (top + bottom). Tests multi-screenshot merging."
+    },
+    {
+      "id": "didi-2-merged",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-2.1.jpeg", "didi/didi-AR-2.jpeg"],
+      "golden": "didi/golden/didi-2-merged.json"
+    },
+    {
+      "id": "didi-3-merged",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-3.1.jpeg", "didi/didi-AR-3.jpeg"],
+      "golden": "didi/golden/didi-3-merged.json"
+    },
+    {
+      "id": "didi-1-top-only",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-1.1.jpeg"],
+      "golden": "didi/golden/didi-1-top-only.json",
+      "$comment": "Top half alone — tests partial extraction without rider/commission breakdown."
+    },
+    {
+      "id": "didi-1-bottom-only",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-1.jpeg"],
+      "golden": "didi/golden/didi-1-bottom-only.json",
+      "$comment": "Bottom half alone — has fare breakdown + date but no distance/duration."
+    },
+    {
+      "id": "uber-misfiled-as-didi-4",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": ["didi/didi-AR-4.jpeg"],
+      "golden": "didi/golden/didi-4-same-as-2-bottom.json",
+      "$comment": "didi-AR-4.jpeg is bytewise identical to uber-1Trip-AR-1.jpeg — user misfiled it in didi/. Kept golden file path for stability; content was corrected."
+    },
+    {
+      "id": "indrive-1",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": ["indrive/indervier-AR-1.jpeg"],
+      "golden": "indrive/golden/indrive-1.json"
+    },
+    {
+      "id": "indrive-2",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": ["indrive/indervier-AR-2.jpeg"],
+      "golden": "indrive/golden/indrive-2.json"
+    },
+    {
+      "id": "indrive-3",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": ["indrive/indervier-AR-3.jpeg"],
+      "golden": "indrive/golden/indrive-3.json"
+    },
+    {
+      "id": "indrive-4",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": ["indrive/indervier-AR-4.jpeg"],
+      "golden": "indrive/golden/indrive-4.json"
+    }
+  ]
+}

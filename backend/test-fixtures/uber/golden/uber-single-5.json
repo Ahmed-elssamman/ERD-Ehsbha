@@ -1,0 +1,21 @@
+{
+  "platform": "UBER",
+  "grossEgp": 31.81,
+  "receivedEgp": 27.04,
+  "commissionEgp": 4.77,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 5.70,
+  "totalKm": 5.70,
+  "durationSec": 701,
+  "startedAt": null,
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "Nasr City 4455020 EG",
+  "destination": "Ahmed El-Zomor Nasr City 11765 EG",
+  "$notes": {
+    "cashCollected": 28.00,
+    "comment": "Same trip as uber-single-1"
+  }
+}

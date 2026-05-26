@@ -1,0 +1,4573 @@
+{
+  "runAt": "2026-05-25T13:16:13.493Z",
+  "cases": [
+    {
+      "caseId": "uber-single-1",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "uber/uber-1Trip-AR-1.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "00128MB.l.11070%\n11:17\n< تفاصيل المشوار\n؟\nـمن الصحى\nكوبري .\nGoogle\nMap data @2026\nالمسافة\nالمدة\n1.61 كلم\n5 من الدقائق 41 ثانية\nEl-Nasr Rd Nasr City 4450233 EG\n1\nAbbas El Akkad Nasr City 4450143 EG\nالمبلغ النقدي الذي تم تحصيله: 18.00 ج.م.\nالدخل\nالأجرة\n20.00 ج.م.\n٧\n3.00- ج.م.\nرسوم الخدمة\nالأجرة ×15%\n17.00 ج.م.\nالدخل\n18.00 - ج.م. v\nمبالغ الدخل\n1.00- ج.م.\nرصيد المشاوير\nC\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 341,
+          "grossEgp": 20,
+          "receivedEgp": 17,
+          "tipEgp": null,
+          "commissionEgp": 3,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 1.61,
+          "paidKm": 1.61,
+          "pickup": "El-Nasr Rd Nasr City 4450233 EG",
+          "destination": "Abbas El Akkad Nasr City 4450143 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.808,
+          "commissionEgp": 0.94,
+          "receivedEgp": 0.94,
+          "paidKm": 0.866,
+          "durationSec": 0.866,
+          "paymentMethod": 1,
+          "pickup": 0.577,
+          "destination": 0.577,
+          "totalKm": 0.529
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 341,
+              "grossEgp": 20,
+              "receivedEgp": 17,
+              "tipEgp": null,
+              "commissionEgp": 3,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 1.61,
+              "paidKm": 1.61,
+              "pickup": "El-Nasr Rd Nasr City 4450233 EG",
+              "destination": "Abbas El Akkad Nasr City 4450143 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.808,
+              "commissionEgp": 0.94,
+              "receivedEgp": 0.94,
+              "paidKm": 0.866,
+              "durationSec": 0.866,
+              "paymentMethod": 1,
+              "pickup": 0.577,
+              "destination": 0.577,
+              "totalKm": 0.529
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "ad9c19227a561d11395284e82cc304880edcfadd763c96ae61a60c26d999aab9"
+        ],
+        "rawTextLengths": [
+          346
+        ],
+        "ocrMeanConfidence": 0.924
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 20,
+          "actual": 20,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 17,
+          "actual": 17,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 3,
+          "actual": 3,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 1.61,
+          "actual": 1.61,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 1.61,
+          "actual": 1.61,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 341,
+          "actual": 341,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "El-Nasr Rd Nasr City 4450233 EG",
+          "actual": "El-Nasr Rd Nasr City 4450233 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Abbas El Akkad Nasr City 4450143 EG",
+          "actual": "Abbas El Akkad Nasr City 4450143 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.924,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-single-2",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "uber/uber-1Trip-AR-2.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:17\nbeg moB ilI1 070%\nتفاصيل المشوار\nالمسافة\nالمدة\n4.29 كلم\n9 من الدقائق 47 ثانية\n4442441 EG مدينة نصر محور المشير محمد علي\nO\nفهمی\n4455022 EG مدينة نصر\nالمبلغ النقدي الذي تم تحصيله: 34.00 ج.م.\nالدخل\nالأجرة\n37.85 ج.م.\n٧\n5.68- ج.م.\nرسوم الخدمة\nالأجرة × 15%\n32.17 ج.م.\nالدخل\nمبالغ الدخل\n34.00 - ج.م. v\n1.83- ج.م.\nرصيد المشاوير\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 587,
+          "grossEgp": 37.85,
+          "receivedEgp": 32.17,
+          "tipEgp": null,
+          "commissionEgp": 5.68,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 4.29,
+          "paidKm": 4.29,
+          "pickup": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+          "destination": "مدينة نصر 4455022 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.811,
+          "commissionEgp": 0.944,
+          "receivedEgp": 0.944,
+          "paidKm": 0.869,
+          "durationSec": 0.869,
+          "paymentMethod": 1,
+          "pickup": 0.579,
+          "destination": 0.579,
+          "totalKm": 0.531
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 587,
+              "grossEgp": 37.85,
+              "receivedEgp": 32.17,
+              "tipEgp": null,
+              "commissionEgp": 5.68,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 4.29,
+              "paidKm": 4.29,
+              "pickup": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+              "destination": "مدينة نصر 4455022 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.811,
+              "commissionEgp": 0.944,
+              "receivedEgp": 0.944,
+              "paidKm": 0.869,
+              "durationSec": 0.869,
+              "paymentMethod": 1,
+              "pickup": 0.579,
+              "destination": 0.579,
+              "totalKm": 0.531
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "a2d419e4c54de2df8950c5e75472c5099b1c91e1831b2332ae7a8f037603a9d8"
+        ],
+        "rawTextLengths": [
+          301
+        ],
+        "ocrMeanConfidence": 0.93
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 37.85,
+          "actual": 37.85,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 32.17,
+          "actual": 32.17,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 5.68,
+          "actual": 5.68,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 4.29,
+          "actual": 4.29,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 4.29,
+          "actual": 4.29,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 587,
+          "actual": 587,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+          "actual": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "مدينة نصر 4455022 EG",
+          "actual": "مدينة نصر 4455022 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.93,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-single-3",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "uber/uber-1Trip-AR-3.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:16\nتفاصيل المشوار\n>\n؟\nالمدة\nالمسافة\n8.16 كلم\n12 من الدقائق 46 ثانية\nAl Mazloum Nasr City 4453113 EG\nO\n■\nNasr City 4440510 EG\nالمبلغ النقدي الذي تم تحصيله: 15.00 ج.م.\nالدخل\nالأجرة\n42.98 ج.م. v\n6.45- ج.م.\nرسوم الخدمة\nالأجرة × 15%\nالدخل\n36.53 ج.م.\n15.00 - ج.م.\nمبالغ الدخل\n21.53 ج.م.\nرصيد المشاوير\nالمزيد من التفاصيل\n٧\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 766,
+          "grossEgp": 42.98,
+          "receivedEgp": 36.53,
+          "tipEgp": null,
+          "commissionEgp": 6.45,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 8.16,
+          "paidKm": 8.16,
+          "pickup": "Al Mazloum Nasr City 4453113 EG",
+          "destination": "Nasr City 4440510 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.809,
+          "commissionEgp": 0.942,
+          "receivedEgp": 0.886,
+          "paidKm": 0.867,
+          "durationSec": 0.867,
+          "paymentMethod": 1,
+          "pickup": 0.578,
+          "destination": 0.578,
+          "totalKm": 0.53
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 766,
+              "grossEgp": 42.98,
+              "receivedEgp": 36.53,
+              "tipEgp": null,
+              "commissionEgp": 6.45,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 8.16,
+              "paidKm": 8.16,
+              "pickup": "Al Mazloum Nasr City 4453113 EG",
+              "destination": "Nasr City 4440510 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.809,
+              "commissionEgp": 0.942,
+              "receivedEgp": 0.886,
+              "paidKm": 0.867,
+              "durationSec": 0.867,
+              "paymentMethod": 1,
+              "pickup": 0.578,
+              "destination": 0.578,
+              "totalKm": 0.53
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "07c8270a1aca2a4fd3a83ac73ae030205b4c4643b8d073cbc13afc4422b70c19"
+        ],
+        "rawTextLengths": [
+          312
+        ],
+        "ocrMeanConfidence": 0.927
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 42.98,
+          "actual": 42.98,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 36.53,
+          "actual": 36.53,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 6.45,
+          "actual": 6.45,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 8.16,
+          "actual": 8.16,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 8.16,
+          "actual": 8.16,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 766,
+          "actual": 766,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Al Mazloum Nasr City 4453113 EG",
+          "actual": "Al Mazloum Nasr City 4453113 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Nasr City 4440510 EG",
+          "actual": "Nasr City 4440510 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.927,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-single-4-scrolled",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "uber/uber-1Trip-AR-4.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "4.00 0 mlml071%\n11:16\nتفاصيل المشوار\n>\nAl Mazloum Nasr City 4453113 EG\n0\n1\nNasr City 4440510 EG\nالمبلغ النقدي الذي تم تحصيله: 15.00 ج.م.\nالدخل\nالأجرة\n42.98 ج.م. ٧\n6.45- ج.م.\nرسوم الخدمة\nالأجرة ×15%\nلدخل\n36.53 ج.م.\n15.00 - ج.م.\nمبالغ الدخل\n21.53 ج.م.\nرصيد المشاوير\nالمزيد من التفاصيل\n٧\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": null,
+          "grossEgp": 42.98,
+          "receivedEgp": 36.53,
+          "tipEgp": null,
+          "commissionEgp": 6.45,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": null,
+          "paidKm": null,
+          "pickup": "Al Mazloum Nasr City 4453113 EG",
+          "destination": "Nasr City 4440510 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.796,
+          "commissionEgp": 0.926,
+          "paymentMethod": 1,
+          "pickup": 0.568,
+          "destination": 0.568,
+          "receivedEgp": 0.663
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": null,
+              "grossEgp": 42.98,
+              "receivedEgp": 36.53,
+              "tipEgp": null,
+              "commissionEgp": 6.45,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": null,
+              "paidKm": null,
+              "pickup": "Al Mazloum Nasr City 4453113 EG",
+              "destination": "Nasr City 4440510 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.796,
+              "commissionEgp": 0.926,
+              "paymentMethod": 1,
+              "pickup": 0.568,
+              "destination": 0.568,
+              "receivedEgp": 0.663
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_RECEIVED_DERIVED_FROM_GROSS_MINUS_COMMISSION",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "ffc54edc8f7371d1efa3f8e0cfdbb67ac35e699688582ee8e7670692bc825687"
+        ],
+        "rawTextLengths": [
+          262
+        ],
+        "ocrMeanConfidence": 0.894
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 42.98,
+          "actual": 42.98,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 36.53,
+          "actual": 36.53,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 6.45,
+          "actual": 6.45,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Al Mazloum Nasr City 4453113 EG",
+          "actual": "Al Mazloum Nasr City 4453113 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Nasr City 4440510 EG",
+          "actual": "Nasr City 4440510 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.894,
+      "warnings": [
+        "OCR_RECEIVED_DERIVED_FROM_GROSS_MINUS_COMMISSION",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-single-5",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "uber/uber-1Trip-AR-5.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:15\n< تفاصيل المشوار\nـ الدائري\nGoogle\nMap data @2026\nالمدة\nالمسافة\n11 من الدقائق 41 ثانية\n5.70 كلم\nNasr City 4455020 EG\nAhmed El-Zomor Nasr City 11765 EG\nالمبلغ النقدي الذي تم تحصيله: 28.00 ج.م.\nالدخل\nالأجرة\n31.81 ج.م.\n٧\n4.77- ج.م.\nرسوم الخدمة\nالأجرة × 15%\n27.04 ج.م.\nالدخل\n28.00- ج.م.\nمبالغ الدخل\n0.96- ج.م.\nرصيد المشاوير\nC\nالأرباح\nالقائمة\nالصفحة الرئيسية\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 701,
+          "grossEgp": 31.81,
+          "receivedEgp": 27.04,
+          "tipEgp": null,
+          "commissionEgp": 4.77,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 5.7,
+          "paidKm": 5.7,
+          "pickup": "Nasr City 4455020 EG",
+          "destination": "Ahmed El-Zomor Nasr City 11765 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.809,
+          "commissionEgp": 0.942,
+          "receivedEgp": 0.942,
+          "paidKm": 0.867,
+          "durationSec": 0.867,
+          "paymentMethod": 1,
+          "pickup": 0.578,
+          "destination": 0.578,
+          "totalKm": 0.53
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 701,
+              "grossEgp": 31.81,
+              "receivedEgp": 27.04,
+              "tipEgp": null,
+              "commissionEgp": 4.77,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 5.7,
+              "paidKm": 5.7,
+              "pickup": "Nasr City 4455020 EG",
+              "destination": "Ahmed El-Zomor Nasr City 11765 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.809,
+              "commissionEgp": 0.942,
+              "receivedEgp": 0.942,
+              "paidKm": 0.867,
+              "durationSec": 0.867,
+              "paymentMethod": 1,
+              "pickup": 0.578,
+              "destination": 0.578,
+              "totalKm": 0.53
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "a9e1a5d7aa6241976deb3d5282b26530c2222f88af7789f9ae8539af7f8beaa7"
+        ],
+        "rawTextLengths": [
+          320
+        ],
+        "ocrMeanConfidence": 0.927
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 31.81,
+          "actual": 31.81,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 27.04,
+          "actual": 27.04,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 4.77,
+          "actual": 4.77,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 5.7,
+          "actual": 5.7,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 5.7,
+          "actual": 5.7,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 701,
+          "actual": 701,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Nasr City 4455020 EG",
+          "actual": "Nasr City 4455020 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Ahmed El-Zomor Nasr City 11765 EG",
+          "actual": "Ahmed El-Zomor Nasr City 11765 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.927,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-single-6",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "uber/uber-1Trip-AR-6.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "0.58 - 1B .. il .il 71%\n11:15\nتفاصيل المشوار\n>\nالمسافة\nالمدة\n2.72 كلم\n13 من الدقائق 56ثانية\nEG مدينة نصر عبد المنعم رياض\n1\n4455022 EG مدينة نصر المهندس\nالمبلغ النقدي الذي تم تحصيله: 28.00 ج.م.\nالدخل\nالأجرة\n32.38 ج.م.\n٧\n4.86- ج.م.\nرسوم الخدمة\nالأجرة × 15%\n27.52 ج.م.\nالدخل\n28.00 - ج.م. مـ\nمبالغ الدخل\n0.48- ج.م.\nرصيد المشاوير\nالمبلغ الإجمالي الذي تحصّله أوبر مقابل مشاويرك من 20\nأ ... ١ - 18 .ا . .واضحة ... 55 . .ا ما الأحبة\nG\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 836,
+          "grossEgp": 32.38,
+          "receivedEgp": 27.52,
+          "tipEgp": null,
+          "commissionEgp": 4.86,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 2.72,
+          "paidKm": 2.72,
+          "pickup": "مدينة نصر عبد المنعم رياض EG",
+          "destination": "مدينة نصر المهندس 4455022 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.796,
+          "commissionEgp": 0.927,
+          "receivedEgp": 0.927,
+          "paidKm": 0.853,
+          "durationSec": 0.853,
+          "paymentMethod": 1,
+          "pickup": 0.569,
+          "destination": 0.569,
+          "totalKm": 0.521
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 836,
+              "grossEgp": 32.38,
+              "receivedEgp": 27.52,
+              "tipEgp": null,
+              "commissionEgp": 4.86,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 2.72,
+              "paidKm": 2.72,
+              "pickup": "مدينة نصر عبد المنعم رياض EG",
+              "destination": "مدينة نصر المهندس 4455022 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.796,
+              "commissionEgp": 0.927,
+              "receivedEgp": 0.927,
+              "paidKm": 0.853,
+              "durationSec": 0.853,
+              "paymentMethod": 1,
+              "pickup": 0.569,
+              "destination": 0.569,
+              "totalKm": 0.521
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "6c9cfb35a617b7421218363291f8db9117c7918b7119c3d8f556b262c65bda06"
+        ],
+        "rawTextLengths": [
+          396
+        ],
+        "ocrMeanConfidence": 0.896
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 32.38,
+          "actual": 32.38,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 27.52,
+          "actual": 27.52,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 4.86,
+          "actual": 4.86,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 2.72,
+          "actual": 2.72,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 2.72,
+          "actual": 2.72,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 836,
+          "actual": 836,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "مدينة نصر عبد المنعم رياض EG",
+          "actual": "مدينة نصر عبد المنعم رياض EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "مدينة نصر المهندس 4455022 EG",
+          "actual": "مدينة نصر المهندس 4455022 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.896,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-misfiled-as-didi-5",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-5.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:17\nbeg moB ilI1 070%\nتفاصيل المشوار\nالمسافة\nالمدة\n4.29 كلم\n9 من الدقائق 47 ثانية\n4442441 EG مدينة نصر محور المشير محمد علي\nO\nفهمی\n4455022 EG مدينة نصر\nالمبلغ النقدي الذي تم تحصيله: 34.00 ج.م.\nالدخل\nالأجرة\n37.85 ج.م.\n٧\n5.68- ج.م.\nرسوم الخدمة\nالأجرة × 15%\n32.17 ج.م.\nالدخل\nمبالغ الدخل\n34.00 - ج.م. v\n1.83- ج.م.\nرصيد المشاوير\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 587,
+          "grossEgp": 37.85,
+          "receivedEgp": 32.17,
+          "tipEgp": null,
+          "commissionEgp": 5.68,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 4.29,
+          "paidKm": 4.29,
+          "pickup": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+          "destination": "مدينة نصر 4455022 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.811,
+          "commissionEgp": 0.944,
+          "receivedEgp": 0.944,
+          "paidKm": 0.869,
+          "durationSec": 0.869,
+          "paymentMethod": 1,
+          "pickup": 0.579,
+          "destination": 0.579,
+          "totalKm": 0.531
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 587,
+              "grossEgp": 37.85,
+              "receivedEgp": 32.17,
+              "tipEgp": null,
+              "commissionEgp": 5.68,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 4.29,
+              "paidKm": 4.29,
+              "pickup": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+              "destination": "مدينة نصر 4455022 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.811,
+              "commissionEgp": 0.944,
+              "receivedEgp": 0.944,
+              "paidKm": 0.869,
+              "durationSec": 0.869,
+              "paymentMethod": 1,
+              "pickup": 0.579,
+              "destination": 0.579,
+              "totalKm": 0.531
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "a2d419e4c54de2df8950c5e75472c5099b1c91e1831b2332ae7a8f037603a9d8"
+        ],
+        "rawTextLengths": [
+          301
+        ],
+        "ocrMeanConfidence": 0.93
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 37.85,
+          "actual": 37.85,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 32.17,
+          "actual": 32.17,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 5.68,
+          "actual": 5.68,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 4.29,
+          "actual": 4.29,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 4.29,
+          "actual": 4.29,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 587,
+          "actual": 587,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+          "actual": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "مدينة نصر 4455022 EG",
+          "actual": "مدينة نصر 4455022 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.93,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-misfiled-as-didi-7",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-7.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:16\nتفاصيل المشوار\n>\n؟\nالمدة\nالمسافة\n8.16 كلم\n12 من الدقائق 46 ثانية\nAl Mazloum Nasr City 4453113 EG\nO\n■\nNasr City 4440510 EG\nالمبلغ النقدي الذي تم تحصيله: 15.00 ج.م.\nالدخل\nالأجرة\n42.98 ج.م. v\n6.45- ج.م.\nرسوم الخدمة\nالأجرة × 15%\nالدخل\n36.53 ج.م.\n15.00 - ج.م.\nمبالغ الدخل\n21.53 ج.م.\nرصيد المشاوير\nالمزيد من التفاصيل\n٧\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 766,
+          "grossEgp": 42.98,
+          "receivedEgp": 36.53,
+          "tipEgp": null,
+          "commissionEgp": 6.45,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 8.16,
+          "paidKm": 8.16,
+          "pickup": "Al Mazloum Nasr City 4453113 EG",
+          "destination": "Nasr City 4440510 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.809,
+          "commissionEgp": 0.942,
+          "receivedEgp": 0.886,
+          "paidKm": 0.867,
+          "durationSec": 0.867,
+          "paymentMethod": 1,
+          "pickup": 0.578,
+          "destination": 0.578,
+          "totalKm": 0.53
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 766,
+              "grossEgp": 42.98,
+              "receivedEgp": 36.53,
+              "tipEgp": null,
+              "commissionEgp": 6.45,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 8.16,
+              "paidKm": 8.16,
+              "pickup": "Al Mazloum Nasr City 4453113 EG",
+              "destination": "Nasr City 4440510 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.809,
+              "commissionEgp": 0.942,
+              "receivedEgp": 0.886,
+              "paidKm": 0.867,
+              "durationSec": 0.867,
+              "paymentMethod": 1,
+              "pickup": 0.578,
+              "destination": 0.578,
+              "totalKm": 0.53
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "07c8270a1aca2a4fd3a83ac73ae030205b4c4643b8d073cbc13afc4422b70c19"
+        ],
+        "rawTextLengths": [
+          312
+        ],
+        "ocrMeanConfidence": 0.927
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 42.98,
+          "actual": 42.98,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 36.53,
+          "actual": 36.53,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 6.45,
+          "actual": 6.45,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 8.16,
+          "actual": 8.16,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 8.16,
+          "actual": 8.16,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 766,
+          "actual": 766,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Al Mazloum Nasr City 4453113 EG",
+          "actual": "Al Mazloum Nasr City 4453113 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Nasr City 4440510 EG",
+          "actual": "Nasr City 4440510 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.927,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-multi-1",
+      "platform": "UBER",
+      "kind": "multi-trip",
+      "files": [
+        "uber/uber-2-Trip-AR-1.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:16 9\nملخص الدخل\nE:\nAll\nFeature\nType\nV\nV\nالجمعة، 15 مايو\n.P.@ 19.70\n00\n~ 5:49\nسكوتر . 5 من الدقائق 36 ثانية . 2.37 كلم\n20.00 ج.م. المبلغ النقدي الذي تم تحصيله\nCairo City\nمدينة القاهرة\nالجديدة\nGoogle\nMap data @2026 Google\nUnnamed Road Nasr City 4720110 EG\nUnnamed Road New Cairo 1 4730005 EG\n.P.c 36.53\n00\n₱ 5:32\nسكوتر . 12 من الدقائق 46 ثانية . 8.16 كلم\n15.00 ج.م. المبلغ النقدي الذي تم تحصيله\nNew\nZAHRAA\nNasr City\nNASR CITY\nمدينه نصر\nCH\nبنة\nCairo City\nنصر\nRd\nدينة القاهرة\nGoogle\nMap data @2026 Google\nAl Mazloum Nasr City 4453113 EG\nNasr City 4440510 EG\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "multi",
+        "parsed": {
+          "vehicleType": "scooter",
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 336,
+          "receivedEgp": 19.7,
+          "tipEgp": null,
+          "commissionEgp": null,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 2.37,
+          "paidKm": 2.37,
+          "pickup": "Unnamed Road Nasr City 4720110 EG",
+          "destination": "Unnamed Road New Cairo 1 4730005 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": null,
+          "paidKm": 0.861,
+          "durationSec": 0.861,
+          "paymentMethod": 1,
+          "vehicleType": 0.718,
+          "pickup": 0.574,
+          "destination": 0.574,
+          "totalKm": 0.526,
+          "receivedEgp": 0.814
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "scooter",
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 336,
+              "receivedEgp": 19.7,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 2.37,
+              "paidKm": 2.37,
+              "pickup": "Unnamed Road Nasr City 4720110 EG",
+              "destination": "Unnamed Road New Cairo 1 4730005 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": null,
+              "paidKm": 0.861,
+              "durationSec": 0.861,
+              "paymentMethod": 1,
+              "vehicleType": 0.718,
+              "pickup": 0.574,
+              "destination": 0.574,
+              "totalKm": 0.526,
+              "receivedEgp": 0.814
+            }
+          },
+          {
+            "parsed": {
+              "vehicleType": "scooter",
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 766,
+              "receivedEgp": 36.53,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 8.16,
+              "paidKm": 8.16,
+              "pickup": "Al Mazloum Nasr City 4453113 EG",
+              "destination": "Nasr City 4440510 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": null,
+              "paidKm": 0.842,
+              "durationSec": 0.842,
+              "paymentMethod": 1,
+              "vehicleType": 0.702,
+              "pickup": 0.562,
+              "destination": 0.562,
+              "totalKm": 0.515,
+              "receivedEgp": 0.796
+            }
+          }
+        ],
+        "warnings": [
+          "card1:OCR_TIME_AMBIGUOUS",
+          "card1:OCR_DISTANCE_IS_PAID_KM",
+          "card1:OCR_LOW_CONFIDENCE_totalKm",
+          "card1:OCR_LOW_CONFIDENCE_startedAt",
+          "card1:OCR_LOW_CONFIDENCE_endedAt",
+          "card2:OCR_TIME_AMBIGUOUS",
+          "card2:OCR_DISTANCE_IS_PAID_KM",
+          "card2:OCR_LOW_CONFIDENCE_totalKm",
+          "card2:OCR_LOW_CONFIDENCE_startedAt",
+          "card2:OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "82cff02f29f117caee445a576bedcbb1e83630281c399aaaebe9ceeeb4623f8b"
+        ],
+        "rawTextLengths": [
+          548
+        ],
+        "ocrMeanConfidence": 0.893
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "trip1.platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "trip1.grossEgp",
+          "expected": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.receivedEgp",
+          "expected": 19.7,
+          "actual": 19.7,
+          "status": "match"
+        },
+        {
+          "field": "trip1.commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.paidKm",
+          "expected": 2.37,
+          "actual": 2.37,
+          "status": "match"
+        },
+        {
+          "field": "trip1.totalKm",
+          "expected": 2.37,
+          "actual": 2.37,
+          "status": "match"
+        },
+        {
+          "field": "trip1.durationSec",
+          "expected": 336,
+          "actual": 336,
+          "status": "match"
+        },
+        {
+          "field": "trip1.startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "trip1.vehicleType",
+          "expected": "scooter",
+          "actual": "scooter",
+          "status": "match"
+        },
+        {
+          "field": "trip1.pickup",
+          "expected": "Unnamed Road Nasr City 4720110 EG",
+          "actual": "Unnamed Road Nasr City 4720110 EG",
+          "status": "match"
+        },
+        {
+          "field": "trip1.destination",
+          "expected": "Unnamed Road New Cairo 1 4730005 EG",
+          "actual": "Unnamed Road New Cairo 1 4730005 EG",
+          "status": "match"
+        },
+        {
+          "field": "trip2.platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "trip2.grossEgp",
+          "expected": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.receivedEgp",
+          "expected": 36.53,
+          "actual": 36.53,
+          "status": "match"
+        },
+        {
+          "field": "trip2.commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.paidKm",
+          "expected": 8.16,
+          "actual": 8.16,
+          "status": "match"
+        },
+        {
+          "field": "trip2.totalKm",
+          "expected": 8.16,
+          "actual": 8.16,
+          "status": "match"
+        },
+        {
+          "field": "trip2.durationSec",
+          "expected": 766,
+          "actual": 766,
+          "status": "match"
+        },
+        {
+          "field": "trip2.startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "trip2.vehicleType",
+          "expected": "scooter",
+          "actual": "scooter",
+          "status": "match"
+        },
+        {
+          "field": "trip2.pickup",
+          "expected": "Al Mazloum Nasr City 4453113 EG",
+          "actual": "Al Mazloum Nasr City 4453113 EG",
+          "status": "match"
+        },
+        {
+          "field": "trip2.destination",
+          "expected": "Nasr City 4440510 EG",
+          "actual": "Nasr City 4440510 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 30,
+      "fieldsTotal": 30,
+      "meanConfidence": 0.893,
+      "warnings": [
+        "card1:OCR_TIME_AMBIGUOUS",
+        "card1:OCR_DISTANCE_IS_PAID_KM",
+        "card1:OCR_LOW_CONFIDENCE_totalKm",
+        "card1:OCR_LOW_CONFIDENCE_startedAt",
+        "card1:OCR_LOW_CONFIDENCE_endedAt",
+        "card2:OCR_TIME_AMBIGUOUS",
+        "card2:OCR_DISTANCE_IS_PAID_KM",
+        "card2:OCR_LOW_CONFIDENCE_totalKm",
+        "card2:OCR_LOW_CONFIDENCE_startedAt",
+        "card2:OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-multi-2",
+      "platform": "UBER",
+      "kind": "multi-trip",
+      "files": [
+        "uber/uber-2-Trip-AR-2.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:16 0\nملخص الدخل\n>\n=:\nAll\nType\nFeature\nV\nالسبت، 16 مايو\n7 زادت قيمة الأجرة\n18.30 ج.م.\n00\n₱ 6:56\nسكوتر . 6 من الدقائق 53ثانية . 1.90 كلم\n22.00 ج.م. المبلغ النقدي الذي تم تحصيله\nHRAA\nCITY\nزهراء\nAl Methak\nRing RA\nنصَرَ\nEl Salam M'\nمسجد السلام\nGoogle\nMap data @202€\nMohammed Helmy Nasr City EG\n......\nFahmy Ali Nasr City 4442615 EG\n.P.@ 18.27\n00\n₱ 6:41\nسكوتر . 6 من الدقائق 22 ثانية - 2.31 كلم\n19.00 ج.م. المبلغ النقدي الذي تم تحصيله\nZAHRAA\nNASR CITY\nمدينة\nAl Methak\nGooglehmed El-Zomor\nMap data @202€\nOmar Ibn El-Khattab Nasr City EG\nAl Maglis Nasr City 4442632 EG\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "multi",
+        "parsed": {
+          "vehicleType": "scooter",
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 413,
+          "receivedEgp": 18.3,
+          "tipEgp": null,
+          "commissionEgp": null,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 1.9,
+          "paidKm": 1.9,
+          "pickup": "Mohammed Helmy Nasr City EG",
+          "destination": "Fahmy Ali Nasr City 4442615 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": null,
+          "paidKm": 0.837,
+          "durationSec": 0.837,
+          "paymentMethod": 1,
+          "vehicleType": 0.697,
+          "pickup": 0.558,
+          "destination": 0.558,
+          "totalKm": 0.511,
+          "receivedEgp": 0.79
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "scooter",
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 413,
+              "receivedEgp": 18.3,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 1.9,
+              "paidKm": 1.9,
+              "pickup": "Mohammed Helmy Nasr City EG",
+              "destination": "Fahmy Ali Nasr City 4442615 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": null,
+              "paidKm": 0.837,
+              "durationSec": 0.837,
+              "paymentMethod": 1,
+              "vehicleType": 0.697,
+              "pickup": 0.558,
+              "destination": 0.558,
+              "totalKm": 0.511,
+              "receivedEgp": 0.79
+            }
+          },
+          {
+            "parsed": {
+              "vehicleType": "scooter",
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 382,
+              "receivedEgp": 18.27,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 2.31,
+              "paidKm": 2.31,
+              "pickup": "Omar Ibn El-Khattab Nasr City EG",
+              "destination": "Al Maglis Nasr City 4442632 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": null,
+              "paidKm": 0.846,
+              "durationSec": 0.846,
+              "paymentMethod": 1,
+              "vehicleType": 0.705,
+              "pickup": 0.564,
+              "destination": 0.564,
+              "totalKm": 0.517,
+              "receivedEgp": 0.799
+            }
+          }
+        ],
+        "warnings": [
+          "card1:OCR_TIME_AMBIGUOUS",
+          "card1:OCR_DISTANCE_IS_PAID_KM",
+          "card1:OCR_LOW_CONFIDENCE_totalKm",
+          "card1:OCR_LOW_CONFIDENCE_startedAt",
+          "card1:OCR_LOW_CONFIDENCE_endedAt",
+          "card2:OCR_TIME_AMBIGUOUS",
+          "card2:OCR_DISTANCE_IS_PAID_KM",
+          "card2:OCR_LOW_CONFIDENCE_totalKm",
+          "card2:OCR_LOW_CONFIDENCE_startedAt",
+          "card2:OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "e3cc4589bb01a4150d1af48d776ad2568c7f1524e554f528b4348700b7c1e9ac"
+        ],
+        "rawTextLengths": [
+          555
+        ],
+        "ocrMeanConfidence": 0.87
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "trip1.platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "trip1.grossEgp",
+          "expected": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.receivedEgp",
+          "expected": 18.3,
+          "actual": 18.3,
+          "status": "match"
+        },
+        {
+          "field": "trip1.commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.paidKm",
+          "expected": 1.9,
+          "actual": 1.9,
+          "status": "match"
+        },
+        {
+          "field": "trip1.totalKm",
+          "expected": 1.9,
+          "actual": 1.9,
+          "status": "match"
+        },
+        {
+          "field": "trip1.durationSec",
+          "expected": 413,
+          "actual": 413,
+          "status": "match"
+        },
+        {
+          "field": "trip1.startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "trip1.vehicleType",
+          "expected": "scooter",
+          "actual": "scooter",
+          "status": "match"
+        },
+        {
+          "field": "trip1.pickup",
+          "expected": "Mohammed Helmy Nasr City EG",
+          "actual": "Mohammed Helmy Nasr City EG",
+          "status": "match"
+        },
+        {
+          "field": "trip1.destination",
+          "expected": "Fahmy Ali Nasr City 4442615 EG",
+          "actual": "Fahmy Ali Nasr City 4442615 EG",
+          "status": "match"
+        },
+        {
+          "field": "trip2.platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "trip2.grossEgp",
+          "expected": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.receivedEgp",
+          "expected": 18.27,
+          "actual": 18.27,
+          "status": "match"
+        },
+        {
+          "field": "trip2.commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.paidKm",
+          "expected": 2.31,
+          "actual": 2.31,
+          "status": "match"
+        },
+        {
+          "field": "trip2.totalKm",
+          "expected": 2.31,
+          "actual": 2.31,
+          "status": "match"
+        },
+        {
+          "field": "trip2.durationSec",
+          "expected": 382,
+          "actual": 382,
+          "status": "match"
+        },
+        {
+          "field": "trip2.startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "trip2.vehicleType",
+          "expected": "scooter",
+          "actual": "scooter",
+          "status": "match"
+        },
+        {
+          "field": "trip2.pickup",
+          "expected": "Omar Ibn El-Khattab Nasr City EG",
+          "actual": "Omar Ibn El-Khattab Nasr City EG",
+          "status": "match"
+        },
+        {
+          "field": "trip2.destination",
+          "expected": "Al Maglis Nasr City 4442632 EG",
+          "actual": "Al Maglis Nasr City 4442632 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 30,
+      "fieldsTotal": 30,
+      "meanConfidence": 0.87,
+      "warnings": [
+        "card1:OCR_TIME_AMBIGUOUS",
+        "card1:OCR_DISTANCE_IS_PAID_KM",
+        "card1:OCR_LOW_CONFIDENCE_totalKm",
+        "card1:OCR_LOW_CONFIDENCE_startedAt",
+        "card1:OCR_LOW_CONFIDENCE_endedAt",
+        "card2:OCR_TIME_AMBIGUOUS",
+        "card2:OCR_DISTANCE_IS_PAID_KM",
+        "card2:OCR_LOW_CONFIDENCE_totalKm",
+        "card2:OCR_LOW_CONFIDENCE_startedAt",
+        "card2:OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-multi-3",
+      "platform": "UBER",
+      "kind": "multi-trip",
+      "files": [
+        "uber/uber-2-Trip-AR-3.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "心 ··· 4QQ xilil071%\n11:15 9\nملخص الدخل\n=:\nAll\n٧\nFeature\nType\n٧\nالاثنين، 18 مايو\n1 زادت قيمة الأجرة\n27.04 ج.م.\n00\n₱ 10:46\nسكوتر . 11 من الدقائق 41 ثانية . 5.70 كلم\n28.00 ج.م. المبلغ النقدي الذي تم تحصيله\nAl Hayy\nAth Thamin\nasr City\nCH\nZAHRAA\nالحى الثامن\nNASR CITY\nمدينه ند\nRing Rd\nزهراء مدينة\nCH\nGoogle\nMap data @202€\nNasr City 4455020 EG\n٠١٠٠٠٠\nAhmed El-Zomor Nasr City 11765 EG\n.P.a 27.52\n00\n₱ 10:22\nسكوتر . 13 من الدقائق 56ثانية . 2.72 كلم\n28.00 ج.م. المبلغ النقدي الذي تم تحصيله\nCH\nCH\nGoogle\nMap data @202€\nمدينة نصر عبد المنعم رياض EG\n٥٠٠٠٠\nمدينة نصر المهندس 4455022 EG\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "multi",
+        "parsed": {
+          "vehicleType": "scooter",
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 701,
+          "receivedEgp": 27.04,
+          "tipEgp": null,
+          "commissionEgp": null,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 5.7,
+          "paidKm": 5.7,
+          "pickup": "Nasr City 4455020 EG",
+          "destination": "Ahmed El-Zomor Nasr City 11765 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": null,
+          "paidKm": 0.856,
+          "durationSec": 0.856,
+          "paymentMethod": 1,
+          "vehicleType": 0.714,
+          "pickup": 0.571,
+          "destination": 0.571,
+          "totalKm": 0.523,
+          "receivedEgp": 0.809
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "scooter",
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 701,
+              "receivedEgp": 27.04,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 5.7,
+              "paidKm": 5.7,
+              "pickup": "Nasr City 4455020 EG",
+              "destination": "Ahmed El-Zomor Nasr City 11765 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": null,
+              "paidKm": 0.856,
+              "durationSec": 0.856,
+              "paymentMethod": 1,
+              "vehicleType": 0.714,
+              "pickup": 0.571,
+              "destination": 0.571,
+              "totalKm": 0.523,
+              "receivedEgp": 0.809
+            }
+          },
+          {
+            "parsed": {
+              "vehicleType": "scooter",
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 836,
+              "receivedEgp": 27.52,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 2.72,
+              "paidKm": 2.72,
+              "pickup": "مدينة نصر عبد المنعم رياض EG",
+              "destination": "مدينة نصر المهندس 4455022 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": null,
+              "paidKm": 0.851,
+              "durationSec": 0.851,
+              "paymentMethod": 1,
+              "vehicleType": 0.709,
+              "pickup": 0.567,
+              "destination": 0.567,
+              "totalKm": 0.52,
+              "receivedEgp": 0.804
+            }
+          }
+        ],
+        "warnings": [
+          "card1:OCR_TIME_AMBIGUOUS",
+          "card1:OCR_DISTANCE_IS_PAID_KM",
+          "card1:OCR_LOW_CONFIDENCE_totalKm",
+          "card1:OCR_LOW_CONFIDENCE_startedAt",
+          "card1:OCR_LOW_CONFIDENCE_endedAt",
+          "card2:OCR_TIME_AMBIGUOUS",
+          "card2:OCR_DISTANCE_IS_PAID_KM",
+          "card2:OCR_LOW_CONFIDENCE_totalKm",
+          "card2:OCR_LOW_CONFIDENCE_startedAt",
+          "card2:OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "a28584519695e3e25673301026fd6402bb5d7947ab83e9035c5c3ed20dc56b08"
+        ],
+        "rawTextLengths": [
+          545
+        ],
+        "ocrMeanConfidence": 0.897
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "trip1.platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "trip1.grossEgp",
+          "expected": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.receivedEgp",
+          "expected": 27.04,
+          "actual": 27.04,
+          "status": "match"
+        },
+        {
+          "field": "trip1.commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.paidKm",
+          "expected": 5.7,
+          "actual": 5.7,
+          "status": "match"
+        },
+        {
+          "field": "trip1.totalKm",
+          "expected": 5.7,
+          "actual": 5.7,
+          "status": "match"
+        },
+        {
+          "field": "trip1.durationSec",
+          "expected": 701,
+          "actual": 701,
+          "status": "match"
+        },
+        {
+          "field": "trip1.startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip1.paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "trip1.vehicleType",
+          "expected": "scooter",
+          "actual": "scooter",
+          "status": "match"
+        },
+        {
+          "field": "trip1.pickup",
+          "expected": "Nasr City 4455020 EG",
+          "actual": "Nasr City 4455020 EG",
+          "status": "match"
+        },
+        {
+          "field": "trip1.destination",
+          "expected": "Ahmed El-Zomor Nasr City 11765 EG",
+          "actual": "Ahmed El-Zomor Nasr City 11765 EG",
+          "status": "match"
+        },
+        {
+          "field": "trip2.platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "trip2.grossEgp",
+          "expected": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.receivedEgp",
+          "expected": 27.52,
+          "actual": 27.52,
+          "status": "match"
+        },
+        {
+          "field": "trip2.commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.paidKm",
+          "expected": 2.72,
+          "actual": 2.72,
+          "status": "match"
+        },
+        {
+          "field": "trip2.totalKm",
+          "expected": 2.72,
+          "actual": 2.72,
+          "status": "match"
+        },
+        {
+          "field": "trip2.durationSec",
+          "expected": 836,
+          "actual": 836,
+          "status": "match"
+        },
+        {
+          "field": "trip2.startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "trip2.paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "trip2.vehicleType",
+          "expected": "scooter",
+          "actual": "scooter",
+          "status": "match"
+        },
+        {
+          "field": "trip2.pickup",
+          "expected": "مدينة نصر عبد المنعم رياض EG",
+          "actual": "مدينة نصر عبد المنعم رياض EG",
+          "status": "match"
+        },
+        {
+          "field": "trip2.destination",
+          "expected": "مدينة نصر المهندس 4455022 EG",
+          "actual": "مدينة نصر المهندس 4455022 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 30,
+      "fieldsTotal": 30,
+      "meanConfidence": 0.897,
+      "warnings": [
+        "card1:OCR_TIME_AMBIGUOUS",
+        "card1:OCR_DISTANCE_IS_PAID_KM",
+        "card1:OCR_LOW_CONFIDENCE_totalKm",
+        "card1:OCR_LOW_CONFIDENCE_startedAt",
+        "card1:OCR_LOW_CONFIDENCE_endedAt",
+        "card2:OCR_TIME_AMBIGUOUS",
+        "card2:OCR_DISTANCE_IS_PAID_KM",
+        "card2:OCR_LOW_CONFIDENCE_totalKm",
+        "card2:OCR_LOW_CONFIDENCE_startedAt",
+        "card2:OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "didi-1-merged",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-1.1.jpeg",
+        "didi/didi-AR-1.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:21 x\n< تفاصيل المشاوير\nأرباحك ®\n20.96 ج.م.\nالمسافة\nالمدة\n2.8 کم\n9 د 2 ث\nTayaran\nنوع السيارة\nطريقة الدفع\nنقدًا\n1 $\n20.00 ج.م.\nتم استلام النقد\nأرباحك\nأجرة المشوار\n20.96 ج.م.\nشامل زيادة وقت الذروة (إن وجد)\n20.96 ج.م.\nإجمالي\nدفع الراكب\n20.00 ج.م.\nالمدفوع من الراكب\n24.40 ج.م.\nأجرة المشوار\n-4.40 ج.م.\nخصومات الراكب\nإجمالي\n20.00 ج.م.\n$\nمستحقات دى دى المقدّرة",
+        "198 7 YR. .. l ml 069%\n11:21 x\nتفاصيل المشاوير\n>\nأجرة المشوار\n20.96 ج.م.\nشامل زيادة وقت الذروة (إن وجد)\n20.96 ج.م.\nإجمالي\nدفع الراكب\n20.00 ج.م.\nالمدفوع من الراكب\n24.40 ج.م.\nأجرة المشوار\n-4.40 ج.م.\nخصومات الراكب\n20.00 ج.م.\nإجمالي\n$\nمستحقات دي دي المقدّرة\n-3.44 ج.م.\nرسوم الخدمة شاملة ضريبة القيمة المضافة\n-3.44 ج.م.\nإجمالي\nتفاصيل المشوار\nhazem\n08:09.2026/05/16 م\nbuilding 294 Gardinia city compound, Nasr City, Cairo\nGovernorate 4456103, Egypt\nPerformance gym, Elmethaq street elayada street\nZahraa Nasr city - Masakin Al dobbaat الحي العاشر مد"
+      ],
+      "parsed": {
+        "platform": "DIDI",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": "Tayaran",
+          "appHint": "DiDi",
+          "startedAt": "2026-05-16T20:09:00.000Z",
+          "endedAt": null,
+          "durationSec": 542,
+          "grossEgp": 24.4,
+          "receivedEgp": 20,
+          "tipEgp": null,
+          "commissionEgp": 3.44,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 2.8,
+          "paidKm": 2.8,
+          "pickup": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+          "destination": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.972,
+          "receivedEgp": 0.972,
+          "commissionEgp": 0.924,
+          "totalKm": 0.535,
+          "paidKm": 0.875,
+          "durationSec": 0.875,
+          "pickup": 0.826,
+          "destination": 0.826,
+          "vehicleType": 0.826,
+          "appHint": 0,
+          "startedAt": 0.826,
+          "paymentMethod": 0.681
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "Tayaran",
+              "appHint": "DiDi",
+              "startedAt": "2026-05-16T20:09:00.000Z",
+              "endedAt": null,
+              "durationSec": 542,
+              "grossEgp": 24.4,
+              "receivedEgp": 20,
+              "tipEgp": null,
+              "commissionEgp": 3.44,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 2.8,
+              "paidKm": 2.8,
+              "pickup": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+              "destination": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.972,
+              "receivedEgp": 0.972,
+              "commissionEgp": 0.924,
+              "totalKm": 0.535,
+              "paidKm": 0.875,
+              "durationSec": 0.875,
+              "pickup": 0.826,
+              "destination": 0.826,
+              "vehicleType": 0.826,
+              "appHint": 0,
+              "startedAt": 0.826,
+              "paymentMethod": 0.681
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "84a57067ab045dacadc87f482813c4b57e6ee4b8f5d1c8e96de0daadafd011bc",
+          "4bd9531b276aeb606f20b8a9089a89ba9b7683b061940b4f5c583df82db968a9"
+        ],
+        "rawTextLengths": [
+          347,
+          512
+        ],
+        "ocrMeanConfidence": 0.944
+      },
+      "detectedPlatform": "DIDI",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "DIDI",
+          "actual": "DIDI",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 24.4,
+          "actual": 24.4,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 20,
+          "actual": 20,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 3.44,
+          "actual": 3.44,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 2.8,
+          "actual": 2.8,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 2.8,
+          "actual": 2.8,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 542,
+          "actual": 542,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-16T20:09:00.000Z",
+          "actual": "2026-05-16T20:09:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": "Tayaran",
+          "actual": "Tayaran",
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+          "actual": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+          "actual": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.944,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "didi-2-merged",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-2.1.jpeg",
+        "didi/didi-AR-2.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "X88 :18.1111070%\n11:20\n< تفاصيل المشاوير\nأرباحك (\n20.51 ج.م.\nالمسافة\nالمدة\n9 د 58 ث\n3.6 کم\nنوع السيارة\nTayaran\nطريقة الدفع\nالدفع الإلكتروني\n$\nأرباحك\nأجرة المشوار\n20.19 ج.م.\nشامل زيادة وقت الذروة (إن وجد)\n0.32 ج.م.\nرسوم وقت الانتظار\n20.51 ج.م.\nإجمالي\nدفع الراكب\n23.50 ج.م.\nالمدفوع من الراكب\n23.82 ج.م.\nأجرة المشوار\n-0.32 ج.م.\nخصومات الراكب\n23.50 ج.م.\n$\nإجمالي\nمستحقات دي دي المقدّرة",
+        "11:20\n< تفاصيل المشاوير\nدفع الراكب\n23.50 ج.م.\nالمدفوع من الراكب\nأجرة المشوار\n23.82 ج.م.\nخصومات الراكب\n-0.32 ج.م.\nإجمالي\n23.50 ج.م.\n$\nمستحقات دي دي المقدَّرة\nرسوم الخدمة شاملة ضريبة القيمة المضافة\n-3.31 ج.م.\n-3.31 ج.م.\nإجمالي\nتفاصيل المشوار\nyehia\n2026/05/16، 08:29 م\n● عماره ٤١٤٥ زهراء مدينة نصر, Al Hay Al Asher Nasr City\nCairo Governorate 4444110 Egypt\nجاردينيا كافيه, سوق السيارات الحي العاشر مدينة نصر محافظة\nالقاهرة 4442401 مصر\nطريق النصر\nTAJ CITY\nالحى الثامن\nمدينه نصر\nزهراء مدينة\nنصر\nمدينة الواحة\nكايرو\nفستيفالـ"
+      ],
+      "parsed": {
+        "platform": "DIDI",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": "Tayaran",
+          "appHint": "DiDi",
+          "startedAt": "2026-05-16T20:29:00.000Z",
+          "endedAt": null,
+          "durationSec": 598,
+          "grossEgp": 23.82,
+          "receivedEgp": 23.5,
+          "tipEgp": null,
+          "commissionEgp": 3.31,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": 0.32,
+          "totalKm": 3.6,
+          "paidKm": 3.6,
+          "pickup": "عماره 4145 زهراء مدينة نصر, Al Hay Al Asher Nasr City Cairo Governorate 4444110 Egypt",
+          "destination": "جاردينيا كافيه, سوق السيارات الحي العاشر مدينة نصر محافظة القاهرة 4442401 مصر",
+          "paymentMethod": "card",
+          "notes": "Waiting fee detected"
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.965,
+          "receivedEgp": 0.965,
+          "commissionEgp": 0.917,
+          "waitingFeeEgp": 0.82,
+          "totalKm": 0.531,
+          "paidKm": 0.869,
+          "durationSec": 0.869,
+          "pickup": 0.82,
+          "destination": 0.82,
+          "vehicleType": 0.82,
+          "appHint": 0,
+          "startedAt": 0.82,
+          "paymentMethod": 0.676
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "Tayaran",
+              "appHint": "DiDi",
+              "startedAt": "2026-05-16T20:29:00.000Z",
+              "endedAt": null,
+              "durationSec": 598,
+              "grossEgp": 23.82,
+              "receivedEgp": 23.5,
+              "tipEgp": null,
+              "commissionEgp": 3.31,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": 0.32,
+              "totalKm": 3.6,
+              "paidKm": 3.6,
+              "pickup": "عماره 4145 زهراء مدينة نصر, Al Hay Al Asher Nasr City Cairo Governorate 4444110 Egypt",
+              "destination": "جاردينيا كافيه, سوق السيارات الحي العاشر مدينة نصر محافظة القاهرة 4442401 مصر",
+              "paymentMethod": "card",
+              "notes": "Waiting fee detected"
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.965,
+              "receivedEgp": 0.965,
+              "commissionEgp": 0.917,
+              "waitingFeeEgp": 0.82,
+              "totalKm": 0.531,
+              "paidKm": 0.869,
+              "durationSec": 0.869,
+              "pickup": 0.82,
+              "destination": 0.82,
+              "vehicleType": 0.82,
+              "appHint": 0,
+              "startedAt": 0.82,
+              "paymentMethod": 0.676
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_WAITING_FEE_DETECTED",
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "05ce9d6fad8e1e6324e489b86ab50f4fc8c83a29fb805664bd1da8eb304743b8",
+          "1b9a47dff188c6e7ceeccd359bf42fb5438627ed468ccf380c4f866e7de9546a"
+        ],
+        "rawTextLengths": [
+          358,
+          511
+        ],
+        "ocrMeanConfidence": 0.93
+      },
+      "detectedPlatform": "DIDI",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "DIDI",
+          "actual": "DIDI",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 23.82,
+          "actual": 23.82,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 23.5,
+          "actual": 23.5,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 3.31,
+          "actual": 3.31,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": 0.32,
+          "actual": 0.32,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 3.6,
+          "actual": 3.6,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 3.6,
+          "actual": 3.6,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 598,
+          "actual": 598,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-16T20:29:00.000Z",
+          "actual": "2026-05-16T20:29:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "card",
+          "actual": "card",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": "Tayaran",
+          "actual": "Tayaran",
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "عماره 4145 زهراء مدينة نصر, Al Hay Al Asher Nasr City Cairo Governorate 4444110 Egypt",
+          "actual": "عماره 4145 زهراء مدينة نصر, Al Hay Al Asher Nasr City Cairo Governorate 4444110 Egypt",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "جاردينيا كافيه, سوق السيارات الحي العاشر مدينة نصر محافظة القاهرة 4442401 مصر",
+          "actual": "جاردينيا كافيه, سوق السيارات الحي العاشر مدينة نصر محافظة القاهرة 4442401 مصر",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.93,
+      "warnings": [
+        "OCR_WAITING_FEE_DETECTED",
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "didi-3-merged",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-3.1.jpeg",
+        "didi/didi-AR-3.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "138 :18 .11 111 070%\n11:20 x\n>\nتفاصيل المشاوير\nأرباحك ®\n29.87 ج.م.\nالمسافة\nالمدة\n6.7 كم\n14 د 5 ث\nنوع السيارة\nTayaran\nطريقة الدفع\nنقدًا\n1$1\n35.00 ج.م.\nتم استلام النقد\nأرباحك\nأجرة المشوار\n29.55 ج.م.\nشامل زيادة وقت الذروة (إن وجد)\n0.32 ج.م.\nرسوم وقت الانتظار\n29.87 ج.م.\nإجمالي\nدفع الراكب\n35.00 ج.م.\nالمدفوع من الراكب\nأجرة المشوار\n34.72 ج.م.\n0.28 ج.م.\nخصومات الراكب\n35.00 ج.م.\nإجمالي\n$",
+        "11:20\n< تفاصيل المشاوير\nشامل زياده وقت الذروة (إن وجد)\n0.32 ج.م.\nرسوم وقت الانتظار\n29.87 ج.م.\nإجمالي\nدفع الراكب\n35.00 ج.م.\nالمدفوع من الراكب\n34.72 ج.م.\nأجرة المشوار\n0.28 ج.م.\nخصومات الراكب\nإجمالي\n35.00 ج.م.\n$\nمستحقات دي دي المقدّرة\n-4.85 ج.م.\nرسوم الخدمة شاملة ضريبة القيمة المضافة\n-4.85 ج.م.\nإجمالي\nتفاصيل المشوار\nمحمد\n2026/05/16، 08:43 م\nمشروع 19، الحي العاشر، مدينة نصر،، Al Hay Al Asher, Nasr\nCity, Cairo Governorate, Egypt\n● مساكن المحمودية, الأباجية المقطم محافظة القاهرة مصر"
+      ],
+      "parsed": {
+        "platform": "DIDI",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": "Tayaran",
+          "appHint": "DiDi",
+          "startedAt": "2026-05-16T20:43:00.000Z",
+          "endedAt": null,
+          "durationSec": 845,
+          "grossEgp": 34.72,
+          "receivedEgp": 35,
+          "tipEgp": null,
+          "commissionEgp": 4.85,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": 0.32,
+          "totalKm": 6.7,
+          "paidKm": 6.7,
+          "pickup": "مشروع 19، الحي العاشر، مدينة نصر، Al Hay Al Asher, Nasr City, Cairo Governorate, Egypt",
+          "destination": "مساكن المحمودية, الأباجية المقطم محافظة القاهرة مصر",
+          "paymentMethod": "cash",
+          "notes": "Waiting fee detected"
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.958,
+          "receivedEgp": 0.958,
+          "commissionEgp": 0.91,
+          "waitingFeeEgp": 0.958,
+          "totalKm": 0.527,
+          "paidKm": 0.862,
+          "durationSec": 0.862,
+          "pickup": 0.814,
+          "destination": 0.814,
+          "vehicleType": 0.814,
+          "appHint": 0,
+          "startedAt": 0.814,
+          "paymentMethod": 0.67
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "Tayaran",
+              "appHint": "DiDi",
+              "startedAt": "2026-05-16T20:43:00.000Z",
+              "endedAt": null,
+              "durationSec": 845,
+              "grossEgp": 34.72,
+              "receivedEgp": 35,
+              "tipEgp": null,
+              "commissionEgp": 4.85,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": 0.32,
+              "totalKm": 6.7,
+              "paidKm": 6.7,
+              "pickup": "مشروع 19، الحي العاشر، مدينة نصر، Al Hay Al Asher, Nasr City, Cairo Governorate, Egypt",
+              "destination": "مساكن المحمودية, الأباجية المقطم محافظة القاهرة مصر",
+              "paymentMethod": "cash",
+              "notes": "Waiting fee detected"
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.958,
+              "receivedEgp": 0.958,
+              "commissionEgp": 0.91,
+              "waitingFeeEgp": 0.958,
+              "totalKm": 0.527,
+              "paidKm": 0.862,
+              "durationSec": 0.862,
+              "pickup": 0.814,
+              "destination": 0.814,
+              "vehicleType": 0.814,
+              "appHint": 0,
+              "startedAt": 0.814,
+              "paymentMethod": 0.67
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_WAITING_FEE_DETECTED",
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "aca9b6f68f83732b64911ee7c31258674b0e1b6a8c047dc746a793a29ac633db",
+          "506cb268992e2002d55abbba7c8a0fd886ac3ec0e28bab07a97201e1475be14f"
+        ],
+        "rawTextLengths": [
+          352,
+          475
+        ],
+        "ocrMeanConfidence": 0.915
+      },
+      "detectedPlatform": "DIDI",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "DIDI",
+          "actual": "DIDI",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 34.72,
+          "actual": 34.72,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 35,
+          "actual": 35,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 4.85,
+          "actual": 4.85,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": 0.32,
+          "actual": 0.32,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 6.7,
+          "actual": 6.7,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 6.7,
+          "actual": 6.7,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 845,
+          "actual": 845,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-16T20:43:00.000Z",
+          "actual": "2026-05-16T20:43:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": "Tayaran",
+          "actual": "Tayaran",
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "مشروع 19، الحي العاشر، مدينة نصر، Al Hay Al Asher, Nasr City, Cairo Governorate, Egypt",
+          "actual": "مشروع 19، الحي العاشر، مدينة نصر، Al Hay Al Asher, Nasr City, Cairo Governorate, Egypt",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "مساكن المحمودية, الأباجية المقطم محافظة القاهرة مصر",
+          "actual": "مساكن المحمودية, الأباجية المقطم محافظة القاهرة مصر",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.915,
+      "warnings": [
+        "OCR_WAITING_FEE_DETECTED",
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "didi-1-top-only",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-1.1.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "11:21 x\n< تفاصيل المشاوير\nأرباحك ®\n20.96 ج.م.\nالمسافة\nالمدة\n2.8 کم\n9 د 2 ث\nTayaran\nنوع السيارة\nطريقة الدفع\nنقدًا\n1 $\n20.00 ج.م.\nتم استلام النقد\nأرباحك\nأجرة المشوار\n20.96 ج.م.\nشامل زيادة وقت الذروة (إن وجد)\n20.96 ج.م.\nإجمالي\nدفع الراكب\n20.00 ج.م.\nالمدفوع من الراكب\n24.40 ج.م.\nأجرة المشوار\n-4.40 ج.م.\nخصومات الراكب\nإجمالي\n20.00 ج.م.\n$\nمستحقات دى دى المقدّرة"
+      ],
+      "parsed": {
+        "platform": "DIDI",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": "Tayaran",
+          "appHint": "DiDi",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 542,
+          "grossEgp": 24.4,
+          "receivedEgp": 20,
+          "tipEgp": null,
+          "commissionEgp": null,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 2.8,
+          "paidKm": 2.8,
+          "pickup": null,
+          "destination": null,
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "receivedEgp": 0.918,
+          "grossEgp": 0.918,
+          "paidKm": 0.87,
+          "durationSec": 0.87,
+          "paymentMethod": 1,
+          "totalKm": 0.532,
+          "vehicleType": 0.822
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": "Tayaran",
+              "appHint": "DiDi",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 542,
+              "grossEgp": 24.4,
+              "receivedEgp": 20,
+              "tipEgp": null,
+              "commissionEgp": null,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 2.8,
+              "paidKm": 2.8,
+              "pickup": null,
+              "destination": null,
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "receivedEgp": 0.918,
+              "grossEgp": 0.918,
+              "paidKm": 0.87,
+              "durationSec": 0.87,
+              "paymentMethod": 1,
+              "totalKm": 0.532,
+              "vehicleType": 0.822
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "84a57067ab045dacadc87f482813c4b57e6ee4b8f5d1c8e96de0daadafd011bc"
+        ],
+        "rawTextLengths": [
+          347
+        ],
+        "ocrMeanConfidence": 0.933
+      },
+      "detectedPlatform": "DIDI",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "DIDI",
+          "actual": "DIDI",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 24.4,
+          "actual": 24.4,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 20,
+          "actual": 20,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 2.8,
+          "actual": 2.8,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 2.8,
+          "actual": 2.8,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 542,
+          "actual": 542,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": "Tayaran",
+          "actual": "Tayaran",
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.933,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "didi-1-bottom-only",
+      "platform": "DIDI",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-1.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "198 7 YR. .. l ml 069%\n11:21 x\nتفاصيل المشاوير\n>\nأجرة المشوار\n20.96 ج.م.\nشامل زيادة وقت الذروة (إن وجد)\n20.96 ج.م.\nإجمالي\nدفع الراكب\n20.00 ج.م.\nالمدفوع من الراكب\n24.40 ج.م.\nأجرة المشوار\n-4.40 ج.م.\nخصومات الراكب\n20.00 ج.م.\nإجمالي\n$\nمستحقات دي دي المقدّرة\n-3.44 ج.م.\nرسوم الخدمة شاملة ضريبة القيمة المضافة\n-3.44 ج.م.\nإجمالي\nتفاصيل المشوار\nhazem\n08:09.2026/05/16 م\nbuilding 294 Gardinia city compound, Nasr City, Cairo\nGovernorate 4456103, Egypt\nPerformance gym, Elmethaq street elayada street\nZahraa Nasr city - Masakin Al dobbaat الحي العاشر مد"
+      ],
+      "parsed": {
+        "platform": "DIDI",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "DiDi",
+          "startedAt": "2026-05-16T20:09:00.000Z",
+          "endedAt": null,
+          "durationSec": null,
+          "grossEgp": 24.4,
+          "receivedEgp": 20,
+          "tipEgp": null,
+          "commissionEgp": 3.44,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": null,
+          "paidKm": null,
+          "pickup": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+          "destination": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+          "paymentMethod": "unknown",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "receivedEgp": 0.929,
+          "commissionEgp": 0.929,
+          "grossEgp": 0.929,
+          "startedAt": 0.831,
+          "pickup": 0.831,
+          "destination": 0.831
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "DiDi",
+              "startedAt": "2026-05-16T20:09:00.000Z",
+              "endedAt": null,
+              "durationSec": null,
+              "grossEgp": 24.4,
+              "receivedEgp": 20,
+              "tipEgp": null,
+              "commissionEgp": 3.44,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": null,
+              "paidKm": null,
+              "pickup": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+              "destination": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+              "paymentMethod": "unknown",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "receivedEgp": 0.929,
+              "commissionEgp": 0.929,
+              "grossEgp": 0.929,
+              "startedAt": 0.831,
+              "pickup": 0.831,
+              "destination": 0.831
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "4bd9531b276aeb606f20b8a9089a89ba9b7683b061940b4f5c583df82db968a9"
+        ],
+        "rawTextLengths": [
+          512
+        ],
+        "ocrMeanConfidence": 0.955
+      },
+      "detectedPlatform": "DIDI",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "DIDI",
+          "actual": "DIDI",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 24.4,
+          "actual": 24.4,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 20,
+          "actual": 20,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 3.44,
+          "actual": 3.44,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-16T20:09:00.000Z",
+          "actual": "2026-05-16T20:09:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "unknown",
+          "actual": "unknown",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+          "actual": "building 294 Gardinia city compound, Nasr City, Cairo Governorate 4456103, Egypt",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+          "actual": "Performance gym, Elmethaq street elayada street Zahraa Nasr city - Masakin Al dobbaat الحي العاشر مد",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.955,
+      "warnings": [
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "uber-misfiled-as-didi-4",
+      "platform": "UBER",
+      "kind": "single-trip",
+      "files": [
+        "didi/didi-AR-4.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "00128MB.l.11070%\n11:17\n< تفاصيل المشوار\n؟\nـمن الصحى\nكوبري .\nGoogle\nMap data @2026\nالمسافة\nالمدة\n1.61 كلم\n5 من الدقائق 41 ثانية\nEl-Nasr Rd Nasr City 4450233 EG\n1\nAbbas El Akkad Nasr City 4450143 EG\nالمبلغ النقدي الذي تم تحصيله: 18.00 ج.م.\nالدخل\nالأجرة\n20.00 ج.م.\n٧\n3.00- ج.م.\nرسوم الخدمة\nالأجرة ×15%\n17.00 ج.م.\nالدخل\n18.00 - ج.م. v\nمبالغ الدخل\n1.00- ج.م.\nرصيد المشاوير\nC\nالأرباح\nالصفحة الرئيسية\nالقائمة\nصندوق الوارد"
+      ],
+      "parsed": {
+        "platform": "UBER",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "Uber",
+          "startedAt": null,
+          "endedAt": null,
+          "durationSec": 341,
+          "grossEgp": 20,
+          "receivedEgp": 17,
+          "tipEgp": null,
+          "commissionEgp": 3,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 1.61,
+          "paidKm": 1.61,
+          "pickup": "El-Nasr Rd Nasr City 4450233 EG",
+          "destination": "Abbas El Akkad Nasr City 4450143 EG",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.808,
+          "commissionEgp": 0.94,
+          "receivedEgp": 0.94,
+          "paidKm": 0.866,
+          "durationSec": 0.866,
+          "paymentMethod": 1,
+          "pickup": 0.577,
+          "destination": 0.577,
+          "totalKm": 0.529
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "Uber",
+              "startedAt": null,
+              "endedAt": null,
+              "durationSec": 341,
+              "grossEgp": 20,
+              "receivedEgp": 17,
+              "tipEgp": null,
+              "commissionEgp": 3,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 1.61,
+              "paidKm": 1.61,
+              "pickup": "El-Nasr Rd Nasr City 4450233 EG",
+              "destination": "Abbas El Akkad Nasr City 4450143 EG",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.808,
+              "commissionEgp": 0.94,
+              "receivedEgp": 0.94,
+              "paidKm": 0.866,
+              "durationSec": 0.866,
+              "paymentMethod": 1,
+              "pickup": 0.577,
+              "destination": 0.577,
+              "totalKm": 0.529
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_LOW_CONFIDENCE_totalKm",
+          "OCR_LOW_CONFIDENCE_startedAt",
+          "OCR_LOW_CONFIDENCE_endedAt"
+        ],
+        "imageHashes": [
+          "ad9c19227a561d11395284e82cc304880edcfadd763c96ae61a60c26d999aab9"
+        ],
+        "rawTextLengths": [
+          346
+        ],
+        "ocrMeanConfidence": 0.924
+      },
+      "detectedPlatform": "UBER",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "UBER",
+          "actual": "UBER",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 20,
+          "actual": 20,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 17,
+          "actual": 17,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 3,
+          "actual": 3,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 1.61,
+          "actual": 1.61,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 1.61,
+          "actual": 1.61,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 341,
+          "actual": 341,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "El-Nasr Rd Nasr City 4450233 EG",
+          "actual": "El-Nasr Rd Nasr City 4450233 EG",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Abbas El Akkad Nasr City 4450143 EG",
+          "actual": "Abbas El Akkad Nasr City 4450143 EG",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.924,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_LOW_CONFIDENCE_totalKm",
+        "OCR_LOW_CONFIDENCE_startedAt",
+        "OCR_LOW_CONFIDENCE_endedAt"
+      ]
+    },
+    {
+      "caseId": "indrive-1",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": [
+        "indrive/indervier-AR-1.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "26.9 4 1il .Il ill 72%\n11:12\nالجمعة, ١٥ مايو ٢٠٢٦\n06:34 PM\n06:14 PM\nOrouba Axis\n0\n06:34 PM\nاستاد القاهرة الدولي\nالمصرى\nالمسافة\nالمدة\nL\nkm 18,4\n20 دقيقة\nMazen\nرم\nالإيصال\nالدعم\nدخلي\n٥٦,٩٧ ج.م.\nالسداد عبر الهاتف المحمول\nاستلمت\nالأجرة\n٦٥,٠٠ ج.م.\nإجمالي المستلم\n٦٥,٠٠ ج.م.\nالدفع نقدًا\nدفعت\nمدفوعات قيمة الخدمة لدينا منخفضة\n٧,٠٤ ج.م.\n(%10.83)\n٠,٩٩ ج.م.\nضريبة القيمة المضافة\n٨,٠٣ ج.م.\nإجمالي المدفوع"
+      ],
+      "parsed": {
+        "platform": "INDRIVE",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "inDrive",
+          "startedAt": "2026-05-15T18:14:00.000Z",
+          "endedAt": "2026-05-15T18:34:00.000Z",
+          "durationSec": 1200,
+          "grossEgp": 65,
+          "receivedEgp": 65,
+          "tipEgp": null,
+          "commissionEgp": 8.03,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 18.4,
+          "paidKm": 18.4,
+          "pickup": "Orouba Axis",
+          "destination": "استاد القاهرة الدولي المصرى",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.817,
+          "receivedEgp": 0.992,
+          "commissionEgp": 0.992,
+          "paidKm": 0.875,
+          "durationSec": 0.681,
+          "startedAt": 0.895,
+          "paymentMethod": 1,
+          "totalKm": 0.535,
+          "endedAt": 0.895,
+          "pickup": 0.827,
+          "destination": 0.827
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "inDrive",
+              "startedAt": "2026-05-15T18:14:00.000Z",
+              "endedAt": "2026-05-15T18:34:00.000Z",
+              "durationSec": 1200,
+              "grossEgp": 65,
+              "receivedEgp": 65,
+              "tipEgp": null,
+              "commissionEgp": 8.03,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 18.4,
+              "paidKm": 18.4,
+              "pickup": "Orouba Axis",
+              "destination": "استاد القاهرة الدولي المصرى",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.817,
+              "receivedEgp": 0.992,
+              "commissionEgp": 0.992,
+              "paidKm": 0.875,
+              "durationSec": 0.681,
+              "startedAt": 0.895,
+              "paymentMethod": 1,
+              "totalKm": 0.535,
+              "endedAt": 0.895,
+              "pickup": 0.827,
+              "destination": 0.827
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_DURATION_FROM_TIMESTAMPS",
+          "OCR_LOW_CONFIDENCE_totalKm"
+        ],
+        "imageHashes": [
+          "ea2b71ea3df04ffced1970989b14f62140d1701e6bf883639b06656683b479ca"
+        ],
+        "rawTextLengths": [
+          363
+        ],
+        "ocrMeanConfidence": 0.945
+      },
+      "detectedPlatform": "INDRIVE",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "INDRIVE",
+          "actual": "INDRIVE",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 65,
+          "actual": 65,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 65,
+          "actual": 65,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 8.03,
+          "actual": 8.03,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 18.4,
+          "actual": 18.4,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 18.4,
+          "actual": 18.4,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 1200,
+          "actual": 1200,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-15T18:14:00.000Z",
+          "actual": "2026-05-15T18:14:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": "2026-05-15T18:34:00.000Z",
+          "actual": "2026-05-15T18:34:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Orouba Axis",
+          "actual": "Orouba Axis",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "استاد القاهرة الدولي المصرى",
+          "actual": "استاد القاهرة الدولي المصرى",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.945,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_DURATION_FROM_TIMESTAMPS",
+        "OCR_LOW_CONFIDENCE_totalKm"
+      ]
+    },
+    {
+      "caseId": "indrive-2",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": [
+        "indrive/indervier-AR-2.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "0 2:99 2 iii .Il 111 72%\n11:12\nالجمعة, ١٥ مايو ٢٠٢٦\n07:14 PM\n07:01 PM\nإسماعيل الفنجري\n07:14 PM\nالغواص عبد العزيز\nشحاتة\nالمدة\nالمسافة\nkm 5,3\n13 دقيقة\nر\nMohamed\nالإيصال\nالدعم\nدخلي\n٣٠,٦٨ ج.م.\nالسداد عبر الهاتف المحمول\nاستلمت\n٣٥,٠٠ ج.م.\nالأجرة\nإجمالي المستلم\n٣٥,٠٠ ج.م.\nالدفع نقدًا\nدفعت\nمدفوعات قيمة الخدمة لدينا منخفضة\n٣,٧٩ ج.م.\n(%10.83)\n٠,٥٣ ج.م.\nضريبة القيمة المضافة\n٤,٣٢ ج.م.\nإجمالي المدفوع"
+      ],
+      "parsed": {
+        "platform": "INDRIVE",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "inDrive",
+          "startedAt": "2026-05-15T19:01:00.000Z",
+          "endedAt": "2026-05-15T19:14:00.000Z",
+          "durationSec": 780,
+          "grossEgp": 35,
+          "receivedEgp": 35,
+          "tipEgp": null,
+          "commissionEgp": 4.32,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 5.3,
+          "paidKm": 5.3,
+          "pickup": "إسماعيل الفنجري",
+          "destination": "الغواص عبد العزيز شحاتة",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.87,
+          "receivedEgp": 0.935,
+          "commissionEgp": 0.994,
+          "paidKm": 0.877,
+          "durationSec": 0.682,
+          "startedAt": 0.896,
+          "paymentMethod": 1,
+          "totalKm": 0.536,
+          "endedAt": 0.896,
+          "pickup": 0.828,
+          "destination": 0.828
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "inDrive",
+              "startedAt": "2026-05-15T19:01:00.000Z",
+              "endedAt": "2026-05-15T19:14:00.000Z",
+              "durationSec": 780,
+              "grossEgp": 35,
+              "receivedEgp": 35,
+              "tipEgp": null,
+              "commissionEgp": 4.32,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 5.3,
+              "paidKm": 5.3,
+              "pickup": "إسماعيل الفنجري",
+              "destination": "الغواص عبد العزيز شحاتة",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.87,
+              "receivedEgp": 0.935,
+              "commissionEgp": 0.994,
+              "paidKm": 0.877,
+              "durationSec": 0.682,
+              "startedAt": 0.896,
+              "paymentMethod": 1,
+              "totalKm": 0.536,
+              "endedAt": 0.896,
+              "pickup": 0.828,
+              "destination": 0.828
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_DURATION_FROM_TIMESTAMPS",
+          "OCR_LOW_CONFIDENCE_totalKm"
+        ],
+        "imageHashes": [
+          "27873535dc648a8c9f5d5e5b3e1f492620895ea3f6c0d1b457b34830cabf71eb"
+        ],
+        "rawTextLengths": [
+          359
+        ],
+        "ocrMeanConfidence": 0.949
+      },
+      "detectedPlatform": "INDRIVE",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "INDRIVE",
+          "actual": "INDRIVE",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 35,
+          "actual": 35,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 35,
+          "actual": 35,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 4.32,
+          "actual": 4.32,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 5.3,
+          "actual": 5.3,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 5.3,
+          "actual": 5.3,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 780,
+          "actual": 780,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-15T19:01:00.000Z",
+          "actual": "2026-05-15T19:01:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": "2026-05-15T19:14:00.000Z",
+          "actual": "2026-05-15T19:14:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "إسماعيل الفنجري",
+          "actual": "إسماعيل الفنجري",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "الغواص عبد العزيز شحاتة",
+          "actual": "الغواص عبد العزيز شحاتة",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.949,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_DURATION_FROM_TIMESTAMPS",
+        "OCR_LOW_CONFIDENCE_totalKm"
+      ]
+    },
+    {
+      "caseId": "indrive-3",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": [
+        "indrive/indervier-AR-3.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "30.0 8 .11 .11072%\n11:12\nالجمعة, ١٥ مايو ٢٠٢٦\n07:57 PM\nرحله . احتملت\n07:27 PM\nAl Methak\nDr Ali Hassan 16009\n07:57 PM\nالمدة\nالمسافة\nkm 30,5\n30 دقيقة\nHozaifa\nالإيصال\nالدعم\nدخلي\n٩١,١٦ ج.م.\nالسداد عبر الهاتف المحمول\nاستلمت\nالأجرة\n١٠٤,٠٠ ج.م.\nإجمالي المستلم\n١٠٤,٠٠ ج.م.\nالدفع نقدًا\nدفعت\nمدفوعات قيمة الخدمة لدينا منخفضة\n١١,٢٦ ج.م.\n(%10.83)\n١,٥٨ ج.م.\nضريبة القيمة المضافة\n١٢,٨٤ ج.م.\nإجمالي المدفوع"
+      ],
+      "parsed": {
+        "platform": "INDRIVE",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "inDrive",
+          "startedAt": "2026-05-15T19:27:00.000Z",
+          "endedAt": "2026-05-15T19:57:00.000Z",
+          "durationSec": 1800,
+          "grossEgp": 104,
+          "receivedEgp": 104,
+          "tipEgp": null,
+          "commissionEgp": 12.84,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 30.5,
+          "paidKm": 30.5,
+          "pickup": "Al Methak",
+          "destination": "Dr Ali Hassan 16009",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.814,
+          "receivedEgp": 0.989,
+          "commissionEgp": 0.989,
+          "paidKm": 0.872,
+          "durationSec": 0.678,
+          "startedAt": 0.892,
+          "paymentMethod": 1,
+          "totalKm": 0.533,
+          "endedAt": 0.892,
+          "pickup": 0.824,
+          "destination": 0.824
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "inDrive",
+              "startedAt": "2026-05-15T19:27:00.000Z",
+              "endedAt": "2026-05-15T19:57:00.000Z",
+              "durationSec": 1800,
+              "grossEgp": 104,
+              "receivedEgp": 104,
+              "tipEgp": null,
+              "commissionEgp": 12.84,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 30.5,
+              "paidKm": 30.5,
+              "pickup": "Al Methak",
+              "destination": "Dr Ali Hassan 16009",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.814,
+              "receivedEgp": 0.989,
+              "commissionEgp": 0.989,
+              "paidKm": 0.872,
+              "durationSec": 0.678,
+              "startedAt": 0.892,
+              "paymentMethod": 1,
+              "totalKm": 0.533,
+              "endedAt": 0.892,
+              "pickup": 0.824,
+              "destination": 0.824
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_DURATION_FROM_TIMESTAMPS",
+          "OCR_LOW_CONFIDENCE_totalKm"
+        ],
+        "imageHashes": [
+          "345ce070a210f5ce013436397b2eabb86af17421693d6c683fdd564ef4a316ae"
+        ],
+        "rawTextLengths": [
+          366
+        ],
+        "ocrMeanConfidence": 0.939
+      },
+      "detectedPlatform": "INDRIVE",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "INDRIVE",
+          "actual": "INDRIVE",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 104,
+          "actual": 104,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 104,
+          "actual": 104,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 12.84,
+          "actual": 12.84,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 30.5,
+          "actual": 30.5,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 30.5,
+          "actual": 30.5,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 1800,
+          "actual": 1800,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-15T19:27:00.000Z",
+          "actual": "2026-05-15T19:27:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": "2026-05-15T19:57:00.000Z",
+          "actual": "2026-05-15T19:57:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Al Methak",
+          "actual": "Al Methak",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "Dr Ali Hassan 16009",
+          "actual": "Dr Ali Hassan 16009",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.939,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_DURATION_FROM_TIMESTAMPS",
+        "OCR_LOW_CONFIDENCE_totalKm"
+      ]
+    },
+    {
+      "caseId": "indrive-4",
+      "platform": "INDRIVE",
+      "kind": "single-trip",
+      "files": [
+        "indrive/indervier-AR-4.jpeg"
+      ],
+      "status": "pass",
+      "rawText": [
+        "0.22 & fB ull ull 72%\n11:12\nالجمعة, ١٥ مايو ٢٠٢٦\n٨\n08:45 PM\nرحله . احتملت\nYehia Salem Elbanna\n08:10 PM\n08:45 PM\nEl-Fardous\nالمسافة\nالمدة\nkm 26,6\n35 دقيقة\nHozaifa\nالإيصال\nالدعم\nدخلي\n٩١,١٦ ج.م.\nالسداد عبر الهاتف المحمول\nاستلمت\nالأجرة\n١٠٤,٠٠ ج.م.\nإجمالي المستلم\n١٠٤,٠٠ ج.م.\nالدفع نقدًا\nدفعت\nمدفوعات قيمة الخدمة لدينا منخفضة\n١١,٢٦ ج.م.\n(%10.83)\n١,٥٨ ج.م.\nضريبة القيمة المضافة\n١٢,٨٤ ج.م.\nإجمالي المدفوع"
+      ],
+      "parsed": {
+        "platform": "INDRIVE",
+        "platformConfidence": 1,
+        "mode": "single",
+        "parsed": {
+          "vehicleType": null,
+          "appHint": "inDrive",
+          "startedAt": "2026-05-15T20:10:00.000Z",
+          "endedAt": "2026-05-15T20:45:00.000Z",
+          "durationSec": 2100,
+          "grossEgp": 104,
+          "receivedEgp": 104,
+          "tipEgp": null,
+          "commissionEgp": 12.84,
+          "tollEgp": null,
+          "parkingEgp": null,
+          "waitingFeeEgp": null,
+          "totalKm": 26.6,
+          "paidKm": 26.6,
+          "pickup": "Yehia Salem Elbanna",
+          "destination": "El-Fardous",
+          "paymentMethod": "cash",
+          "notes": null
+        },
+        "fieldConfidences": {
+          "grossEgp": 0.811,
+          "receivedEgp": 0.985,
+          "commissionEgp": 0.985,
+          "paidKm": 0.869,
+          "durationSec": 0.676,
+          "startedAt": 0.888,
+          "paymentMethod": 1,
+          "totalKm": 0.531,
+          "endedAt": 0.888,
+          "pickup": 0.821,
+          "destination": 0.821
+        },
+        "trips": [
+          {
+            "parsed": {
+              "vehicleType": null,
+              "appHint": "inDrive",
+              "startedAt": "2026-05-15T20:10:00.000Z",
+              "endedAt": "2026-05-15T20:45:00.000Z",
+              "durationSec": 2100,
+              "grossEgp": 104,
+              "receivedEgp": 104,
+              "tipEgp": null,
+              "commissionEgp": 12.84,
+              "tollEgp": null,
+              "parkingEgp": null,
+              "waitingFeeEgp": null,
+              "totalKm": 26.6,
+              "paidKm": 26.6,
+              "pickup": "Yehia Salem Elbanna",
+              "destination": "El-Fardous",
+              "paymentMethod": "cash",
+              "notes": null
+            },
+            "fieldConfidences": {
+              "grossEgp": 0.811,
+              "receivedEgp": 0.985,
+              "commissionEgp": 0.985,
+              "paidKm": 0.869,
+              "durationSec": 0.676,
+              "startedAt": 0.888,
+              "paymentMethod": 1,
+              "totalKm": 0.531,
+              "endedAt": 0.888,
+              "pickup": 0.821,
+              "destination": 0.821
+            }
+          }
+        ],
+        "warnings": [
+          "OCR_DISTANCE_IS_PAID_KM",
+          "OCR_DURATION_FROM_TIMESTAMPS",
+          "OCR_LOW_CONFIDENCE_totalKm"
+        ],
+        "imageHashes": [
+          "bb7b993cb7872950f31cc422e0d369eef802140c2553ff61a04d961c38e222aa"
+        ],
+        "rawTextLengths": [
+          369
+        ],
+        "ocrMeanConfidence": 0.931
+      },
+      "detectedPlatform": "INDRIVE",
+      "diffs": [
+        {
+          "field": "platform",
+          "expected": "INDRIVE",
+          "actual": "INDRIVE",
+          "status": "match"
+        },
+        {
+          "field": "grossEgp",
+          "expected": 104,
+          "actual": 104,
+          "status": "match"
+        },
+        {
+          "field": "receivedEgp",
+          "expected": 104,
+          "actual": 104,
+          "status": "match"
+        },
+        {
+          "field": "commissionEgp",
+          "expected": 12.84,
+          "actual": 12.84,
+          "status": "match"
+        },
+        {
+          "field": "tipEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "waitingFeeEgp",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "paidKm",
+          "expected": 26.6,
+          "actual": 26.6,
+          "status": "match"
+        },
+        {
+          "field": "totalKm",
+          "expected": 26.6,
+          "actual": 26.6,
+          "status": "match"
+        },
+        {
+          "field": "durationSec",
+          "expected": 2100,
+          "actual": 2100,
+          "status": "match"
+        },
+        {
+          "field": "startedAt",
+          "expected": "2026-05-15T20:10:00.000Z",
+          "actual": "2026-05-15T20:10:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "endedAt",
+          "expected": "2026-05-15T20:45:00.000Z",
+          "actual": "2026-05-15T20:45:00.000Z",
+          "status": "match"
+        },
+        {
+          "field": "paymentMethod",
+          "expected": "cash",
+          "actual": "cash",
+          "status": "match"
+        },
+        {
+          "field": "vehicleType",
+          "expected": null,
+          "actual": null,
+          "status": "match"
+        },
+        {
+          "field": "pickup",
+          "expected": "Yehia Salem Elbanna",
+          "actual": "Yehia Salem Elbanna",
+          "status": "match"
+        },
+        {
+          "field": "destination",
+          "expected": "El-Fardous",
+          "actual": "El-Fardous",
+          "status": "match"
+        }
+      ],
+      "fieldsPassed": 15,
+      "fieldsTotal": 15,
+      "meanConfidence": 0.931,
+      "warnings": [
+        "OCR_DISTANCE_IS_PAID_KM",
+        "OCR_DURATION_FROM_TIMESTAMPS",
+        "OCR_LOW_CONFIDENCE_totalKm"
+      ]
+    }
+  ]
+}

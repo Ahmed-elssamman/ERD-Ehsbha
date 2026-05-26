@@ -1,0 +1,41 @@
+{
+  "platform": "UBER",
+  "kind": "multi-trip",
+  "trips": [
+    {
+      "grossEgp": null,
+      "receivedEgp": 18.30,
+      "commissionEgp": null,
+      "tipEgp": null,
+      "waitingFeeEgp": null,
+      "paidKm": 1.90,
+      "totalKm": 1.90,
+      "durationSec": 413,
+      "startedAt": null,
+      "endedAt": null,
+      "paymentMethod": "cash",
+      "vehicleType": "scooter",
+      "pickup": "Mohammed Helmy Nasr City EG",
+      "destination": "Fahmy Ali Nasr City 4442615 EG",
+      "$notes": { "timeOnCard": "6:56 PM", "cashCollected": 22.00, "surge": "زادت قيمة الأجرة" }
+    },
+    {
+      "grossEgp": null,
+      "receivedEgp": 18.27,
+      "commissionEgp": null,
+      "tipEgp": null,
+      "waitingFeeEgp": null,
+      "paidKm": 2.31,
+      "totalKm": 2.31,
+      "durationSec": 382,
+      "startedAt": null,
+      "endedAt": null,
+      "paymentMethod": "cash",
+      "vehicleType": "scooter",
+      "pickup": "Omar Ibn El-Khattab Nasr City EG",
+      "destination": "Al Maglis Nasr City 4442632 EG",
+      "$notes": { "timeOnCard": "6:41 PM", "cashCollected": 19.00 }
+    }
+  ],
+  "$notes": { "dateOnHeader": "السبت 16 مايو" }
+}

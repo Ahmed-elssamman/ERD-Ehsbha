@@ -13,8 +13,15 @@ const SIGNALS: PlatformSignals[] = [
     patterns: [
       /\buber\b/i,
       /اوبر/i,
-      /تفاصيل\s*المشوار/i,
+      // Anchor to (end-of-string | space | non-Arabic char) so this does
+      // NOT also match DiDi's "تفاصيل المشاوير" (the plural form, which
+      // contains "المشوار" as a substring).
+      /تفاصيل\s*المشوار(?=$|\s|[^؀-ۿ])/i,
       /المبلغ\s*النقدي\s*الذي\s*تم\s*تحصيله/i,
+      // Uber breakdown labels — "مبالغ الدخل" / "رصيد المشاوير" / "رسوم الخدمة الأجرة×15%"
+      // appear only on the Uber detail screen.
+      /مبالغ\s*الدخل/i,
+      /رصيد\s*المشاوير/i,
     ],
   },
   {
@@ -25,6 +32,15 @@ const SIGNALS: PlatformSignals[] = [
       /ان\s*درايف/i,
       /السعر\s*المتفق\s*عليه/i,
       /agreed\s+fare/i,
+      // Income card big number label — InDrive-specific.
+      /(?:^|\n)\s*دخلي\s*$/im,
+      // Receipt sections unique to InDrive's earnings layout.
+      /إجمالي\s*المستلم/i,
+      /اجمالي\s*المستلم/i,
+      /إجمالي\s*المدفوع/i,
+      /اجمالي\s*المدفوع/i,
+      /السداد\s*عبر\s*الهاتف/i,
+      /مدفوعات\s*قيمه\s*الخدمه\s*لدينا/i,
     ],
   },
   {
@@ -32,6 +48,21 @@ const SIGNALS: PlatformSignals[] = [
     patterns: [
       /\bdidi\b/i,
       /ديدي/i,
+      // Header is plural "تفاصيل المشاوير" — distinguishes from Uber's
+      // singular "تفاصيل المشوار".
+      /تفاصيل\s*المشاوير/i,
+      /مستحقات\s*دي\s*دي/i,
+      // Card-pay label unique to DiDi Egypt.
+      /الدفع\s*الإلكتروني/i,
+      /الدفع\s*الالكتروني/i,
+      // DiDi vehicle category brand visible at the top of every trip.
+      /\btayaran\b/i,
+      // Driver income card label.
+      /(?:^|\n)\s*أرباحك\s*$/im,
+      /(?:^|\n)\s*ارباحك\s*$/im,
+      // Rider-side fare breakdown — DiDi-specific layout.
+      /المدفوع\s*من\s*الراكب/i,
+      /خصومات\s*الراكب/i,
     ],
   },
   {

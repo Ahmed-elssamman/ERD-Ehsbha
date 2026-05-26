@@ -242,6 +242,15 @@ export interface CreateTripInput {
   clientMutationId?: string;
 }
 
+export interface BatchCreateTripsResponse {
+  created: TripItem[];
+  errors: Array<{ index: number; code: string; message: string }>;
+}
+export interface BatchDeleteTripsResponse {
+  deleted: string[];
+  errors: Array<{ id: string; code: string; message: string }>;
+}
+
 export const TripsApi = {
   list: (params?: {
     from?: string;
@@ -253,9 +262,16 @@ export const TripsApi = {
   }) => api.get('/trips', { params }).then((r) => unwrap<TripsListResponse>(r.data)),
   get: (id: string) => api.get(`/trips/${id}`).then((r) => unwrap<TripItem>(r.data)),
   create: (body: CreateTripInput) => api.post('/trips', body).then((r) => unwrap<TripItem>(r.data)),
+  /** Bulk-create endpoint backing the OCR multi-trip flow. One request, N
+   * trips; the server returns successes and per-index failures separately. */
+  createBatch: (items: CreateTripInput[]) =>
+    api.post('/trips/batch', { items }).then((r) => unwrap<BatchCreateTripsResponse>(r.data)),
   update: (id: string, body: Partial<CreateTripInput>) =>
     api.patch(`/trips/${id}`, body).then((r) => unwrap<TripItem>(r.data)),
   remove: (id: string) => api.delete(`/trips/${id}`),
+  /** Bulk-delete used by the trip list's multi-select toolbar. */
+  removeBatch: (ids: string[]) =>
+    api.post('/trips/batch-delete', { ids }).then((r) => unwrap<BatchDeleteTripsResponse>(r.data)),
 };
 
 /* -------- Expenses ------------------------------------------------------ */

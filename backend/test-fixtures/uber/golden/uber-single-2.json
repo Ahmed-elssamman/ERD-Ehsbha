@@ -1,0 +1,21 @@
+{
+  "platform": "UBER",
+  "grossEgp": 37.85,
+  "receivedEgp": 32.17,
+  "commissionEgp": 5.68,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 4.29,
+  "totalKm": 4.29,
+  "durationSec": 587,
+  "startedAt": null,
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "مدينة نصر محور المشير محمد علي فهمي 4442441 EG",
+  "destination": "مدينة نصر 4455022 EG",
+  "$notes": {
+    "cashCollected": 34.00,
+    "balance": -1.83
+  }
+}

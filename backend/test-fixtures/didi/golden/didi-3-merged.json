@@ -1,0 +1,22 @@
+{
+  "platform": "DIDI",
+  "grossEgp": 34.72,
+  "receivedEgp": 35.00,
+  "commissionEgp": 4.85,
+  "tipEgp": null,
+  "waitingFeeEgp": 0.32,
+  "paidKm": 6.7,
+  "totalKm": 6.7,
+  "durationSec": 845,
+  "startedAt": "2026-05-16T20:43:00.000Z",
+  "endedAt": null,
+  "paymentMethod": "cash",
+  "vehicleType": "Tayaran",
+  "pickup": "مشروع 19، الحي العاشر، مدينة نصر، Al Hay Al Asher, Nasr City, Cairo Governorate, Egypt",
+  "destination": "مساكن المحمودية, الأباجية المقطم محافظة القاهرة مصر",
+  "$notes": {
+    "discountRider": 0.28,
+    "earningsLine": 29.87,
+    "surgeOrAdjustment": "rider paid 35.00 > أجرة 34.72; the 0.28 is a positive 'خصومات' line"
+  }
+}

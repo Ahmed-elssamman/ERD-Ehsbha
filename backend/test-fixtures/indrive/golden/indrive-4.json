@@ -1,0 +1,24 @@
+{
+  "platform": "INDRIVE",
+  "grossEgp": 104.00,
+  "receivedEgp": 104.00,
+  "commissionEgp": 12.84,
+  "tipEgp": null,
+  "waitingFeeEgp": null,
+  "paidKm": 26.6,
+  "totalKm": 26.6,
+  "durationSec": 2100,
+  "startedAt": "2026-05-15T20:10:00.000Z",
+  "endedAt": "2026-05-15T20:45:00.000Z",
+  "paymentMethod": "cash",
+  "vehicleType": null,
+  "pickup": "Yehia Salem Elbanna",
+  "destination": "El-Fardous",
+  "$notes": {
+    "incomeLine": 91.16,
+    "vat": 1.58,
+    "serviceFee": 11.26,
+    "rider": "Hozaifa",
+    "comment": "Income line shows 91.16 same as indrive-3 — likely coincidence or daily-cumulative display; verify with user."
+  }
+}

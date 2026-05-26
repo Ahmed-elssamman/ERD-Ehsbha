@@ -1,0 +1,44 @@
+{
+  "platform": "UBER",
+  "kind": "multi-trip",
+  "trips": [
+    {
+      "grossEgp": null,
+      "receivedEgp": 19.70,
+      "commissionEgp": null,
+      "tipEgp": null,
+      "waitingFeeEgp": null,
+      "paidKm": 2.37,
+      "totalKm": 2.37,
+      "durationSec": 336,
+      "startedAt": null,
+      "endedAt": null,
+      "paymentMethod": "cash",
+      "vehicleType": "scooter",
+      "pickup": "Unnamed Road Nasr City 4720110 EG",
+      "destination": "Unnamed Road New Cairo 1 4730005 EG",
+      "$notes": { "timeOnCard": "5:49 PM", "cashCollected": 20.00 }
+    },
+    {
+      "grossEgp": null,
+      "receivedEgp": 36.53,
+      "commissionEgp": null,
+      "tipEgp": null,
+      "waitingFeeEgp": null,
+      "paidKm": 8.16,
+      "totalKm": 8.16,
+      "durationSec": 766,
+      "startedAt": null,
+      "endedAt": null,
+      "paymentMethod": "cash",
+      "vehicleType": "scooter",
+      "pickup": "Al Mazloum Nasr City 4453113 EG",
+      "destination": "Nasr City 4440510 EG",
+      "$notes": { "timeOnCard": "5:32 PM", "cashCollected": 15.00 }
+    }
+  ],
+  "$notes": {
+    "dateOnHeader": "الجمعة 15 مايو",
+    "summaryScreen": "ملخص الدخل — prominent number on each card is الدخل (income), not الأجرة (gross fare)."
+  }
+}
