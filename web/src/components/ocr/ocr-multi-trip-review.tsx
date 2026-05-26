@@ -238,6 +238,19 @@ function TripCard({ index, state, fieldConfidences, locale, t, onToggle, onChang
                 />
               </div>
               <Row
+                label={t('trips.field.startedAt')}
+                confidence={fieldConfidences.startedAt}
+              >
+                <Input
+                  type="datetime-local"
+                  value={toLocalDatetime(parsed.startedAt)}
+                  onChange={(e) =>
+                    onChange({ startedAt: fromLocalDatetime(e.target.value, parsed.startedAt) })
+                  }
+                  dir="ltr"
+                />
+              </Row>
+              <Row
                 label={t('trips.ocr.fieldPickup')}
                 confidence={fieldConfidences.pickup}
               >
@@ -385,4 +398,19 @@ function parseNum(s: string): number | null {
 
 function numToString(v: number | null | undefined): string {
   return v == null || !Number.isFinite(v) ? '' : String(v);
+}
+
+function toLocalDatetime(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromLocalDatetime(local: string, fallback: string | null): string | null {
+  if (!local) return null;
+  const d = new Date(local);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toISOString();
 }

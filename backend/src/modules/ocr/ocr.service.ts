@@ -141,6 +141,14 @@ export class OcrService {
       const platform = platformHint ?? this.detectPlatformForImage(ocr);
       const parser = this.parserMap[platform];
       const slices = this.splitter.split(ocr);
+
+      // The date header ("الجمعة، 15 مايو") lives ABOVE all cards in the
+      // summary screen; the slicer drops it. Pre-extract it once from the
+      // unsliced OCR so each card can attach a real timestamp (date +
+      // per-card time) instead of falling back to Date.now() at the
+      // create-trip layer.
+      const baseDate = extractSummaryHeaderDate(ocr.text);
+
       for (const slice of slices) {
         const words = slice.lines.flatMap((l) => l.words);
         const meanConf = words.length
@@ -158,6 +166,7 @@ export class OcrService {
         // the top of the card slice and storing it as receivedEgp.
         if (platform === 'UBER') {
           applyMultiTripAmountFix(slice, parsed);
+          applyMultiTripDatetimeFix(slice, parsed, baseDate);
         }
 
         const scored = this.scorer.score(parsed.perField, 1, meanConf);
@@ -341,6 +350,85 @@ export type { ImageEvidence, ParseContext };
  * clear the grossEgp that the base fallback may have mis-set to the
  * cash-collected line.
  */
+/**
+ * Extracts the date header that Uber prints above the trip cards on its
+ * "ملخص الدخل" summary screen — e.g. "الجمعة، 15 مايو". The year is never
+ * shown so we infer it: pick the most recent past date that matches the
+ * extracted day+month (current year if it's still upcoming this year minus
+ * one day's slack, otherwise the previous year).
+ */
+function extractSummaryHeaderDate(text: string): Date | null {
+  // Normalize once: strip Arabic diacritics and fold variants that the dictionary
+  // tolerates, so "الجمعةَ" / "الجمعه" both match.
+  const norm = text
+    .replace(/[ً-ٰٟۖ-ۜ۟-۪ۤۧۨ-ۭ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه');
+  const m = norm.match(
+    /(?:الجمعه|السبت|الاحد|الاثنين|الثلاثاء|الاربعاء|الخميس)[،,\s]+(\d{1,2})\s+(يناير|فبراير|مارس|ابريل|مايو|يونيو|يوليو|اغسطس|سبتمبر|اكتوبر|نوفمبر|ديسمبر)/i,
+  );
+  if (!m) return null;
+  const day = Number(m[1]);
+  const monthIdx = AR_MONTHS.indexOf(m[2]);
+  if (monthIdx < 0 || !Number.isFinite(day) || day < 1 || day > 31) return null;
+
+  const now = new Date();
+  // Build in UTC so toISOString later is deterministic across timezones and
+  // matches the rest of the parser pipeline (which also treats Uber's
+  // local-clock display as UTC components).
+  const candidate = new Date(Date.UTC(now.getUTCFullYear(), monthIdx, day));
+  if (candidate.getTime() - now.getTime() > 24 * 60 * 60 * 1000) {
+    candidate.setUTCFullYear(candidate.getUTCFullYear() - 1);
+  }
+  return candidate;
+}
+const AR_MONTHS = [
+  'يناير', 'فبراير', 'مارس', 'ابريل', 'مايو', 'يونيو',
+  'يوليو', 'اغسطس', 'سبتمبر', 'اكتوبر', 'نوفمبر', 'ديسمبر',
+];
+
+/**
+ * Combines the global date header (from `extractSummaryHeaderDate`) with the
+ * per-card time line to give each trip card a real timestamp. The card's
+ * time line takes one of a few mangled OCR shapes — "₱ 5:32", "~ 5:49",
+ * "10:46 PM" — so we accept any HH:MM substring near the top of the slice.
+ *
+ * Uber Egypt's summary screen displays times in 12h format with the م/ص
+ * suffix. After OCR the suffix is unreliable, but the hour itself is
+ * preserved, so we assume PM when hour < 12 — empirically every multi-trip
+ * card we've seen in the field is from afternoon/evening shifts. The
+ * driver can flip the time in the multi-trip review if that assumption is
+ * wrong for them.
+ */
+function applyMultiTripDatetimeFix(
+  slice: import('./merge/multi-trip.splitter').TripSlice,
+  parsed: RawParsed,
+  baseDate: Date | null,
+): void {
+  if (!baseDate) return;
+  if (parsed.fields.startedAt) return;
+  const head = slice.lines.slice(0, 4);
+  for (const l of head) {
+    const m = l.text.match(/(?:^|\s)(\d{1,2}):(\d{2})(?:\s|$)/);
+    if (!m) continue;
+    const h = Number(m[1]);
+    const mn = Number(m[2]);
+    if (!Number.isFinite(h) || !Number.isFinite(mn) || h > 23 || mn > 59) continue;
+    const hour24 = h < 12 ? h + 12 : h;
+    const dt = new Date(
+      Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate(), hour24, mn, 0),
+    );
+    parsed.fields.startedAt = dt.toISOString();
+    parsed.perField.startedAt = 0.75;
+    if (parsed.fields.durationSec && !parsed.fields.endedAt) {
+      const end = new Date(dt.getTime() + parsed.fields.durationSec * 1000);
+      parsed.fields.endedAt = end.toISOString();
+      parsed.perField.endedAt = 0.7;
+    }
+    return;
+  }
+}
+
 function applyMultiTripAmountFix(
   slice: import('./merge/multi-trip.splitter').TripSlice,
   parsed: RawParsed,
