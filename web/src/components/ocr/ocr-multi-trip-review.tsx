@@ -99,14 +99,13 @@ export function OcrMultiTripReview({ result, onApply, onDiscard, saving, statusM
 
       <div
         className={[
-          'max-h-[60vh] space-y-2 overflow-y-auto overscroll-contain rounded-xl border bg-muted/30 p-2 scroll-smooth transition-opacity',
-          // Lock editing while the batch-save is in flight so the snapshot
-          // we POST'd matches what the user sees on screen.
+          'space-y-2 rounded-xl border bg-muted/30 p-2 transition-opacity',
+          // The parent Dialog body is already a scroll container — don't
+          // nest another one (causes double-scroll where the trackpad fights
+          // for which container to scroll). Just let the list grow naturally
+          // and let the dialog scroll vertically.
           saving ? 'pointer-events-none opacity-60' : '',
         ].join(' ')}
-        // Scroll snap on each card makes mobile flicks feel deliberate without
-        // taking over keyboard navigation.
-        style={{ scrollSnapType: 'y proximity' }}
         aria-busy={saving || undefined}
       >
         {cards.map((card, i) => (

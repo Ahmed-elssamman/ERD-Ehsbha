@@ -579,10 +579,31 @@ export interface AppNotification {
   data?: Record<string, unknown> | null;
 }
 
+export interface DailyDigestData {
+  kind: 'DAILY_DIGEST';
+  locale: 'ar' | 'en';
+  insights: {
+    todayTargetPiastres: number | null;
+    monthlyGoalPiastres: number | null;
+    earnedThisMonthPiastres: number;
+    remainingDaysInMonth: number;
+    bestHour: { hour: number; netEgpPerHr: number } | null;
+    bestAppForDow: { appId: string; appName: string; netPiastres: number } | null;
+    lowEgpPerKmArea: { areaId: string; areaName: string; egpPerKm: number } | null;
+    emptyKmRatioYesterday: number | null;
+    yesterdayNetPiastres: number;
+  };
+  tips: Array<{ key: string; vars: Record<string, string | number> }>;
+}
+
 export const NotificationsApi = {
   list: (params?: { cursor?: string; limit?: number }) =>
     api.get('/notifications', { params }).then((r) => unwrap<{ items: AppNotification[]; nextCursor: string | null }>(r.data)),
   markRead: (id: string) => api.post(`/notifications/${id}/read`),
+  /** Dev / onboarding helper: triggers today's digest synchronously and
+   * stores it as an in-app notification. Returns the new id. */
+  triggerDailyDigest: () =>
+    api.post('/notifications/daily-digest/me').then((r) => unwrap<{ notificationId: string }>(r.data)),
 };
 
 /* -------- Community ----------------------------------------------------- */

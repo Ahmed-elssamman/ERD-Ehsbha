@@ -6,6 +6,8 @@ import { Button } from './button';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl';
+
 interface DialogProps {
   open: boolean;
   onClose: () => void;
@@ -14,9 +16,33 @@ interface DialogProps {
   children?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  /**
+   * Controls the dialog's max-width.
+   *  - sm  (28rem)  — confirm / single field
+   *  - md  (32rem)  — default; standard form
+   *  - lg  (42rem)  — wide form / multi-section
+   *  - xl  (56rem)  — extra content like the OCR multi-trip review
+   */
+  size?: DialogSize;
 }
 
-export function Dialog({ open, onClose, title, description, children, footer, className }: DialogProps) {
+const SIZE_TO_MAX_WIDTH: Record<DialogSize, string> = {
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+};
+
+export function Dialog({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  className,
+  size = 'md',
+}: DialogProps) {
   const t = useT();
   useEffect(() => {
     if (!open) return;
@@ -35,7 +61,11 @@ export function Dialog({ open, onClose, title, description, children, footer, cl
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center">
+        // Outer flex container caps the dialog at viewport height (using `dvh`
+        // so the mobile address bar's collapse/expand doesn't clip the
+        // sticky footer) and centres on desktop, bottom-sheets on mobile.
+        // `safe-area-inset-bottom` reserves the iOS home-indicator gutter.
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -53,13 +83,20 @@ export function Dialog({ open, onClose, title, description, children, footer, cl
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 24, opacity: 0, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            // Three-row grid: header (auto) / body (1fr scroll) / footer (auto).
+            // `max-h-[100dvh]` on mobile makes the sheet sit flush at the
+            // bottom while body content scrolls inside; `sm:max-h-[calc(100dvh-2rem)]`
+            // leaves a 1rem gap on each side on desktop.
             className={cn(
-              'relative z-10 w-full max-w-lg overflow-hidden rounded-t-2xl border border-border bg-card text-card-foreground shadow-elevated sm:rounded-2xl',
+              'relative z-10 flex w-full flex-col overflow-hidden border border-border bg-card text-card-foreground shadow-elevated',
+              'max-h-[100dvh] rounded-t-2xl pb-[env(safe-area-inset-bottom)]',
+              'sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:pb-0',
+              SIZE_TO_MAX_WIDTH[size],
               className,
             )}
           >
             {(title || description) ? (
-              <div className="flex items-start justify-between gap-3 border-b border-border/60 p-5">
+              <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/60 p-5">
                 <div className="min-w-0">
                   {title ? (
                     <h2 id="dialog-title" className="text-base font-semibold">
@@ -75,9 +112,11 @@ export function Dialog({ open, onClose, title, description, children, footer, cl
                 </Button>
               </div>
             ) : null}
-            <div className="p-5">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 scroll-smooth">
+              {children}
+            </div>
             {footer ? (
-              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 bg-muted/30 p-4">
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/60 bg-muted/30 p-4">
                 {footer}
               </div>
             ) : null}

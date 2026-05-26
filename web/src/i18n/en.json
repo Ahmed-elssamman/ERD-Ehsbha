@@ -780,10 +780,23 @@
   },
   "notifications": {
     "title": "Notifications",
-    "subtitle": "Important updates and reminders",
+    "subtitle": "Today's target and smart tips from your data",
     "empty": "No notifications yet",
     "markAllRead": "Mark all as read",
-    "markRead": "Mark as read"
+    "markRead": "Mark as read",
+    "refreshDigest": "Today's tips",
+    "digest": {
+      "todayTargetLabel": "Today's target to stay on your monthly goal",
+      "monthlyContext": "Earned {earned} EGP of {goal} EGP · {days} days left this month",
+      "yesterdayNet": "Yesterday: {egp} EGP net",
+      "tip": {
+        "todayTarget": "Focus on {egp} EGP today — keeping that pace for the next {days} days closes the month.",
+        "bestHour": "Your best window is around {display} (~{egpHr} EGP/hr) — be online a bit before.",
+        "bestApp": "On days like today your top app is {name} — start there.",
+        "avoidArea": "Avoid long runs in {area} — your EGP/km there ({egpPerKm} EGP) is below average.",
+        "emptyKm": "Yesterday {pct}% of your km was empty. Wait for the next ping in-zone instead of driving back."
+      }
+    }
   },
   "settings": {
     "title": "Settings",

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,9 +7,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n';
-import { NotificationsApi } from '@/lib/api/endpoints';
+import { NotificationsApi, type AppNotification, type DailyDigestData } from '@/lib/api/endpoints';
 import { formatDate, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { DailyDigestCard } from '@/components/notifications/daily-digest-card';
+
+function digestPayload(n: AppNotification): DailyDigestData | null {
+  const d = n.data as { kind?: string } | null | undefined;
+  if (!d || d.kind !== 'DAILY_DIGEST') return null;
+  return n.data as unknown as DailyDigestData;
+}
 
 export function NotificationsPage() {
   const { t, locale } = useI18n();
@@ -32,17 +39,33 @@ export function NotificationsPage() {
     qc.invalidateQueries({ queryKey: ['notifications'] });
   };
 
+  const triggerDigestMut = useMutation({
+    mutationFn: () => NotificationsApi.triggerDailyDigest(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title={t('notifications.title')}
         subtitle={t('notifications.subtitle')}
         actions={
-          unread.length > 0 ? (
-            <Button variant="outline" onClick={markAll} className="gap-2">
-              <Check className="h-4 w-4" /> {t('notifications.markAllRead')}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => triggerDigestMut.mutate()}
+              loading={triggerDigestMut.isPending}
+              className="gap-1.5"
+            >
+              <Sparkles className="h-4 w-4" />
+              {t('notifications.refreshDigest')}
             </Button>
-          ) : undefined
+            {unread.length > 0 ? (
+              <Button variant="outline" onClick={markAll} className="gap-2">
+                <Check className="h-4 w-4" /> {t('notifications.markAllRead')}
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -60,44 +83,58 @@ export function NotificationsPage() {
             <EmptyState Icon={Bell} title={t('notifications.empty')} />
           ) : (
             <ul className="divide-y divide-border/60">
-              {items.map((n, i) => (
-                <motion.li
-                  key={n.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.16, delay: Math.min(i, 10) * 0.02 }}
-                  className={cn('flex items-start justify-between gap-3 px-5 py-4', !n.readAt && 'bg-primary/5')}
-                >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span
-                      className={cn(
-                        'mt-1 h-2 w-2 shrink-0 rounded-full',
-                        n.readAt ? 'bg-muted-foreground/40' : 'bg-primary',
-                      )}
-                      aria-hidden
-                    />
-                    <div className="min-w-0">
-                      <p className="font-semibold leading-snug">{n.title}</p>
-                      <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>
-                      <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                        {formatDate(n.sentAt, locale, { day: 'numeric', month: 'short' })} ·{' '}
-                        <span dir="ltr">{formatTime(n.sentAt, locale)}</span>
-                      </p>
+              {items.map((n, i) => {
+                const digest = digestPayload(n);
+                return (
+                  <motion.li
+                    key={n.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.16, delay: Math.min(i, 10) * 0.02 }}
+                    className={cn(
+                      'flex flex-col gap-3 px-5 py-4',
+                      !n.readAt && 'bg-primary/5',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span
+                          className={cn(
+                            'mt-1 h-2 w-2 shrink-0 rounded-full',
+                            n.readAt ? 'bg-muted-foreground/40' : 'bg-primary',
+                          )}
+                          aria-hidden
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold leading-snug">{n.title}</p>
+                          {/* For DAILY_DIGEST we render structured content below; the
+                              raw body text is redundant. For every other kind, fall
+                              back to the plain body that the backend stored. */}
+                          {digest ? null : (
+                            <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>
+                          )}
+                          <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {formatDate(n.sentAt, locale, { day: 'numeric', month: 'short' })} ·{' '}
+                            <span dir="ltr">{formatTime(n.sentAt, locale)}</span>
+                          </p>
+                        </div>
+                      </div>
+                      {!n.readAt ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markMut.mutate(n.id)}
+                          className="gap-1.5 text-xs"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {t('notifications.markRead')}
+                        </Button>
+                      ) : null}
                     </div>
-                  </div>
-                  {!n.readAt ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => markMut.mutate(n.id)}
-                      className="gap-1.5 text-xs"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      {t('notifications.markRead')}
-                    </Button>
-                  ) : null}
-                </motion.li>
-              ))}
+                    {digest ? <DailyDigestCard data={digest} /> : null}
+                  </motion.li>
+                );
+              })}
             </ul>
           )}
         </CardContent>

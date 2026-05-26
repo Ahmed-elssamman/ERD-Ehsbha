@@ -129,11 +129,16 @@ export function OcrUploadDialog({ open, onOpenChange, onParsed }: Props) {
 
   const showFooter = !result;
   const canExtract = !isPending && files.length > 0 && platform != null;
+  // The multi-trip review can host up to 20 expandable cards — give it the
+  // widest dialog size so each card has horizontal room. Single-trip review
+  // and the initial picker stay compact.
+  const dialogSize = result && result.mode === 'multi' && result.trips.length > 1 ? 'xl' : 'lg';
 
   return (
     <Dialog
       open={open}
       onClose={() => onOpenChange(false)}
+      size={dialogSize}
       title={t('trips.ocr.dialogTitle')}
       description={t('trips.ocr.dialogSubtitle')}
       footer={
