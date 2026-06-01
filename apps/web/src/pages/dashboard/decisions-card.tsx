@@ -69,8 +69,10 @@ export function DecisionsCard({ data, loading }: Props) {
                       d.tone ? TONE_STYLES[d.tone] ?? 'border-border' : 'border-border',
                     )}
                   >
-                    <p className="text-sm font-semibold">{d.title}</p>
-                    {d.body ? <p className="mt-1 text-xs opacity-90">{d.body}</p> : null}
+                    <p className="break-words text-sm font-semibold">{d.title}</p>
+                    {d.body ? (
+                      <p className="mt-1 line-clamp-2 break-words text-xs opacity-90">{d.body}</p>
+                    ) : null}
                   </Link>
                 </motion.li>
               ))}

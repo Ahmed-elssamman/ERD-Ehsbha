@@ -1,10 +1,10 @@
 {
-  "name": "@ehsbha/backend",
+  "name": "@ehsbha/api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "build": "nest build",
-    "start": "node dist/main.js",
+    "start": "node dist/src/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "typecheck": "tsc --noEmit",
@@ -17,6 +17,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
+    "seed:admin": "ts-node prisma/seed-admin.ts",
     "smoke": "ts-node scripts/smoke.ts",
     "smoke:ocr": "ts-node -r dotenv/config scripts/smoke-azure-ocr.ts",
     "benchmark:ocr": "ts-node -r dotenv/config scripts/ocr-benchmark.ts"

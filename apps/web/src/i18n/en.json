@@ -667,7 +667,13 @@
       "evening": "Evening (5pm–10pm)",
       "night": "Night (10pm–5am)"
     },
-    "windows": { "7d": "7d", "30d": "30d", "90d": "90d" }
+    "windows": { "7d": "7d", "30d": "30d", "90d": "90d" },
+    "chartAria": {
+      "apps": "Net profit by app — bar chart",
+      "areas": "Net profit by area — bar chart",
+      "hours": "Net profit by time of day — bar chart"
+    },
+    "chartError": "Chart failed to render"
   },
   "score": {
     "title": "Driver score",
@@ -693,6 +699,15 @@
       "lastMealHours": "Hours since last meal",
       "weather": "Driving conditions"
     },
+    "fieldHints": {
+      "sleepHours": "Aim for 7+ hours for safer driving",
+      "continuousMinutes": "Take a break every 90 minutes",
+      "totalHours": "Stop before 10 hours total",
+      "stress": "1 = relaxed, 10 = very stressed",
+      "breaks": "Short stops of 5 minutes or more",
+      "lastMealHours": "Long gaps reduce focus"
+    },
+    "historyChartAria": "Driver score over the last 14 days — area chart",
     "feelings": { "great": "Great", "ok": "OK", "tired": "Tired", "exhausted": "Exhausted" },
     "weatherOptions": { "clear": "Clear", "rain": "Rain", "heat": "Heat", "traffic": "Heavy traffic" },
     "yes": "Yes",

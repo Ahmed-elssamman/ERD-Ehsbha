@@ -110,11 +110,13 @@ export function DashboardPage() {
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"
       >
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{greeting}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('dashboard.todaySummary')}</p>
+        <div className="min-w-0 max-w-full">
+          <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{greeting}</h1>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            {t('dashboard.todaySummary')}
+          </p>
         </div>
-        <Button asChild className="gap-2">
+        <Button asChild className="shrink-0 gap-2">
           <Link to="/trips/new">
             <Plus className="h-4 w-4" aria-hidden />
             {t('nav.addTrip')}

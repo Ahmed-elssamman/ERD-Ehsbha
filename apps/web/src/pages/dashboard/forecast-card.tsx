@@ -25,15 +25,17 @@ export function ForecastCard({ data, loading }: Props) {
       >
         <Card className="transition-all hover:border-primary/40 hover:shadow-elevated">
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
-            <div>
+            <div className="min-w-0">
               <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="h-4 w-4 text-primary" aria-hidden />
-                {t('dashboard.forecast')}
+                <TrendingUp className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <span className="truncate">{t('dashboard.forecast')}</span>
               </CardTitle>
-              <p className="mt-1 text-xs text-muted-foreground">{t('dashboard.forecastSubtitle')}</p>
+              <p className="mt-1 break-words text-xs text-muted-foreground">
+                {t('dashboard.forecastSubtitle')}
+              </p>
             </div>
             <ArrowRight
-              className="h-4 w-4 text-muted-foreground/60 transition-all group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+              className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-all group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
               aria-hidden
             />
           </CardHeader>
@@ -46,20 +48,20 @@ export function ForecastCard({ data, loading }: Props) {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs uppercase tracking-wide text-muted-foreground">
                       {t('dashboard.projected')}
                     </p>
-                    <p className="num-tabular text-2xl font-bold tracking-tight">
+                    <p className="num-tabular break-words text-xl font-bold tracking-tight sm:text-2xl">
                       {formatMoney(data.forecastNetPiastres, locale)}
                     </p>
                   </div>
-                  <div className="text-end">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <div className="min-w-0 text-end">
+                    <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">
                       {t('dashboard.currentNet')}
                     </p>
-                    <p className="num-tabular text-sm font-semibold">
+                    <p className="num-tabular break-words text-sm font-semibold">
                       {formatMoney(data.currentNetPiastres, locale)}
                     </p>
                   </div>
@@ -72,9 +74,13 @@ export function ForecastCard({ data, loading }: Props) {
                     transition={{ duration: 0.7, ease: 'easeOut' }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{t('dashboard.elapsed', { elapsed: data.elapsedDays, total: data.totalDays })}</span>
-                  <span dir="ltr">± {formatMoney(data.confidenceBandPiastres, locale)}</span>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="min-w-0 truncate">
+                    {t('dashboard.elapsed', { elapsed: data.elapsedDays, total: data.totalDays })}
+                  </span>
+                  <span dir="ltr" className="min-w-0 truncate">
+                    ± {formatMoney(data.confidenceBandPiastres, locale)}
+                  </span>
                 </div>
               </div>
             )}

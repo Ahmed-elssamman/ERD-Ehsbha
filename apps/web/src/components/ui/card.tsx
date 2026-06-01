@@ -23,10 +23,20 @@ export const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   },
 );
 
-export const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  function CardTitle({ className, ...props }, ref) {
+type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+
+export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  as?: HeadingLevel;
+}
+
+export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
+  function CardTitle({ className, as: Tag = 'h3', ...props }, ref) {
     return (
-      <h3 ref={ref} className={cn('text-base font-semibold leading-none tracking-tight', className)} {...props} />
+      <Tag
+        ref={ref}
+        className={cn('text-base font-semibold leading-none tracking-tight', className)}
+        {...props}
+      />
     );
   },
 );

@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { ChartErrorBoundary } from '@/components/ui/chart-error-boundary';
 import { useI18n } from '@/i18n';
 import { AnalyticsApi, ScoreApi } from '@/lib/api/endpoints';
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
@@ -221,7 +222,7 @@ export function DriverScorePage() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-5 grid grid-cols-2 gap-2">
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
                   <SubScore label={t('score.efficiency')} value={base.efficiency} Icon={Activity} />
                   <SubScore label={t('score.profit')} value={base.profit} Icon={Coins} />
                   <SubScore
@@ -248,30 +249,36 @@ export function DriverScorePage() {
             ) : chartData.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground">{t('common.noData')}</p>
             ) : (
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                    <defs>
-                      <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="hsl(var(--border))" vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: 12,
-                        color: 'hsl(var(--card-foreground))',
-                      }}
-                    />
-                    <Area type="monotone" dataKey="overall" stroke="hsl(var(--primary))" fill="url(#scoreFill)" strokeWidth={2.5} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <ChartErrorBoundary fallbackText={t('analytics.chartError')}>
+                <div
+                  className="h-72"
+                  role="img"
+                  aria-label={t('score.historyChartAria')}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                      <defs>
+                        <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="hsl(var(--border))" vertical={false} strokeDasharray="3 3" />
+                      <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: 12,
+                          color: 'hsl(var(--card-foreground))',
+                        }}
+                      />
+                      <Area type="monotone" dataKey="overall" stroke="hsl(var(--primary))" fill="url(#scoreFill)" strokeWidth={2.5} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </ChartErrorBoundary>
             )}
           </CardContent>
         </Card>
@@ -489,7 +496,11 @@ function WellnessCheckCard({
               dir="ltr"
               value={checkIn.sleepHours}
               onChange={setNum('sleepHours')}
+              aria-describedby="sleepHours-hint"
             />
+            <p id="sleepHours-hint" className="text-xs text-muted-foreground">
+              {t('score.fieldHints.sleepHours')}
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="continuousMinutes">{t('score.fields.continuousMinutes')}</Label>
@@ -502,7 +513,11 @@ function WellnessCheckCard({
               dir="ltr"
               value={checkIn.continuousMinutes}
               onChange={setNum('continuousMinutes')}
+              aria-describedby="continuousMinutes-hint"
             />
+            <p id="continuousMinutes-hint" className="text-xs text-muted-foreground">
+              {t('score.fieldHints.continuousMinutes')}
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="totalHours">{t('score.fields.totalHours')}</Label>
@@ -515,7 +530,11 @@ function WellnessCheckCard({
               dir="ltr"
               value={checkIn.totalHours}
               onChange={setNum('totalHours')}
+              aria-describedby="totalHours-hint"
             />
+            <p id="totalHours-hint" className="text-xs text-muted-foreground">
+              {t('score.fieldHints.totalHours')}
+            </p>
           </div>
         </div>
 
@@ -563,7 +582,11 @@ function WellnessCheckCard({
                   dir="ltr"
                   value={checkIn.stress}
                   onChange={setNum('stress')}
+                  aria-describedby="stress-hint"
                 />
+                <p id="stress-hint" className="text-xs text-muted-foreground">
+                  {t('score.fieldHints.stress')}
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="breaks">{t('score.fields.breaks')}</Label>
@@ -576,7 +599,11 @@ function WellnessCheckCard({
                   dir="ltr"
                   value={checkIn.breaks}
                   onChange={setNum('breaks')}
+                  aria-describedby="breaks-hint"
                 />
+                <p id="breaks-hint" className="text-xs text-muted-foreground">
+                  {t('score.fieldHints.breaks')}
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="lastMealHours">{t('score.fields.lastMealHours')}</Label>
@@ -589,7 +616,11 @@ function WellnessCheckCard({
                   dir="ltr"
                   value={checkIn.lastMealHours}
                   onChange={setNum('lastMealHours')}
+                  aria-describedby="lastMealHours-hint"
                 />
+                <p id="lastMealHours-hint" className="text-xs text-muted-foreground">
+                  {t('score.fieldHints.lastMealHours')}
+                </p>
               </div>
             </div>
 

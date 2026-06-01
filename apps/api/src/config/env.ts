@@ -11,6 +11,13 @@ const EnvSchema = z.object({
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('30d'),
 
+  // Admin platform JWT realm (completely separate from driver auth above).
+  // Must be different secrets — token-confusion impossibility relies on this.
+  ADMIN_JWT_ACCESS_SECRET: z.string().min(32),
+  ADMIN_JWT_REFRESH_SECRET: z.string().min(32),
+  ADMIN_JWT_ACCESS_TTL: z.string().default('15m'),
+  ADMIN_JWT_REFRESH_TTL: z.string().default('8h'),
+
   CORS_ORIGINS: z.string().default('*'),
 
   // SMTP — leave empty in dev to log the code to the console instead of

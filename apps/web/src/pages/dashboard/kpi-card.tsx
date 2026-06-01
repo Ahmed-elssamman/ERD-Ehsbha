@@ -46,23 +46,25 @@ export function KpiCard({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="min-w-0 flex-1 truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
         {Icon ? (
           <motion.span
             whileHover={to ? { rotate: -6, scale: 1.06 } : undefined}
             transition={{ type: 'spring', stiffness: 360, damping: 22 }}
-            className={cn('grid h-9 w-9 place-items-center rounded-lg', TONE[tone])}
+            className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg', TONE[tone])}
           >
             <Icon className="h-[18px] w-[18px]" aria-hidden />
           </motion.span>
         ) : null}
       </div>
 
-      <div className="mt-2 min-h-[2.5rem]">
+      <div className="mt-2 min-h-[2.5rem] min-w-0">
         {loading ? (
           <Skeleton className="h-7 w-24" />
         ) : (
-          <p className="num-tabular text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+          <p className="num-tabular break-words text-xl font-bold leading-tight tracking-tight sm:text-2xl xl:text-3xl">
             {value}
           </p>
         )}
@@ -70,13 +72,15 @@ export function KpiCard({
 
       <div className="mt-1 flex items-center justify-between gap-2">
         {hint ? (
-          <p className="num-tabular text-xs text-muted-foreground">{hint}</p>
+          <p className="num-tabular min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {hint}
+          </p>
         ) : (
           <span />
         )}
         {to ? (
           <ChevronRight
-            className="h-3.5 w-3.5 text-muted-foreground/60 transition-all group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+            className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-all group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
             aria-hidden
           />
         ) : null}

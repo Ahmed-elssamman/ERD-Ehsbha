@@ -122,6 +122,8 @@ export function AppLayout() {
             </div>
           </header>
 
+          {/* tabIndex=-1 lets the skip-link move focus to <main> on activation
+              without inserting it into the natural tab sequence. */}
           <main
             id="main-content"
             tabIndex={-1}
@@ -135,15 +137,20 @@ export function AppLayout() {
       {/* Mobile drawer — always mounted, toggled via animate + pointer-events.
           Avoids the AnimatePresence mount/unmount race that left the overlay
           stuck on top of the header during lazy-route Suspense transitions on
-          installed mobile PWAs. */}
-      <motion.div
+          installed mobile PWAs. The overlay is a real <button> so screen
+          readers announce it and Enter/Space dismiss it. The Escape key path
+          is handled in the useEffect above. */}
+      <motion.button
+        type="button"
         initial={false}
         animate={{ opacity: mobileNavOpen ? 1 : 0 }}
         transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
         onClick={() => setMobileNavOpen(false)}
-        aria-hidden
+        tabIndex={mobileNavOpen ? 0 : -1}
+        aria-label={t('common.closeMenu')}
+        aria-hidden={!mobileNavOpen}
         className={cn(
-          'fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden',
+          'fixed inset-0 z-40 cursor-default bg-black/45 backdrop-blur-sm lg:hidden',
           mobileNavOpen ? 'pointer-events-auto' : 'pointer-events-none',
         )}
       />
@@ -161,9 +168,9 @@ export function AppLayout() {
         )}
       >
         <div className="flex h-16 shrink-0 items-center justify-between px-4">
-          <div onClick={() => setMobileNavOpen(false)}>
-            <Logo to="/" />
-          </div>
+          {/* Drawer auto-closes on route change via the location effect above —
+              no extra handler needed here. */}
+          <Logo to="/" />
           <Button
             variant="ghost"
             size="icon"

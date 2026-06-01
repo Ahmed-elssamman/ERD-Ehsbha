@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs } from '@/components/ui/tabs';
+import { ChartErrorBoundary } from '@/components/ui/chart-error-boundary';
 import { useI18n } from '@/i18n';
 import { AnalyticsApi } from '@/lib/api/endpoints';
 import { formatDuration, formatKm, formatMoney, formatNumber } from '@/lib/format';
@@ -137,7 +138,7 @@ function WindowSelector({ value, onChange }: { value: WindowKey; onChange: (w: W
 }
 
 function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
-  const { t, locale } = useI18n();
+  const { t, locale, dir } = useI18n();
   const [w, setW] = useState<WindowKey>('7d');
   const { data, isLoading } = useQuery<{
     windowDays: number;
@@ -187,30 +188,44 @@ function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
           ) : chartData.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground">{t('analytics.noDataPeriod')}</p>
           ) : (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                  <CartesianGrid stroke="hsl(var(--border))" vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} interval={0} angle={-15} textAnchor="end" height={50} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 12,
-                      color: 'hsl(var(--card-foreground))',
-                    }}
-                    formatter={(v: number) => formatMoney(Math.round(v * 100), locale)}
-                    cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
-                  />
-                  <Bar dataKey="net" radius={[8, 8, 0, 0]}>
-                    {chartData.map((d, i) => (
-                      <Cell key={i} fill={d.color || '#34D399'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartErrorBoundary fallbackText={t('analytics.chartError')}>
+              <div
+                className="h-72"
+                role="img"
+                aria-label={t(`analytics.chartAria.${kind}`)}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid stroke="hsl(var(--border))" vertical={false} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="name"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      interval={0}
+                      angle={dir === 'rtl' ? 15 : -15}
+                      textAnchor={dir === 'rtl' ? 'start' : 'end'}
+                      height={50}
+                    />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: 12,
+                        color: 'hsl(var(--card-foreground))',
+                      }}
+                      formatter={(v: number) => formatMoney(Math.round(v * 100), locale)}
+                      cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
+                    />
+                    <Bar dataKey="net" radius={[8, 8, 0, 0]}>
+                      {chartData.map((d) => (
+                        <Cell key={d.name} fill={d.color || '#34D399'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartErrorBoundary>
           )}
         </CardContent>
       </Card>
@@ -274,26 +289,32 @@ function HoursTab() {
           ) : chart.every((c) => c.net === 0 && c.trips === 0) ? (
             <p className="text-center text-sm text-muted-foreground">{t('analytics.noDataPeriod')}</p>
           ) : (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                  <CartesianGrid stroke="hsl(var(--border))" vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 12,
-                      color: 'hsl(var(--card-foreground))',
-                    }}
-                    formatter={(v: number) => formatMoney(Math.round(v * 100), locale)}
-                    cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
-                  />
-                  <Bar dataKey="net" radius={[8, 8, 0, 0]} fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartErrorBoundary fallbackText={t('analytics.chartError')}>
+              <div
+                className="h-72"
+                role="img"
+                aria-label={t('analytics.chartAria.hours')}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid stroke="hsl(var(--border))" vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: 12,
+                        color: 'hsl(var(--card-foreground))',
+                      }}
+                      formatter={(v: number) => formatMoney(Math.round(v * 100), locale)}
+                      cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
+                    />
+                    <Bar dataKey="net" radius={[8, 8, 0, 0]} fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartErrorBoundary>
           )}
         </CardContent>
       </Card>
@@ -306,9 +327,9 @@ function SummaryCard({ label, value, loading }: { label: string; value: string; 
     <Card className="p-4 sm:p-5">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       {loading ? (
-        <Skeleton className="mt-2 h-7 w-24" />
+        <Skeleton className="mt-2 h-7 w-24 sm:h-8" />
       ) : (
-        <p className="num-tabular mt-2 text-xl font-bold sm:text-2xl">{value || '—'}</p>
+        <p className="num-tabular mt-2 text-xl font-bold leading-7 sm:text-2xl sm:leading-8">{value || '—'}</p>
       )}
     </Card>
   );

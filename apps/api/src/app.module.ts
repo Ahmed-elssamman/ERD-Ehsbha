@@ -24,12 +24,14 @@ import { OdometerModule } from './modules/odometer/odometer.module';
 import { CommunityModule } from './modules/community/community.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SupportModule } from './modules/support/support.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
+    AdminModule,
     UsersModule,
     DriversModule,
     VehiclesModule,

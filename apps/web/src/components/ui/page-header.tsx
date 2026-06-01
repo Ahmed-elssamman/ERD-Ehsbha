@@ -16,11 +16,15 @@ export function PageHeader({ title, subtitle, actions, className }: Props) {
         className,
       )}
     >
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+      <div className="min-w-0 max-w-full">
+        <h1 className="break-words text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        {subtitle ? (
+          <p className="mt-1 break-words text-sm text-muted-foreground">{subtitle}</p>
+        ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+      ) : null}
     </header>
   );
 }

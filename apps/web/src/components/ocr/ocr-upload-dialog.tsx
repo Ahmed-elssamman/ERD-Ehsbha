@@ -31,9 +31,10 @@ interface Props {
     result: OcrExtractResponseDto,
   ) =>
     | void
-    | Promise<void>
     | { keepOpen: true; statusMessage?: { kind: 'error' | 'success'; text: string } }
-    | Promise<{ keepOpen: true; statusMessage?: { kind: 'error' | 'success'; text: string } }>;
+    | Promise<
+        void | { keepOpen: true; statusMessage?: { kind: 'error' | 'success'; text: string } }
+      >;
 }
 
 /**

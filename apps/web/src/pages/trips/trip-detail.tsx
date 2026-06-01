@@ -101,10 +101,10 @@ export function TripDetailPage() {
               <CardTitle className="text-base">{t('trips.tripKm')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <KV label={t('trips.tripKm')} value={`${formatKm(trip.totalKmMeters, locale)} km`} />
-                <KV label={t('trips.tripPaidKm')} value={`${formatKm(trip.paidKmMeters, locale)} km`} />
-                <KV label={t('trips.tripEmptyKm')} value={`${formatKm(trip.emptyKmMeters, locale)} km`} />
+              <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                <KV label={t('trips.tripKm')} value={`${formatKm(trip.totalKmMeters, locale)} ${t('common.km')}`} />
+                <KV label={t('trips.tripPaidKm')} value={`${formatKm(trip.paidKmMeters, locale)} ${t('common.km')}`} />
+                <KV label={t('trips.tripEmptyKm')} value={`${formatKm(trip.emptyKmMeters, locale)} ${t('common.km')}`} />
               </div>
             </CardContent>
           </Card>
@@ -115,7 +115,9 @@ export function TripDetailPage() {
                 <CardTitle className="text-base">{t('trips.tripNotes')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{trip.notes}</p>
+                <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                  {trip.notes}
+                </p>
               </CardContent>
             </Card>
           ) : null}
@@ -151,18 +153,18 @@ export function TripDetailPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-3">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="num-tabular mt-1 text-base font-semibold">{value}</p>
+    <div className="min-w-0 rounded-xl border border-border/60 bg-card p-3">
+      <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="num-tabular mt-1 break-words text-base font-semibold">{value}</p>
     </div>
   );
 }
 
 function KV({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="num-tabular font-semibold">{value}</p>
+    <div className="min-w-0">
+      <p className="truncate text-xs text-muted-foreground">{label}</p>
+      <p className="num-tabular break-words font-semibold">{value}</p>
     </div>
   );
 }

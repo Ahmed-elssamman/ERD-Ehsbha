@@ -66,23 +66,23 @@ export function RecentTrips({ items, loading }: Props) {
                     to={`/trips/${trip.id}`}
                     className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-accent/30"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p
-                        className={`num-tabular text-sm font-semibold ${
+                        className={`num-tabular truncate text-sm font-semibold ${
                           net >= 0 ? 'text-foreground' : 'text-destructive'
                         }`}
                       >
                         {formatMoney(net, locale)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground">
                         <span dir="ltr">{formatTime(trip.startedAt, locale)}</span>
                         {' · '}
                         {formatKm(trip.totalKmMeters, locale)} {t('common.km')}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 shrink-0 items-center gap-2">
                       {trip.notes ? (
-                        <p className="hidden max-w-[40%] truncate text-xs text-muted-foreground sm:block">
+                        <p className="hidden max-w-[160px] truncate text-xs text-muted-foreground sm:block">
                           {trip.notes}
                         </p>
                       ) : null}

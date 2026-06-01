@@ -1,10 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusable(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => !el.hasAttribute('aria-hidden') && el.offsetParent !== null,
+  );
+}
 
 type DialogSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -44,19 +53,68 @@ export function Dialog({
   size = 'md',
 }: DialogProps) {
   const t = useT();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
+    openerRef.current = (document.activeElement as HTMLElement) ?? null;
+
+    // Defer initial focus until the panel is mounted in the DOM, then move
+    // focus to the first focusable child (or the panel itself as fallback).
+    const focusTimer = window.setTimeout(() => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusables = getFocusable(panel);
+      // Prefer first non-close-button focusable so screen-reader users land
+      // on the dialog's primary content rather than the dismiss button.
+      const target = focusables.find((el) => el.getAttribute('aria-label') !== t('common.close'))
+        ?? focusables[0]
+        ?? panel;
+      target.focus({ preventScroll: true });
+    }, 30);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusables = getFocusable(panel);
+      if (focusables.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !panel.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
+      // Return focus to whatever opened the dialog so keyboard users don't
+      // lose their place. Guard for elements that left the DOM mid-dialog.
+      const opener = openerRef.current;
+      if (opener && document.body.contains(opener)) {
+        opener.focus({ preventScroll: true });
+      }
     };
-  }, [open, onClose]);
+  }, [open, onClose, t]);
 
   return (
     <AnimatePresence>
@@ -76,9 +134,11 @@ export function Dialog({
             aria-hidden
           />
           <motion.div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={title ? 'dialog-title' : undefined}
+            tabIndex={-1}
             initial={{ y: 24, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 24, opacity: 0, scale: 0.98 }}

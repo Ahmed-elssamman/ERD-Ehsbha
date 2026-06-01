@@ -82,7 +82,16 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: { enabled: true, type: 'module', navigateFallback: '/index.html' },
+      // `suppressWarnings` silences the harmless "glob doesn't match any
+      // files" warning emitted by workbox-build's dev SW pass — in dev the
+      // glob scans `dev-dist/`, which only contains sw.js and workbox-*.js
+      // (both excluded by globIgnores), so no precache entry can ever match.
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: '/index.html',
+        suppressWarnings: true,
+      },
     }),
   ],
 });
