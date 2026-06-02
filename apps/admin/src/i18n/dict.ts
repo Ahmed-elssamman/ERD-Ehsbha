@@ -51,6 +51,12 @@ export const DICT = {
     completed: { en: 'Completed', ar: 'تم بنجاح' },
   },
 
+  // Document / tab titles
+  meta: {
+    login: { en: 'Sign in', ar: 'تسجيل الدخول' },
+    notFound: { en: 'Not found', ar: 'الصفحة غير موجودة' },
+  },
+
   // Sidebar
   nav: {
     dashboard: { en: 'Dashboard', ar: 'لوحة التحكم' },

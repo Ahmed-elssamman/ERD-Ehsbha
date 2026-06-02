@@ -344,6 +344,8 @@ Verified against ADMIN_ARCHITECTURE.md Step 2:
 
 Each row is testable as an E2E scenario (ADMIN_ARCHITECTURE.md Step 19).
 
+
+
 ### Custom Roles (Phase 4)
 
 The schema (`admin_roles` + `admin_role_permissions`) already supports custom roles. UI for managing them is part of `/admin/roles` page (Roles & Permissions). System roles cannot be deleted; custom roles can.

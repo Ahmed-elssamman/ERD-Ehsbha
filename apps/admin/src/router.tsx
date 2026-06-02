@@ -1,5 +1,6 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { usePageTitle } from '@/lib/use-page-title';
 import {
   AdminGuestRoute,
   AdminProtectedRoute,
@@ -30,7 +31,16 @@ import { NotFoundPage } from '@/pages/stubs';
 
 const gate = (perm: string, el: React.ReactNode) => <RequirePermission permission={perm}>{el}</RequirePermission>;
 
+// Layout route (no path) that keeps the browser-tab title synced to the route.
+function TitleBoundary() {
+  usePageTitle();
+  return <Outlet />;
+}
+
 export const router = createBrowserRouter([
+  {
+    element: <TitleBoundary />,
+    children: [
   {
     path: '/login',
     element: <AdminGuestRoute><LoginPage /></AdminGuestRoute>,
@@ -70,4 +80,6 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
+    ],
+  },
 ]);
