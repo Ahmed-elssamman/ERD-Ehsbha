@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Loader2 } from 'lucide-react';
-import { AdminAuthContract } from '@ehsbha/api-contracts';
+import * as AdminAuthContract from '@/lib/contracts/admin-auth';
 import { adminApi } from '@/lib/api/admin-client';
 import { useAdminAuth } from '@/stores/admin-auth.store';
 import { cn } from '@/lib/utils';
