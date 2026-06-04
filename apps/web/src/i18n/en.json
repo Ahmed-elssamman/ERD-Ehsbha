@@ -285,7 +285,8 @@
       "paidExceedsTotal": "Paid km can't exceed total km",
       "receivedExceedsGross": "Received can't exceed quoted price",
       "selectVehicle": "Pick a vehicle first",
-      "selectApp": "Pick an app first"
+      "selectApp": "Pick an app first",
+      "saveFailed": "Couldn't save the trip: {reason}"
     },
     "bulkDelete": {
       "enter": "Select multiple",

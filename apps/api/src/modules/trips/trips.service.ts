@@ -2,7 +2,7 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
-import { CreateTripDto, ListTripsDto, UpdateTripDto } from './dto/trips.dto';
+import { CreateTripDto, CreateTripSchema, ListTripsDto, UpdateTripDto } from './dto/trips.dto';
 
 @Injectable()
 export class TripsService {
@@ -169,13 +169,24 @@ export class TripsService {
    * Returns the successfully created trips plus a per-index error array so
    * the client can surface "saved X of N, Y failed" without ambiguity.
    */
-  async createBatch(driverId: string, items: CreateTripDto[]) {
+  async createBatch(driverId: string, items: unknown[]) {
     const created: Awaited<ReturnType<TripsService['create']>>[] = [];
     const errors: Array<{ index: number; code: string; message: string }> = [];
 
     for (let i = 0; i < items.length; i++) {
+      // Validate each item individually so one bad card (common with OCR
+      // noise) doesn't sink the whole batch — see BatchCreateTripsSchema.
+      const parsed = CreateTripSchema.safeParse(items[i]);
+      if (!parsed.success) {
+        const message = parsed.error.issues
+          .map((iss) => `${iss.path.join('.') || '(root)'}: ${iss.message}`)
+          .join('; ');
+        errors.push({ index: i, code: 'VALIDATION_ERROR', message });
+        this.logger.warn(`createBatch item ${i} invalid: ${message}`);
+        continue;
+      }
       try {
-        const trip = await this.create(driverId, items[i]);
+        const trip = await this.create(driverId, parsed.data);
         created.push(trip);
       } catch (err) {
         const mapped = this.classifyError(err);

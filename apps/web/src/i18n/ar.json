@@ -285,7 +285,8 @@
       "paidExceedsTotal": "كم الراكب لا يمكن أن يتجاوز الإجمالي",
       "receivedExceedsGross": "المستلم لا يمكن أن يتجاوز السعر المعروض",
       "selectVehicle": "اختر مركبة أولاً",
-      "selectApp": "اختر تطبيقاً أولاً"
+      "selectApp": "اختر تطبيقاً أولاً",
+      "saveFailed": "تعذّر حفظ الرحلة: {reason}"
     },
     "bulkDelete": {
       "enter": "تحديد متعدد",

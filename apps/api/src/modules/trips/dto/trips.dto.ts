@@ -41,12 +41,20 @@ export type UpdateTripDto = z.infer<typeof UpdateTripSchema>;
  * scans an Uber "ملخص الدخل" with 10-15 cards still fits in one round-trip,
  * but small enough that any single failure surface stays digestible.
  *
+ * IMPORTANT: items are validated PER-ITEM inside the service, NOT here. If we
+ * ran `z.array(CreateTripSchema)` at the controller boundary, a single invalid
+ * card (e.g. OCR noise producing paidKm > totalKm, or received > gross) would
+ * reject the ENTIRE batch with a 400 — defeating the whole point of the
+ * endpoint, which is to save the good cards and report the bad ones per-index.
+ * So here we only validate the envelope shape (array, 1..20); each element is
+ * `CreateTripSchema.safeParse`d in `TripsService.createBatch`.
+ *
  * The server processes each item sequentially (NOT in parallel) so the
  * downstream aggregate-counter upserts don't race on the same
  * driver/day/app row.
  */
 export const BatchCreateTripsSchema = z.object({
-  items: z.array(CreateTripSchema).min(1).max(20),
+  items: z.array(z.unknown()).min(1).max(20),
 });
 export type BatchCreateTripsDto = z.infer<typeof BatchCreateTripsSchema>;
 

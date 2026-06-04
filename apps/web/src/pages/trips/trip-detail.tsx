@@ -115,7 +115,7 @@ export function TripDetailPage() {
                 <CardTitle className="text-base">{t('trips.tripNotes')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                <p className="min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] text-sm text-muted-foreground">
                   {trip.notes}
                 </p>
               </CardContent>

@@ -352,8 +352,8 @@ The schema (`admin_roles` + `admin_role_permissions`) already supports custom ro
 
 ### Status: ✅ Verifiable
 - Permission catalog is a finite list and can be enumerated in tests.
-- Each demo account's permission set is deterministically derived from their role(s).
-- Every controller is testable with each demo account → expected status code.
+- Each demo account's permission set is deterministically derived from their role .
+- Every controller is testable with each demo account → expected status code .
 
 ---
 

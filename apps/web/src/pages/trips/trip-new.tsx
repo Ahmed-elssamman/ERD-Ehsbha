@@ -100,9 +100,12 @@ export function TripNewPage() {
     try {
       const { created, errors } = await bulkCreateMut.mutateAsync(r);
       if (created.length === r.trips.length) {
-        // All saved — leave the new-trip page and show the trips list with
-        // the freshly created entries at the top.
-        navigate('/trips', { replace: true });
+        // All saved — show the trips list with the widest window so the
+        // freshly imported trips are visible even when their startedAt is in
+        // the past (OCR screenshots are often from earlier days). The default
+        // "last 7 days" filter would otherwise hide them and make it look
+        // like nothing was saved.
+        navigate('/trips?range=all', { replace: true });
         return;
       }
       if (created.length > 0) {

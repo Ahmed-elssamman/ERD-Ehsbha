@@ -52,9 +52,15 @@ export function buildCreateTripFromOcr(opts: {
     endedAt = new Date(startedAt.getTime() + 60_000);
   }
 
-  const grossEgp = parsed.grossEgp ?? parsed.receivedEgp ?? 0;
-  const totalKm = parsed.totalKm ?? parsed.paidKm ?? 0;
-  const paidKm = parsed.paidKm ?? parsed.totalKm ?? 0;
+  const receivedEgp = parsed.receivedEgp ?? null;
+  // Clamp OCR-derived values to satisfy the server's invariants
+  // (gross ≥ received, totalKm ≥ paidKm). OCR noise across N summary cards
+  // frequently breaks one of these; without clamping the server rejects that
+  // card and the driver loses the trip. The driver can still fine-tune later.
+  const grossEgp = Math.max(parsed.grossEgp ?? parsed.receivedEgp ?? 0, receivedEgp ?? 0);
+  const rawPaidKm = parsed.paidKm ?? parsed.totalKm ?? 0;
+  const totalKm = Math.max(parsed.totalKm ?? parsed.paidKm ?? 0, rawPaidKm);
+  const paidKm = Math.min(rawPaidKm, totalKm);
 
   const notesParts: string[] = [];
   if (imageHashes.length > 0) {

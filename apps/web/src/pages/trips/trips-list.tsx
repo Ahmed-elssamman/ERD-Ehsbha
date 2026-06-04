@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Route, Filter, Plus, ChevronRight, Trash2, CheckSquare, Square, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageHeader } from '@/components/ui/page-header';
@@ -17,6 +17,11 @@ import { durationMinutes } from '@/lib/time';
 import { Badge } from '@/components/ui/badge';
 
 type Preset = 'today' | 'last7' | 'last30' | 'thisMonth' | 'all';
+
+const PRESETS: Preset[] = ['today', 'last7', 'last30', 'thisMonth', 'all'];
+function parsePreset(value: string | null): Preset {
+  return value && (PRESETS as string[]).includes(value) ? (value as Preset) : 'last7';
+}
 
 function rangeFor(preset: Preset): { from?: string; to?: string } {
   const now = new Date();
@@ -46,7 +51,12 @@ export function TripsListPage() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [preset, setPreset] = useState<Preset>('last7');
+  // Initial filter window can be seeded from the URL (?range=all) — the OCR
+  // import flow sends the driver here with range=all so freshly imported trips
+  // (whose startedAt is often days/weeks in the past) are visible immediately
+  // instead of being hidden behind the default "last 7 days" window.
+  const [searchParams] = useSearchParams();
+  const [preset, setPreset] = useState<Preset>(() => parsePreset(searchParams.get('range')));
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirm, setConfirm] = useState(false);

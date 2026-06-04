@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,7 +53,14 @@ const schema = z
   .refine((v) => v.paidKm <= v.totalKm, {
     path: ['paidKm'],
     message: 'paid-exceeds-total',
-  });
+  })
+  .refine(
+    (v) => v.receivedEgp == null || (v.receivedEgp as unknown as string) === '' || Number(v.receivedEgp) <= Number(v.grossEgp),
+    {
+      path: ['receivedEgp'],
+      message: 'received-exceeds-gross',
+    },
+  );
 
 type FormValues = z.input<typeof schema>;
 
@@ -101,6 +108,7 @@ function fieldConfidence(ocr: OcrPrefill | null | undefined, field: keyof FormVa
 export function TripForm({ trip, onDone, initialFromOcr }: Props) {
   const { t, locale } = useI18n();
   const qc = useQueryClient();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: VehiclesApi.list });
   const appsQ = useQuery({ queryKey: ['apps', 'mine'], queryFn: AppsApi.mine });
   const areasQ = useQuery({ queryKey: ['areas'], queryFn: AreasApi.list });
@@ -249,6 +257,7 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
   });
 
   const submit = handleSubmit(async (v) => {
+    setSubmitError(null);
     const ocrTagged =
       initialFromOcr && initialFromOcr.imageHashes.length > 0
         ? `ocrImageHashes=${initialFromOcr.imageHashes.join(',')}`
@@ -285,8 +294,11 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
         await createMut.mutateAsync(body);
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn('Trip submit failed', readApiError(err));
+      // Surface the failure to the driver instead of swallowing it — a
+      // silent console.warn made server-side rejections (validation, network)
+      // look like "nothing happened" after pressing Save.
+      const e = readApiError(err);
+      setSubmitError(t('trips.errors.saveFailed', { reason: e.message || e.code }));
     }
   });
 
@@ -389,6 +401,7 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           optional
           hint={t('trips.hint.received')}
           confidence={fieldConfidence(initialFromOcr, 'receivedEgp')}
+          error={errors.receivedEgp?.message === 'received-exceeds-gross' ? t('trips.errors.receivedExceedsGross') : null}
         >
           <Input
             id="receivedEgp"
@@ -538,6 +551,15 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           {formatMoney(Math.round(netEgp * 100), locale)}
         </p>
       </div>
+
+      {submitError ? (
+        <p
+          className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+          role="alert"
+        >
+          {submitError}
+        </p>
+      ) : null}
 
       <div className="flex items-center justify-end gap-2 pt-2">
         <Button type="submit" loading={isSubmitting || createMut.isPending || updateMut.isPending}>
