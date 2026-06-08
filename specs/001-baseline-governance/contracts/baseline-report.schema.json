@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ehsbha.local/contracts/baseline-report.schema.json",
+  "title": "Ehsbha Phase 0 Baseline Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "revision",
+    "branch",
+    "startedAt",
+    "completedAt",
+    "environment",
+    "overallStatus",
+    "steps",
+    "knownLimitations",
+    "artifactMeasurements",
+    "coverageRecords"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "revision": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "node", "npm", "postgresql", "authoritative"],
+      "properties": {
+        "os": { "type": "string" },
+        "node": { "type": "string" },
+        "npm": { "type": "string" },
+        "postgresql": { "type": "string" },
+        "authoritative": { "const": true }
+      }
+    },
+    "overallStatus": { "enum": ["passed", "failed"] },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "knownLimitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "artifactMeasurements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/measurement" }
+    },
+    "coverageRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/coverage" }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "group", "status", "durationMs", "summary"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "group": {
+          "enum": [
+            "generation",
+            "lint",
+            "typecheck",
+            "unit",
+            "integration",
+            "contract",
+            "smoke",
+            "e2e",
+            "migration",
+            "build",
+            "audit",
+            "measurement"
+          ]
+        },
+        "status": { "enum": ["passed", "failed", "not_applicable"] },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "summary": { "type": "string", "minLength": 1 },
+        "artifactPaths": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application", "artifactPath", "category", "rawBytes", "budgetStatus"],
+      "properties": {
+        "application": { "enum": ["web", "admin"] },
+        "artifactPath": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["entry-js", "route-js", "css", "asset", "pwa"] },
+        "rawBytes": { "type": "integer", "minimum": 0 },
+        "compressedBytes": { "type": "integer", "minimum": 0 },
+        "budgetStatus": { "enum": ["within", "over", "unclassified"] }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface",
+        "kind",
+        "identifier",
+        "activity",
+        "status",
+        "evidence",
+        "blocking"
+      ],
+      "properties": {
+        "surface": { "enum": ["web", "admin", "api"] },
+        "kind": {
+          "enum": [
+            "route",
+            "page",
+            "endpoint",
+            "permission",
+            "translation",
+            "empty-state",
+            "service-worker"
+          ]
+        },
+        "identifier": { "type": "string", "minLength": 1 },
+        "activity": { "enum": ["active", "obsolete", "scaffold"] },
+        "status": { "enum": ["passed", "failed", "known_gap"] },
+        "evidence": { "type": "string", "minLength": 1 },
+        "blocking": { "type": "boolean" },
+        "owner": { "type": "string" },
+        "followUp": { "type": "string" }
+      }
+    }
+  }
+}
+
