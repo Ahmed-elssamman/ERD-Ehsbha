@@ -26,9 +26,27 @@
     "dev:admin": "npm-run-all -p api:dev admin:dev",
     "dev:all": "npm-run-all -p api:dev web:dev admin:dev",
     "build": "npm run api:build && npm run web:build && npm run admin:build",
-    "typecheck": "npm run api:typecheck && npm run web:typecheck && npm run admin:typecheck"
+    "typecheck": "npm run api:typecheck && npm run web:typecheck && npm run admin:typecheck",
+    "lint": "eslint .",
+    "test": "npm run api:test",
+    "test:integration": "npm --workspace @ehsbha/api run test:integration",
+    "test:contract": "npm --workspace @ehsbha/api run test:contract",
+    "test:smoke": "npm --workspace @ehsbha/api run test:smoke",
+    "test:coverage": "npm --workspace @ehsbha/api run test:coverage",
+    "test:e2e": "node scripts/verification/not-applicable.mjs --exit-zero e2e \"E2E not implemented in Phase 0\"",
+    "test:verification": "node --test scripts/verification/tests/*.test.mjs",
+    "verify:prerequisites": "node scripts/verification/check-prerequisites.mjs",
+    "verify:measure": "node scripts/verification/measure-builds.mjs",
+    "verify:routes": "node scripts/verification/audit-routes.mjs",
+    "verify:adr": "node --test scripts/verification/tests/adr-format.test.mjs",
+    "verify:security": "node scripts/verification/security-scan.mjs",
+    "verify": "node scripts/verification/verify.mjs"
   },
   "devDependencies": {
+    "eslint": "^10.4.1",
     "npm-run-all": "^4.1.5"
+  },
+  "dependencies": {
+    "ajv-formats": "^3.0.1"
   }
 }

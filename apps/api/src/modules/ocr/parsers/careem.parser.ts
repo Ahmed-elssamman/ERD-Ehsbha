@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { BaseParser } from './base.parser';
+import { BaseParser, RawParsed } from './base.parser';
 import { OcrParsedTripDto, OcrPlatform } from '../dto/ocr.dto';
+import { OcrWord, ParseContext } from '../types';
 import { SemanticNormalizer } from '../semantic/normalizer';
 
 @Injectable()
@@ -9,6 +10,38 @@ export class CareemParser extends BaseParser {
 
   constructor(normalizer: SemanticNormalizer) {
     super(normalizer);
+  }
+
+  override parse(text: string, words: OcrWord[], ctx?: Partial<ParseContext>): RawParsed {
+    const res = super.parse(text, words, ctx);
+    this.fixCareemCommission(text, res);
+    return res;
+  }
+
+  /**
+   * Careem's "دفعت" section has values BELOW their labels (opposite of the
+   * RTL convention the base parser assumes). The base parser picks up the
+   * VAT-only amount (1.58) from the line above "إجمالي المدفوع" as the
+   * commission, instead of the actual total (12.84) on the line below.
+   *
+   * Fix: find the "إجمالي المدفوع" total line and prefer its NEXT-line
+   * value over whatever the base parser found.
+   */
+  private fixCareemCommission(text: string, res: RawParsed): void {
+    const lines = text.split('\n').map((l) => l.trim());
+    const normLines = lines.map((l) => this.normalizer.normalizeText(l));
+    for (let i = 0; i < normLines.length; i++) {
+      if (/^اجمالي\s*المدفوع/.test(normLines[i]) || /^إجمالي\s*المدفوع/.test(normLines[i])) {
+        if (i + 1 < lines.length) {
+          const amt = this.findCurrencyOnLine(lines[i + 1])?.amount;
+          if (amt != null && amt > 0 && (res.fields.commissionEgp == null || amt > res.fields.commissionEgp)) {
+            res.fields.commissionEgp = amt;
+            res.perField.commissionEgp = 0.95;
+            break;
+          }
+        }
+      }
+    }
   }
 
   /**

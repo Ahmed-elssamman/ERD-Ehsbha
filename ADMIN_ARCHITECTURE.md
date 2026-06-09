@@ -2,7 +2,7 @@
 
 **Ehsbha Admin Platform — Official Architectural Blueprint**
 
-> Status: Blueprint (not yet implemented). This document is the single source of truth for building a SaaS-grade admin platform on top of the existing Ehsbha driver platform. No code or schema changes have been made to the existing system; everything below is a forward-looking design.
+> Status: Implemented (Phase 0). Major capabilities are labeled `Implemented`, `Partial`, or `Planned` based on current source evidence. The monorepo structure (`apps/{web,admin,api}` + `packages/*`) is in place.
 
 > **Binding architectural decision (recorded 2026-05-29):** The Admin Dashboard is a **completely separate frontend application** from the user-facing web app. It is **not** a route-isolated section of the existing `web/` app. The monorepo is reorganized to `/apps/{web,admin,api}` with shared code lifted into `/packages/*`. See "Monorepo Architecture" section below for the locked-in structure.
 
@@ -1288,7 +1288,7 @@ All require `roles.manage`.
 ### Table Systems
 - **Single primary table component** with: cursor pagination, server-side sort, server-side filter, column visibility toggle, sticky header, density toggle (comfy / compact), row click → detail, bulk select (where allowed), CSV export button.
 - **Empty state**: clear copy + a primary action (e.g., "No tickets in this view — change the filter").
-- **Loading state**: skeleton rows (reuse `web/components/ui/skeleton`).
+- **Loading state**: skeleton rows (reuse from `apps/web/src/components/ui/skeleton`).
 - **Error state**: inline retry + link to status page.
 
 ### Filter Systems

@@ -34,8 +34,15 @@ const AREAS = [
   { name: 'New Cairo', color: '#22D3EE' },
 ];
 
+let randomState = 0x45_48_53_42;
+
+function nextRandom() {
+  randomState = (Math.imul(randomState, 1_664_525) + 1_013_904_223) >>> 0;
+  return randomState / 0x1_0000_0000;
+}
+
 function rand(min: number, max: number) {
-  return Math.random() * (max - min) + min;
+  return nextRandom() * (max - min) + min;
 }
 function randInt(min: number, max: number) {
   return Math.floor(rand(min, max + 1));
@@ -62,12 +69,17 @@ async function main() {
   }
 
   console.log('Seeding demo driver…');
-  const passwordHash = await argon2.hash('demo1234', { type: argon2.argon2id });
+  const demoPassword = process.env.SMOKE_DRIVER_PASSWORD;
+  if (!demoPassword) {
+    throw new Error('SMOKE_DRIVER_PASSWORD is required for deterministic non-production seeding');
+  }
+  const passwordHash = await argon2.hash(demoPassword, { type: argon2.argon2id });
   const user = await prisma.user.upsert({
     where: { phone: '+201000000001' },
-    update: {},
+    update: { passwordHash, email: 'driver.phase0@example.test' },
     create: {
       phone: '+201000000001',
+      email: 'driver.phase0@example.test',
       passwordHash,
       locale: 'ar',
       timezone: 'Africa/Cairo',
@@ -109,6 +121,8 @@ async function main() {
   await prisma.areaDailyAggregate.deleteMany({ where: { driverId } });
   await prisma.recommendation.deleteMany({ where: { driverId } });
   await prisma.scoreSnapshot.deleteMany({ where: { driverId } });
+  await prisma.goal.deleteMany({ where: { driverId } });
+  await prisma.communityPost.deleteMany({ where: { driverId } });
 
   console.log('Driver apps…');
   const appUber = await prisma.appSource.findUniqueOrThrow({ where: { code: 'UBER' } });
@@ -183,7 +197,7 @@ async function main() {
       const appSource = [appUber, appInDrive, appPrivate].find((a) => a.id === app.appSourceId)!;
       const commissionPct = Number(app.commissionPct);
       const commission = Math.round((gross * commissionPct) / 100);
-      const tip = Math.random() < 0.15 ? randInt(500, 2_500) : 0;
+      const tip = nextRandom() < 0.15 ? randInt(500, 2_500) : 0;
       const area = pick(areas);
 
       await prisma.trip.create({
@@ -257,7 +271,7 @@ async function main() {
         },
       });
     }
-    if (Math.random() < 0.06) {
+    if (nextRandom() < 0.06) {
       await prisma.expense.create({
         data: {
           driverId,
@@ -294,7 +308,7 @@ async function main() {
   await seedCommunityAndReviews(driverId, passwordHash);
 
   console.log('\n✓ Seed complete');
-  console.log(`Demo login:  phone=+201000000001  password=demo1234`);
+  console.log('Demo driver seeded from SMOKE_DRIVER_PASSWORD');
 }
 
 async function recomputeAllAggregates(driverId: string) {
@@ -647,7 +661,7 @@ async function seedCommunityAndReviews(driverId: string, passwordHash: string) {
     const phone = `+20100000999${(i + 1).toString().padStart(2, '0')}`;
     const u = await prisma.user.upsert({
       where: { phone },
-      update: {},
+      update: { passwordHash },
       create: {
         phone,
         passwordHash,

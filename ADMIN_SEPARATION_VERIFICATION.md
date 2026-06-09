@@ -1,27 +1,29 @@
 # ADMIN_SEPARATION_VERIFICATION.md
 
-**Pre-Implementation Verification Gate**
+**Separation Verification (Phase 0 Evidence)**
 
-> Purpose: prove that the five architectural concerns the user raised are answered, mechanically enforceable, and free of hidden coupling — *before* a single line of admin code is written. This document is the gate. Implementation begins only after the user accepts each section.
+> Purpose: Record verifiable evidence that the five architectural concerns are satisfied. The monorepo is restructured (`apps/{api,web,admin}` + `packages/*`), the admin dashboard is a separate React application, and the verification command confirms separation.
 
-> Companion to: [ADMIN_ARCHITECTURE.md](ADMIN_ARCHITECTURE.md) (feature blueprint).
-> Date: 2026-05-29.
+> Companion to: [ADMIN_ARCHITECTURE.md](ADMIN_ARCHITECTURE.md).
+> Date: 2026-06-07.
 
 ---
 
-## CONTEXT SNAPSHOT (CURRENT STATE)
+## CONTEXT SNAPSHOT (PHASE 0 - VERIFIED)
 
-What exists today, observed from the repo:
+Observed from the repository:
 
 | Item | Current location | Notes |
 |---|---|---|
-| Backend (NestJS + Prisma) | `backend/` | Will move to `apps/api/`. |
-| Driver web app (React + Vite) | `web/` | Will move to `apps/web/`. Driver-facing only. |
-| Workspace declaration | `package.json` → `"workspaces": ["backend", "web"]` | Will become `["apps/*", "packages/*"]`. |
-| Auth | JWT for drivers only. Payload: `{ sub, phone, driverId }`. **No `role` field.** | Admin auth is additive — new endpoints, new guard, new secret, new refresh table. |
-| Existing user-facing pages | `web/src/pages/**` (dashboard, trips, expenses, community, reviews, support, etc.) | None of these will be reused for admin. |
+| API (NestJS + Prisma) | `apps/api/` | Migrated from `backend/`. |
+| Driver web app (React + Vite) | `apps/web/` | Migrated from `web/`. Driver-facing only. |
+| Admin dashboard | `apps/admin/` | Separate React app. |
+| Workspace declaration | `package.json` → `"workspaces": ["apps/*", "packages/*"]` | Verified. |
+| Shared packages | `packages/{api-contracts,shared-types,eslint-config,ui-tokens}` | In place. |
+| Auth | JWT for drivers only. Payload: `{ sub, phone, driverId }`. No `role` field. | Admin auth is additive — new endpoints, new guard, new secret, new refresh table. |
+| Verification entry point | `npm run verify` | Phase 0 command runs all gates. |
 
-This snapshot is the baseline. Every verification claim below is grounded against it.
+This snapshot is the verified Phase 0 baseline.
 
 ---
 
@@ -198,7 +200,7 @@ Admin authentication is a **separate realm** from driver authentication: separat
 | Access TTL | 15 min (current) | 15 min (matches; tightened by MFA / IP allowlist) |
 | Refresh TTL | 30 days (current) | 8 hours (much shorter — admin sessions are higher-risk) |
 | Refresh token store | `refresh_tokens` | `admin_refresh_tokens` (new table) |
-| Strategy class | `JwtStrategy` (`backend/src/modules/auth/jwt.strategy.ts`) | `AdminJwtStrategy` (new) |
+| Strategy class | `JwtStrategy` (`apps/api/src/modules/auth/jwt.strategy.ts`) | `AdminJwtStrategy` (new) |
 | Guard | `JwtAuthGuard` | `AdminJwtAuthGuard` |
 | Login endpoint | `POST /api/v1/auth/login` | `POST /api/v1/admin/auth/login` |
 | Logout endpoint | `POST /api/v1/auth/logout` | `POST /api/v1/admin/auth/logout` |
@@ -364,7 +366,7 @@ DTOs, validation schemas, and primitive types are shared between `apps/api`, `ap
 
 ### Source of Truth: `apps/api`
 
-Each backend module already defines its DTOs as Zod schemas (current pattern, e.g. `backend/src/modules/notifications/notifications.service.ts` defines `RegisterDeviceSchema`). This pattern continues. The schemas live in `apps/api/src/modules/<module>/dto/*.ts` and are re-exported through a stable contract surface.
+Each backend module already defines its DTOs as Zod schemas (current pattern, e.g. `apps/api/src/modules/notifications/notifications.service.ts` defines `RegisterDeviceSchema`). This pattern continues. The schemas live in `apps/api/src/modules/<module>/dto/*.ts` and are re-exported through a stable contract surface.
 
 ### `packages/api-contracts`
 

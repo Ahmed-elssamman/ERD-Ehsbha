@@ -142,15 +142,19 @@ const ROLES: Array<{ code: string; name: string; description: string }> = [
   { code: 'analyst', name: 'Analyst', description: 'Read-only across all analytics.' },
 ];
 
-const DEMO_ACCOUNTS: Array<{ email: string; password: string; displayName: string; roleCode: string }> = [
-  { email: 'admin@ehsbha.com',     password: 'SuperAdmin#2026', displayName: 'Super Admin',  roleCode: 'super_admin' },
-  { email: 'manager@ehsbha.com',   password: 'Manager#2026',    displayName: 'Manager',      roleCode: 'admin' },
-  { email: 'moderator@ehsbha.com', password: 'Moderator#2026',  displayName: 'Moderator',    roleCode: 'moderator' },
-  { email: 'support@ehsbha.com',   password: 'Support#2026',    displayName: 'Support',      roleCode: 'support' },
-  { email: 'analyst@ehsbha.com',   password: 'Analyst#2026',    displayName: 'Analyst',      roleCode: 'analyst' },
+const DEMO_ACCOUNTS: Array<{ email: string; displayName: string; roleCode: string }> = [
+  { email: 'admin@ehsbha.com',     displayName: 'Super Admin', roleCode: 'super_admin' },
+  { email: 'manager@ehsbha.com',   displayName: 'Manager',     roleCode: 'admin' },
+  { email: 'moderator@ehsbha.com', displayName: 'Moderator',   roleCode: 'moderator' },
+  { email: 'support@ehsbha.com',   displayName: 'Support',     roleCode: 'support' },
+  { email: 'analyst@ehsbha.com',   displayName: 'Analyst',     roleCode: 'analyst' },
 ];
 
 async function main(): Promise<void> {
+  const adminSeedPassword = process.env.ADMIN_SEED_PASSWORD;
+  if (!adminSeedPassword) {
+    throw new Error('ADMIN_SEED_PASSWORD is required for deterministic non-production seeding');
+  }
   console.log('[admin-seed] Upserting permissions…');
   for (const p of PERMISSIONS) {
     await prisma.adminPermission.upsert({
@@ -190,10 +194,10 @@ async function main(): Promise<void> {
   console.log('[admin-seed] Upserting demo admin accounts…');
   for (const acct of DEMO_ACCOUNTS) {
     const role = await prisma.adminRole.findUniqueOrThrow({ where: { code: acct.roleCode } });
-    const passwordHash = await argon2.hash(acct.password, { type: argon2.argon2id });
+    const passwordHash = await argon2.hash(adminSeedPassword, { type: argon2.argon2id });
     const admin = await prisma.adminUser.upsert({
       where: { email: acct.email },
-      update: { displayName: acct.displayName, isActive: true },
+      update: { displayName: acct.displayName, isActive: true, passwordHash },
       create: {
         email: acct.email,
         passwordHash,

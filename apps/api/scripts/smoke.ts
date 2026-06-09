@@ -2,22 +2,23 @@
  * Ehsbha HTTP smoke test
  * --------------------------------------------------------------
  * Exercises the full API surface end-to-end against a running
- * backend + seeded database.
+ * API + seeded database.
  *
- *   1. cd backend
- *   2. cp .env.example .env  (and set strong JWT secrets)
+ *   1. cd apps/api
+ *   2. cp .env.test.example .env (and set strong JWT secrets)
  *   3. docker compose up -d postgres
  *   4. npm run prisma:migrate
  *   5. npm run seed
- *   6. npm run start:dev  (in another terminal)
+ *   6. npm run start:dev (in another terminal)
  *   7. npx ts-node scripts/smoke.ts
  *
  * Pass with `SMOKE_BASE_URL=http://localhost:4000/api/v1` to override.
  */
 
 const base = process.env.SMOKE_BASE_URL ?? 'http://localhost:4000/api/v1';
-const phone = '+201000000001';
-const password = 'demo1234';
+const phone = process.env.SMOKE_DRIVER_PHONE ?? '+201000000001';
+const password = process.env.SMOKE_DRIVER_PASSWORD;
+if (!password) throw new Error('SMOKE_DRIVER_PASSWORD is required');
 
 let accessToken = '';
 let refreshToken = '';
@@ -230,10 +231,10 @@ async function main() {
   if (devCode && /^\d{6}$/.test(devCode)) ok('Dev code returned (6 digits)');
   else ko('Dev code', 'expected a 6-digit devCode in dev mode');
 
-  // Forgot for unknown phone should still return 200 (no enumeration leak)
+  // The recovery contract directs unknown accounts to registration.
   const forgotUnknown = await call('POST', '/auth/password/forgot', { phone: '+209999999999' }, false);
-  if (forgotUnknown.status === 200) ok('Unknown phone → 200 (no enumeration)');
-  else ko('Unknown phone forgot', `status ${forgotUnknown.status}`);
+  if (forgotUnknown.status === 404) ok('Unknown phone returns 404 USER_NOT_FOUND');
+  else ko('Unknown phone forgot', `expected 404, got ${forgotUnknown.status}`);
 
   // Wrong code → 401
   const wrongReset = await call('POST', '/auth/password/reset', {

@@ -99,7 +99,7 @@ Screenshot
 
 ### How well it works
 
-The benchmark runner ([`backend/scripts/ocr-benchmark.ts`](./backend/scripts/ocr-benchmark.ts)) replays the full pipeline against 21 hand-curated fixtures with field-level golden answers and reports per-field accuracy.
+The benchmark runner ([`apps/api/scripts/ocr-benchmark.ts`](./apps/api/scripts/ocr-benchmark.ts)) replays the full pipeline against 21 hand-curated fixtures with field-level golden answers and reports per-field accuracy.
 
 | Platform | Test cases | Single-trip | Multi-trip cards | Field accuracy |
 |---|---:|---:|---:|---:|
@@ -131,11 +131,11 @@ Each card auto-fills `startedAt` by combining the date header (`الجمعة، 1
 ### Running the benchmark yourself
 
 ```bash
-cd backend
+cd apps/api
 npm run benchmark:ocr
 ```
 
-The script reports per-case accuracy, top failing fields, and writes the full report (raw OCR text, parsed output, per-field diffs) to `backend/test-fixtures/results/baseline-{timestamp}.json` so any regression is immediately diff-able.
+The script reports per-case accuracy, top failing fields, and writes the full report (raw OCR text, parsed output, per-field diffs) to `apps/api/test-fixtures/results/baseline-{timestamp}.json` so any regression is immediately diff-able.
 
 ---
 
@@ -407,32 +407,32 @@ You need **two terminals** running simultaneously.
 
 ```bash
 # 1. install all workspaces
-npm install --legacy-peer-deps
+npm ci
 
-# 2. configure backend env (DO NOT overwrite an existing .env)
-cd backend
+# 2. configure API env (DO NOT overwrite an existing .env)
+cd apps/api
 [ -f .env ] || cp .env.example .env
-# Then open backend/.env and set DATABASE_URL + JWT_ACCESS_SECRET + JWT_REFRESH_SECRET.
+# Then open apps/api/.env and set DATABASE_URL + JWT_ACCESS_SECRET + JWT_REFRESH_SECRET.
 # For Neon: console.neon.tech → project → "Connection string" → "psql" tab.
 # For OCR: set AZURE_VISION_ENDPOINT + AZURE_VISION_KEY (multi-service AI resource).
 
 # 3. Prisma client (required on first install and after schema changes)
-cd ..
-npm run backend:prisma:generate
+cd ../..
+npm run api:prisma:generate
 
 # 4. (fresh database only) migrate + seed
-cd backend
+cd apps/api
 npx prisma migrate status        # if "up to date" → skip the next line
 npm run prisma:migrate
 npm run seed                     # creates demo driver + 30 days of data (idempotent)
-cd ..
+cd ../..
 ```
 
 ### Run
 
 ```bash
-# Terminal 1 — backend (start first; the web app expects it on 4000)
-npm run backend:dev
+# Terminal 1 — API (start first; the web app expects it on 4000)
+npm run api:dev
 # → "Ehsbha API listening on http://localhost:4000/api/v1"
 
 # Terminal 2 — web
@@ -454,17 +454,15 @@ npm run web:typecheck            # strict TS, noUnused*, no implicit any
 npm run web:build                # production bundle + Workbox service worker
 npm run web:preview              # serve the production bundle on 5173
 
-# Backend
-cd backend
-npx nest build                   # → dist/
-docker build -t ehsbha-api .     # Dockerfile checked in; multi-stage
+# API
+npm run api:build                # builds apps/api to dist/
 
 # OCR benchmark — replays 21 Arabic screenshots through Azure + the full pipeline
-npm run benchmark:ocr            # expects 360/360 fields matched
-# Full report → backend/test-fixtures/results/baseline-{ISO timestamp}.json
+npm run api:test:smoke           # smoke test
+# Full report → apps/api/test-fixtures/results/baseline-{ISO timestamp}.json
 
-# End-to-end smoke (33 checks)
-npm run smoke                    # walks every endpoint, asserts aggregate deltas
+# End-to-end smoke (40+ checks)
+npm run test:smoke               # walks every endpoint, asserts aggregate deltas
 ```
 
 The web build emits a manifest, service worker (Workbox), and 40+ lazy-loaded chunks. Open the preview URL in Chrome and run Lighthouse to confirm Performance / PWA / Accessibility / SEO scores on the real production bundle.
@@ -526,7 +524,7 @@ All routes are prefixed `/api/v1` and require a `Bearer` access token unless not
 | `/support` | Ticket form |
 | `/health` | Public liveness + version |
 
-A 33-check smoke script (`backend/scripts/smoke.ts`) exercises every endpoint plus auth flows, aggregate-delta correctness, and refresh-token reuse detection.
+A smoke script (`apps/api/scripts/smoke.ts`) exercises every endpoint plus auth flows, aggregate-delta correctness, and refresh-token reuse detection.
 
 ---
 
@@ -562,73 +560,38 @@ A 33-check smoke script (`backend/scripts/smoke.ts`) exercises every endpoint pl
 
 ```
 .
-├── ARCHITECTURE.md              # design rationale (v3.0, web-only)
+├── ARCHITECTURE.md              # design rationale (v3.0, PWA)
 ├── README.md                    # this file
-├── package.json                 # workspaces (backend + web)
-├── backend/
-│   ├── prisma/                  # schema (piastres + meters + UTC), migrations, seed
-│   ├── scripts/
-│   │   ├── smoke.ts             # 33-check end-to-end smoke
-│   │   ├── smoke-azure-ocr.ts   # one-shot Azure connectivity test
-│   │   └── ocr-benchmark.ts     # 21-case OCR regression suite (100% expected)
-│   ├── test-fixtures/           # OCR test screenshots + golden JSON answers
-│   └── src/
-│       ├── main.ts, app.module.ts
-│       ├── common/              # filters, pipes, guards, decorators
-│       ├── prisma/              # PrismaService
-│       └── modules/
-│           ├── auth/, users/, drivers/, vehicles/
-│           ├── apps/, areas/, sessions/, odometer/
-│           ├── trips/           # CRUD + /batch + /batch-delete
-│           ├── expenses/, fuel/, maintenance/, goals/
-│           ├── ocr/             # ← see below
-│           ├── notifications/, recommendations/, score/
-│           ├── reviews/, support/, community/
-│           ├── analytics/, aggregates/
-│           ├── mailer/, sync/, health/
-│           └── …
-│
-│       └── modules/ocr/
-│           ├── ocr.controller.ts, ocr.service.ts, ocr.module.ts
-│           ├── dto/ocr.dto.ts
-│           ├── azure/                       # AzureVisionClient + AzureDocumentIntelligenceClient
-│           ├── image-processing/            # SharpProcessor + chrome-filter
-│           ├── semantic/                    # SemanticNormalizer + digit-normalizer + dictionary
-│           ├── detectors/                   # PlatformDetector (UBER/INDRIVE/DIDI/CAREEM signatures)
-│           ├── parsers/                     # base + uber + indrive + didi + careem
-│           ├── merge/                       # MultiScreenshotMerger + MultiTripSplitter
-│           ├── confidence/                  # ConfidenceScorer
-│           └── validation/                  # TripValidator
-│
-└── web/
-    ├── index.html               # SEO meta, manifest link, no-flash theme/dir bootstrap
-    ├── vite.config.ts           # PWA + manual chunks
-    ├── tailwind.config.ts       # HSL tokens, animations
-    ├── public/                  # icons, manifest assets, sitemap.xml, robots.txt, offline.html
-    └── src/
-        ├── main.tsx, App.tsx, router.tsx
-        ├── styles/index.css
-        ├── i18n/                # ar.json, en.json, Provider
-        ├── providers/           # theme-provider, query-provider, i18n-provider
-        ├── stores/              # auth.store, theme.store
-        ├── hooks/               # use-ocr-extract, use-vehicle-selector, …
-        ├── lib/
-        │   ├── api/             # axios client (JWT refresh) + typed endpoints
-        │   ├── ocr/             # parsed-to-form, ocr-to-trip helpers
-        │   ├── format.ts        # money / km / duration / number / date (locale-aware)
-        │   └── time.ts
-        ├── components/
-        │   ├── ui/              # button, input, dialog, card, …
-        │   ├── controls/        # theme-toggle, lang-toggle
-        │   ├── layout/          # auth-layout, app-layout, sidebar
-        │   ├── ocr/             # upload-dialog, source-selector, review-form,
-        │   │                    # multi-trip-review, dropzone, progress, confidence-badge
-        │   └── pwa/             # install-dialog
-        ├── routes/              # protected-route, guest-route
-        └── pages/               # auth, dashboard, trips, expenses, maintenance,
-                                 # vehicle-health, analytics, driver-score, decisions,
-                                 # planner, best-hours, simulator, notifications,
-                                 # community, reviews, support, guide, settings
+├── package.json                 # workspaces (apps/* + packages/*)
+├── apps/
+│   ├── api/                     # NestJS API (formerly backend/)
+│   │   ├── prisma/              # schema, migrations, seed
+│   │   ├── scripts/
+│   │   │   ├── smoke.ts, test-integration.ts
+│   │   │   ├── smoke-azure-ocr.ts
+│   │   │   └── ocr-benchmark.ts
+│   │   ├── test-fixtures/
+│   │   └── src/
+│   │       ├── main.ts, app.module.ts
+│   │       ├── common/          # filters, pipes, guards, decorators
+│   │       ├── prisma/          # PrismaService
+│   │       └── modules/         # 26 domain modules
+│   ├── web/                     # Driver-facing React PWA
+│   │   ├── src/                 # pages, components, hooks, stores, i18n
+│   │   └── vite.config.ts, tailwind.config.ts
+│   └── admin/                   # Admin dashboard (separate React app)
+│       └── src/
+├── packages/
+│   ├── api-contracts/
+│   ├── shared-types/
+│   ├── eslint-config/
+│   └── ui-tokens/
+├── docs/
+│   ├── adr/                     # Architecture Decision Records
+│   └── baseline/                # Phase 0 baseline evidence
+├── scripts/
+│   └── verification/            # Verification orchestration
+└── specs/                       # Feature specifications
 ```
 
 ---
@@ -638,10 +601,10 @@ A 33-check smoke script (`backend/scripts/smoke.ts`) exercises every endpoint pl
 - **Money is integer piastres** (EGP × 100). No floats anywhere in the data model.
 - **Distance is integer meters**. UI formats to km with one decimal.
 - **Time is UTC** in the DB, presented in the driver's local timezone in the UI.
-- **Every driver-owned write upserts its `DailyAggregate`, `WeeklyAggregate`, `MonthlyAggregate`, `AppDailyAggregate`, and `AreaDailyAggregate` rows in the same transaction** → analytics reads are always O(1).
+- **Every driver-owned write upserts its DailyAggregate, WeeklyAggregate, MonthlyAggregate, AppDailyAggregate, and AreaDailyAggregate rows in the same transaction** → analytics reads are always O(1).
 - **`clientMutationId`** on trips / fuel / expenses / sessions / OCR bulk-create makes replays safe — a duplicate returns the original record.
 - **Nightly cron at 03:17 UTC** re-derives yesterday's aggregates from raw rows, protecting against any in-flight bug ever leaving the materialised counters drifted.
-- **Bilingual content** lives in `web/src/i18n/{ar,en}.json` only. Source code carries keys (`trips.field.gross`), never strings.
+- **Bilingual content** lives in `apps/web/src/i18n/{ar,en}.json` only. Source code carries keys (`trips.field.gross`), never strings.
 - **All API errors carry a stable code** (`OCR_LOW_CONFIDENCE_grossEgp`, `OCR_PLATFORM_UNKNOWN`, `DUPLICATE`, `FOREIGN_KEY`, `TRIP_NOT_FOUND`, …) so the web translates them and the next backend version can change wording without breaking clients.
 
 ---
@@ -650,17 +613,17 @@ A 33-check smoke script (`backend/scripts/smoke.ts`) exercises every endpoint pl
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Site loads but login fails (DevTools: `ERR_CONNECTION_REFUSED localhost:4000`) | Backend isn't running | `npm run backend:dev` |
-| `Prisma` errors on backend start | Generated client missing | `npm run backend:prisma:generate` |
-| `P1000` / "trying localhost:5432" | `DATABASE_URL` is the placeholder | Set the real Postgres URL in `backend/.env` |
+| Site loads but login fails (DevTools: `ERR_CONNECTION_REFUSED localhost:4000`) | API isn't running | `npm run api:dev` |
+| `Prisma` errors on API start | Generated client missing | `npm run api:prisma:generate` |
+| `P1000` / "trying localhost:5432" | `DATABASE_URL` is the placeholder | Set the real Postgres URL in `apps/api/.env` |
 | First login is slow (~5 s) | Neon free-tier DB sleeping | One-time wake-up; later requests are fast |
-| `OCR_AUTH` on extract | `AZURE_VISION_KEY` is missing or rotated | Update `backend/.env`, restart backend |
+| `OCR_AUTH` on extract | `AZURE_VISION_KEY` is missing or rotated | Update `apps/api/.env`, restart API |
 | `OCR_NO_PLATFORM` error in the upload dialog | The driver hasn't picked an app | Pick Uber / inDrive / DiDi / Careem; the Extract button enables |
-| Multi-trip save returns `DB_ERROR` on every card | Out-of-date backend without `/trips/batch` endpoint | Pull latest backend; restart |
+| Multi-trip save returns `DB_ERROR` on every card | Out-of-date API | Pull latest API; restart |
 | Port 5173 already in use | Stale Vite process | `netstat -ano \| findstr :5173` then `taskkill /F /PID <pid>` — or let Vite pick the next port |
-| CORS errors in dev | Wrong `CORS_ORIGINS` | Set `CORS_ORIGINS=*` in `backend/.env` for local; lock down for prod |
+| CORS errors in dev | Wrong `CORS_ORIGINS` | Set `CORS_ORIGINS=*` in `apps/api/.env` for local; lock down for prod |
 
-For anything weirder: check `backend/server.log` (Prisma error codes + meta are now logged) or rerun `npm run smoke` from `backend/` to bisect which endpoint regressed.
+For anything weirder: check `apps/api/server.log` (Prisma error codes + meta are now logged) or rerun `npm run test:smoke` to bisect which endpoint regressed.
 
 ---
 

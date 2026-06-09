@@ -47,6 +47,49 @@ export class UberParser extends BaseParser {
       }
     }
 
+    // Fallback: if receivedEgp is still null and payment is cash, derive
+    // from the cash-collected amount (المبلغ النقدي الذي تم تحصيله).
+    if (res.fields.receivedEgp == null && res.fields.paymentMethod === 'cash') {
+      const lines = text.split('\n').map((l) => l.trim());
+      const normLines = lines.map((l) => this.normalizer.normalizeText(l));
+      for (let i = 0; i < normLines.length; i++) {
+        if (/المبلغ\s*النقدي\s*الذي\s*تم\s*تحصيله/.test(normLines[i])) {
+          const amt = this.findCurrencyOnLine(lines[i])?.amount;
+          if (amt != null && amt > 0) {
+            res.fields.receivedEgp = amt;
+            res.perField.receivedEgp = 0.75;
+            res.warnings.push('OCR_RECEIVED_FROM_CASH_COLLECTED');
+            break;
+          }
+        }
+      }
+    }
+
+    // Fix commission extraction: on breakdown screens "رسوم الخدمة" appears
+    // after the fare value line, so the base parser picks up the fare amount
+    // (31.81) instead of the actual commission (-4.77 on the next line).
+    // Detect this by checking if commission unreasonably equals gross.
+    if (
+      res.fields.grossEgp != null &&
+      res.fields.commissionEgp != null &&
+      Math.abs(res.fields.commissionEgp - res.fields.grossEgp) < 0.01
+    ) {
+      const lines = text.split('\n').map((l) => l.trim());
+      const normLines = lines.map((l) => this.normalizer.normalizeText(l));
+      for (let i = 0; i < normLines.length; i++) {
+        if (/^رسوم\s*الخدمه/.test(normLines[i])) {
+          if (i + 1 < lines.length) {
+            const amt = this.findCurrencyOnLine(lines[i + 1])?.amount;
+            if (amt != null && amt > 0 && amt < res.fields.grossEgp) {
+              res.fields.commissionEgp = amt;
+              res.perField.commissionEgp = 0.85;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     return res;
   }
 

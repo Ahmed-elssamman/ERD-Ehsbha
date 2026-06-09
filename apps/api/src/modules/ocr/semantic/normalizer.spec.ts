@@ -35,8 +35,8 @@ describe('dictionary lookup', () => {
     expect(hits.some((h) => h.field === 'fare')).toBe(true);
   });
 
-  it('finds received for cash collected', () => {
-    const hits = findFieldsOnLine(n.normalizeText('المبلغ النقدي الذي تم تحصيله: 28.00 ج.م'));
+  it('finds received for collected amount', () => {
+    const hits = findFieldsOnLine(n.normalizeText('المبلغ المحصل: 28.00 ج.م'));
     expect(hits.some((h) => h.field === 'received')).toBe(true);
   });
 

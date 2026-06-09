@@ -77,7 +77,7 @@
             "measurement"
           ]
         },
-        "status": { "enum": ["passed", "failed", "not_applicable"] },
+        "status": { "enum": ["passed", "failed", "not_applicable", "skipped"] },
         "durationMs": { "type": "integer", "minimum": 0 },
         "summary": { "type": "string", "minLength": 1 },
         "artifactPaths": {
@@ -89,14 +89,16 @@
     "measurement": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["application", "artifactPath", "category", "rawBytes", "budgetStatus"],
+      "required": ["application", "artifactPath", "type", "category", "budgetBytes", "rawBytes", "compressedBytes", "budgetStatus"],
       "properties": {
         "application": { "enum": ["web", "admin"] },
         "artifactPath": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
         "category": { "enum": ["entry-js", "route-js", "css", "asset", "pwa"] },
+        "budgetBytes": { "type": "integer", "minimum": 1 },
         "rawBytes": { "type": "integer", "minimum": 0 },
         "compressedBytes": { "type": "integer", "minimum": 0 },
-        "budgetStatus": { "enum": ["within", "over", "unclassified"] }
+        "budgetStatus": { "enum": ["within", "over"] }
       }
     },
     "coverage": {
@@ -109,7 +111,10 @@
         "activity",
         "status",
         "evidence",
-        "blocking"
+        "blocking",
+        "owner",
+        "followUp",
+        "blockingErrors"
       ],
       "properties": {
         "surface": { "enum": ["web", "admin", "api"] },
@@ -121,6 +126,7 @@
             "permission",
             "translation",
             "empty-state",
+            "error-state",
             "service-worker"
           ]
         },
@@ -129,10 +135,13 @@
         "status": { "enum": ["passed", "failed", "known_gap"] },
         "evidence": { "type": "string", "minLength": 1 },
         "blocking": { "type": "boolean" },
-        "owner": { "type": "string" },
-        "followUp": { "type": "string" }
+        "owner": { "type": "string", "minLength": 1 },
+        "followUp": { "type": "string", "minLength": 1 },
+        "blockingErrors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
       }
     }
   }
 }
-

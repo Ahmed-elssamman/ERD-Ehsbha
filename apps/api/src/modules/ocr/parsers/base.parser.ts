@@ -436,6 +436,7 @@ export abstract class BaseParser {
     for (const line of normalizedLines) {
       const hits = findFieldsOnLine(line);
       for (const h of hits) {
+        if (h.platforms && !h.platforms.includes(this.platform)) continue;
         if (h.field === 'paymentCash' && conf < h.weight) { pm = 'cash'; conf = h.weight; }
         else if (h.field === 'paymentCard' && conf < h.weight) { pm = 'card'; conf = h.weight; }
         else if (h.field === 'paymentWallet' && conf < h.weight) { pm = 'wallet'; conf = h.weight; }

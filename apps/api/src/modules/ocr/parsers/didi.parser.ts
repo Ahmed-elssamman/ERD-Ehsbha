@@ -102,23 +102,42 @@ export class DidiParser extends BaseParser {
       return { value: candidates[0].value, idx: candidates[0].idx };
     };
 
-    // Rider section: extract receivedEgp + grossEgp (max of all أجرة matches).
+    const findNearestValueOrdered = (
+      labelIdx: number,
+      sectionStart: number,
+      sectionEnd: number,
+      order: number[],
+      opts: { minValue?: number; maxValue?: number; allowNegative?: boolean } = {},
+    ): { value: number; idx: number } | null => {
+      const { minValue = -Infinity, maxValue = Infinity, allowNegative = false } = opts;
+      for (const d of order) {
+        const j = labelIdx + d;
+        if (j < sectionStart || j >= sectionEnd) continue;
+        if (isLabelLine(j)) continue;
+        const found = this.findCurrencyOnLine(lines[j]);
+        if (!found || !Number.isFinite(found.amount)) continue;
+        const v = allowNegative ? found.amount : Math.abs(found.amount);
+        if (v < minValue || v > maxValue) continue;
+        if (!allowNegative && found.amount < 0) continue;
+        return { value: v, idx: j };
+      }
+      return null;
+    };
+
+    // Rider section: extract grossEgp from rider-side payment labels.
+    // "المدفوع من الراكب" (what the rider paid) and "أجرة المشوار" (rider fare)
+    // both represent the gross amount before DiDi's commission.
     if (riderStart >= 0) {
       let grossMax: number | null = null;
-      let receivedFound: number | null = null;
       for (let i = riderStart; i < riderEnd; i++) {
         if (/^المدفوع\s*من\s*الراكب/.test(normLines[i])) {
           const v = findNearestValue(i, riderStart, riderEnd, { minValue: 0.01 });
-          if (v && receivedFound == null) receivedFound = v.value;
+          if (v && (grossMax == null || v.value > grossMax)) grossMax = v.value;
         }
         if (/^اجره\s*المشوار(?:$|\s)/.test(normLines[i])) {
           const v = findNearestValue(i, riderStart, riderEnd, { minValue: 0.01 });
           if (v && (grossMax == null || v.value > grossMax)) grossMax = v.value;
         }
-      }
-      if (receivedFound != null) {
-        res.fields.receivedEgp = receivedFound;
-        res.perField.receivedEgp = 0.95;
       }
       if (grossMax != null) {
         res.fields.grossEgp = grossMax;
@@ -126,11 +145,31 @@ export class DidiParser extends BaseParser {
       }
     }
 
+    // Driver section: extract receivedEgp from أرباحك (driver's take-home).
+    // أرباحك appears twice in the fixture: once as a standalone card label
+    // (line 1, value 29.87 on next line) and once as a section header
+    // (line 13, where the base parser wrongly picks 35.00 from the prev
+    // "تم استلام النقد" value). We find the FIRST occurrence and prefer
+    // its next-line value, which reliably gives the driver's earnings.
+    for (let i = 0; i < driverEnd; i++) {
+      if (/^ا?رباحك/.test(normLines[i])) {
+        const v = findNearestValueOrdered(i, 0, driverEnd, [1, -1, 2, -2], { minValue: 0.01, maxValue: 500 });
+        if (v) {
+          res.fields.receivedEgp = v.value;
+          res.perField.receivedEgp = 0.9;
+          break;
+        }
+      }
+    }
+
     // Driver section: extract waitingFeeEgp.
+    // The value typically FOLLOWS the label (next line), unlike most
+    // Arabic RTL layouts where the value PRECEDES the label. We therefore
+    // prefer the next-line candidate by checking in order [+1, -1, +2, -2].
     let waitingFound: number | null = null;
     for (let i = 0; i < driverEnd; i++) {
       if (/^رسوم\s*وقت\s*الانتظار/.test(normLines[i])) {
-        const v = findNearestValue(i, 0, driverEnd, { minValue: 0.01, maxValue: 50 });
+        const v = findNearestValueOrdered(i, 0, driverEnd, [1, -1, 2, -2], { minValue: 0.01, maxValue: 50 });
         if (v) waitingFound = v.value;
       }
     }

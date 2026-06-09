@@ -36,12 +36,12 @@ const re = (s: string, flags = 'i') => new RegExp(s, flags);
 export const DICTIONARY: DictEntry[] = [
   // ---------------- Fare / Gross ----------------
   { field: 'fare', weight: 1.0, patterns: [
-    re('اجمالي\\s*الاجره'),
+    re('^اجمالي\\s*الاجره'),
     re('الاجره\\s*الاجماليه'),
     re('اجمالي\\s*المشوار'),
     re('السعر\\s*الاجمالي'),
-    re('قيمه\\s*المشوار'),
-    re('قيمه\\s*الاجره'),
+    re('^قيمه\\s*المشوار'),
+    re('^قيمه\\s*الاجره'),
     re('السعر\\s*المتفق\\s*عليه'),
     re('السعر'),
     re('total\\s+fare'),
@@ -81,7 +81,7 @@ export const DICTIONARY: DictEntry[] = [
     re('صافي\\s*الارباح'),
     re('صافي\\s*الدخل'),
     re('cash\\s+collected'),
-    re('you\\s+earned'),
+    re('you\\s+earned(?!\\s+more)'),
     re('your\\s+earnings'),
     re('net\\s+earnings'),
     re('net\\s+fare'),
@@ -93,19 +93,14 @@ export const DICTIONARY: DictEntry[] = [
   { field: 'received', weight: 1.15, platforms: ['CAREEM'], patterns: [
     re('^دخلي(?=$|\\s|[^\\u0600-\\u06FF])'),
   ]},
-  // DiDi-specific: per user spec the driver's "income" is the CASH the rider
-  // handed over (`المدفوع من الراكب`), NOT the post-commission `أرباحك` card
-  // value. We therefore give `المدفوع من الراكب` the highest weight; `أرباحك`
-  // is kept as a lower-weight fallback that only fires if the rider-side
-  // line is missing (e.g. cropped screenshots).
-  { field: 'received', weight: 1.25, platforms: ['DIDI'], patterns: [
+  // DiDi: "المدفوع من الراكب" = what the rider paid = the GROSS fare (cash
+  // handed over). It is NOT the driver's take-home (which is أرباحك).
+  { field: 'fare', weight: 1.1, platforms: ['DIDI'], patterns: [
     re('المدفوع\\s*من\\s*الراكب'),
   ]},
   { field: 'received', weight: 0.95, platforms: ['DIDI'], patterns: [
     re('^ا?رباحك(?=$|\\s|[^\\u0600-\\u06FF])'),
     re('^أرباحك(?=$|\\s|[^\\u0600-\\u06FF])'),
-    // "تم استلام النقد" appears on the top driver card with the cash amount.
-    re('تم\\s*استلام\\s*النقد'),
   ]},
   // InDrive-specific: rider's total payment line — the closest equivalent
   // to Uber/DiDi's "amount-paid" anchor. "استلمت" section labels it as
@@ -295,7 +290,9 @@ export const DICTIONARY: DictEntry[] = [
   // screen — stronger than the generic adverbial match because the layout
   // also contains "السداد عبر الهاتف المحمول" (which used to win as a
   // wallet signal and flipped the payment method incorrectly to "wallet").
-  { field: 'paymentCash', weight: 1.3, patterns: [
+  // Restricted to InDrive only — on Careem this appears in the receipt
+  // breakdown and should not override the wallet payment method indicator.
+  { field: 'paymentCash', weight: 1.3, platforms: ['INDRIVE'], patterns: [
     re('الدفع\\s*نقدا'),
     re('الدفع\\s*نقدًا'),
   ]},

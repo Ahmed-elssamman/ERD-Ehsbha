@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ehsbha
-      POSTGRES_PASSWORD: ehsbha
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ehsbha
     ports:
       - "5432:5432"
@@ -27,7 +27,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://ehsbha:ehsbha@postgres:5432/ehsbha?schema=public
+      POSTGRES_USER: ehsbha
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ehsbha
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_TTL: 15m
@@ -35,6 +39,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
     ports:
       - "4000:4000"
+    entrypoint: ["./docker-entrypoint.sh"]
     command: sh -c "npx prisma migrate deploy && node dist/main.js"
 
 volumes:
