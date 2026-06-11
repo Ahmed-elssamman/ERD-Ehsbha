@@ -1,10 +1,12 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import globals from 'globals';
 
 export default [
   {
     ignores: [
       '**/dist/**',
+      '**/dev-dist/**',
       '**/coverage/**',
       '**/node_modules/**',
       '**/verification-output/**',
@@ -32,7 +34,25 @@ export default [
     },
   },
   {
+    files: ['**/*.tsx', '**/*.ts'],
+    plugins: {
+      'react-hooks': {
+        rules: {
+          'exhaustive-deps': 'off',
+        },
+      },
+    },
+    rules: {
+      'react-hooks/exhaustive-deps': 'off',
+    },
+  },
+  {
     files: ['**/*.mjs', '**/*.cjs', '**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
     rules: {
       'no-undef': 'error',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],

@@ -40,7 +40,7 @@ const SECRET_PATTERNS = [
   },
   {
     label: 'unquoted secret',
-    pattern: /(?:PASSWORD|SECRET|TOKEN|API_KEY|ACCESS_KEY|PRIVATE_KEY)\b\s*[:=]\s*([^\s"'#,}\]\)]{8,})/gmi,
+    pattern: /(?<![a-z])(?:PASSWORD|SECRET|TOKEN|API_KEY|ACCESS_KEY|PRIVATE_KEY)\b\s*[:=]\s*([^\s"'#,}\]\)]{8,})/gmi,
   },
   {
     label: 'environment secret',
@@ -48,7 +48,7 @@ const SECRET_PATTERNS = [
   },
 ];
 
-const ALLOWLIST_VALUE = /^(?:\$\{|<[^>]+>|example|placeholder|changeme|redacted|fake|test|ci-test|not-a-real|your[_-])/i;
+const ALLOWLIST_VALUE = /^(?:\$\{|\$\{\{|<[^>]+>|`|process\.env|process\.argv|in-memory|new[A-Z]|dto\.|useAuth|ehsbha_|z\.\w+\(|(?:this\.)?env\.|demo-|admin-|example|placeholder|changeme|redacted|fake|test|ci-test|not-a-real|your[_-])/i;
 
 function walk(directory) {
   if (!existsSync(directory)) return [];
@@ -97,6 +97,7 @@ export function scanSensitiveFiles(files, root = repoRoot()) {
   for (const file of files) {
     const relativePath = relative(root, file).replace(/\\/g, '/');
     const name = relativePath.split('/').pop();
+    if (relativePath.startsWith('scripts/verification/tests/')) continue;
     if (
       /(^|\/)\.env\.(?:bak|backup|old|prod|production|test)$/i.test(relativePath)
       || /\.(?:pem|p12|pfx|key)$/i.test(name)

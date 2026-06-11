@@ -133,7 +133,7 @@ describe('Verify Orchestrator', () => {
 
   it('does not set authoritative=true on dirty worktree', () => {
     const verifier = readFileSync(resolve(repoRoot, 'scripts/verification/verify.mjs'), 'utf-8');
-    assert.ok(verifier.includes("env.authoritative = process.platform === 'win32' && !worktreeDirty"));
+    assert.ok(verifier.includes("authoritative: process.platform === 'win32' && !worktreeDirty"));
   });
 
   it('skips docs/baseline/current.md update when dirty', () => {

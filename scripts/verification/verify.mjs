@@ -87,26 +87,25 @@ async function main() {
     }
   }
 
+  const headRevision = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
+  const worktreeDirty = execSync('git status --porcelain', { encoding: 'utf-8' }).trim().length > 0;
+  const revision = `${headRevision}${worktreeDirty ? '-dirty' : ''}`;
+  const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+
   const env = {
     os: process.platform,
     node: process.version,
     npm: '',
     postgresql: '16',
-    authoritative: process.platform === 'win32',
+    authoritative: process.platform === 'win32' && !worktreeDirty,
     revision,
-    dirty: false,
+    dirty: worktreeDirty,
   };
 
   try {
     const npmVersion = execSync('npm --version', { encoding: 'utf-8' }).trim();
     env.npm = npmVersion;
   } catch {}
-
-  const headRevision = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
-  const worktreeDirty = execSync('git status --porcelain', { encoding: 'utf-8' }).trim().length > 0;
-  const revision = `${headRevision}${worktreeDirty ? '-dirty' : ''}`;
-  const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-  env.authoritative = process.platform === 'win32' && !worktreeDirty;
 
   let artifactMeasurements = [];
   let coverageRecords = [];
