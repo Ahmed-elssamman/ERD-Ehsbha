@@ -1,0 +1,58 @@
+{
+  "runId": "standalone",
+  "generatedAt": "2026-06-08T22:07:52.939Z",
+  "overallStatus": "passed",
+  "checks": [
+    {
+      "id": "environment-safety",
+      "status": "passed",
+      "detail": "Disposable database 'ehsbha_test_phase0' accepted"
+    },
+    {
+      "id": "prisma-generate",
+      "status": "passed",
+      "detail": "Prisma client generated from current schema"
+    },
+    {
+      "id": "clean-migration",
+      "status": "passed",
+      "detail": "Disposable database reset and all migrations deployed"
+    },
+    {
+      "id": "seed-idempotence",
+      "status": "passed",
+      "detail": "Second seed preserved table counts: {\"users\":7,\"admins\":5,\"trips\":283,\"goals\":1,\"communityPosts\":10,\"reviews\":7,\"roles\":5,\"permissions\":61}"
+    },
+    {
+      "id": "api-build",
+      "status": "passed",
+      "detail": "Current API production build completed"
+    },
+    {
+      "id": "readiness-failure-path",
+      "status": "passed",
+      "detail": "Unreachable test database produced HTTP 503"
+    },
+    {
+      "id": "degraded-shutdown",
+      "status": "passed",
+      "detail": "Degraded API process exited"
+    },
+    {
+      "id": "startup-liveness",
+      "status": "passed",
+      "detail": "Health endpoint returned HTTP 200"
+    },
+    {
+      "id": "database-readiness",
+      "status": "passed",
+      "detail": "Readiness endpoint confirmed database connectivity"
+    },
+    {
+      "id": "healthy-shutdown",
+      "status": "passed",
+      "detail": "Healthy API process exited"
+    }
+  ],
+  "error": null
+}

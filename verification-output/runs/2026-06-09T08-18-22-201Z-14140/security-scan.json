@@ -1,0 +1,286 @@
+{
+  "runId": "2026-06-09T08-18-22-201Z-14140",
+  "generatedAt": "2026-06-09T08:19:38.839Z",
+  "scannedFileCount": 673,
+  "gitStatus": [
+    "M docs/baseline/admin-route-audit.md",
+    "M docs/baseline/web-route-audit.md",
+    "M eslint.config.mjs",
+    "M package-lock.json",
+    "M package.json"
+  ],
+  "findings": [
+    {
+      "path": ".github/workflows/verify.yml",
+      "type": "unquoted secret"
+    },
+    {
+      "path": ".github/workflows/verify.yml",
+      "type": "unquoted secret"
+    },
+    {
+      "path": ".github/workflows/verify.yml",
+      "type": "unquoted secret"
+    },
+    {
+      "path": ".github/workflows/verify.yml",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/api/admin-client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/api/admin-client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/api/admin-client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/contracts/admin-auth.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/contracts/admin-auth.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/contracts/admin-auth.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/admin/src/lib/contracts/admin-auth.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/prisma/seed-admin.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/prisma/seed.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/scripts/test-smoke.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/config/env.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/config/env.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/config/env.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/config/env.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin-auth.controller.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin-auth.controller.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin-auth.controller.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin-auth.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin-auth.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin-management.controller.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/admin/admin.module.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/auth.module.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/auth.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/auth.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/dto/auth.dto.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/dto/auth.dto.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/dto/auth.dto.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/dto/auth.dto.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/auth/dto/auth.dto.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/notifications/notifications.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/notifications/notifications.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/api/src/modules/notifications/notifications.service.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/components/layout/app-layout.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/lib/api/client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/lib/api/client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/lib/api/client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/lib/api/client.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/auth/login.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/auth/register.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/auth/register.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/auth/register.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/auth/reset-password.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/auth/reset-password.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/pages/settings/settings.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/routes/protected-route.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/routes/protected-route.tsx",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "apps/web/src/stores/auth.store.ts",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/controlled-failure.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/redact.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/redact.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/redact.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/sensitive-artifacts.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/sensitive-artifacts.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/sensitive-artifacts.test.mjs",
+      "type": "unquoted secret"
+    },
+    {
+      "path": "scripts/verification/tests/sensitive-artifacts.test.mjs",
+      "type": "unquoted secret"
+    }
+  ]
+}

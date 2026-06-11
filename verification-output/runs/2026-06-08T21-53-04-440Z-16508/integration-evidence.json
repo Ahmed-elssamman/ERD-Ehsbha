@@ -1,0 +1,28 @@
+{
+  "runId": "2026-06-08T21-53-04-440Z-16508",
+  "generatedAt": "2026-06-08T21:54:00.756Z",
+  "overallStatus": "failed",
+  "checks": [
+    {
+      "id": "environment-safety",
+      "status": "passed",
+      "detail": "Disposable database 'ehsbha_test_phase0' accepted"
+    },
+    {
+      "id": "prisma-generate",
+      "status": "passed",
+      "detail": "Prisma client generated from current schema"
+    },
+    {
+      "id": "clean-migration",
+      "status": "passed",
+      "detail": "Disposable database reset and all migrations deployed"
+    },
+    {
+      "id": "integration-run",
+      "status": "failed",
+      "detail": "Seed state changed on second run: {\"firstSeedCounts\":{\"users\":7,\"admins\":5,\"trips\":285,\"goals\":1,\"communityPosts\":10,\"reviews\":7,\"roles\":5,\"permissions\":61},\"secondSeedCounts\":{\"users\":7,\"admins\":5,\"trips\":288,\"goals\":1,\"communityPosts\":10,\"reviews\":7,\"roles\":5,\"permissions\":61}}"
+    }
+  ],
+  "error": "Seed state changed on second run: {\"firstSeedCounts\":{\"users\":7,\"admins\":5,\"trips\":285,\"goals\":1,\"communityPosts\":10,\"reviews\":7,\"roles\":5,\"permissions\":61},\"secondSeedCounts\":{\"users\":7,\"admins\":5,\"trips\":288,\"goals\":1,\"communityPosts\":10,\"reviews\":7,\"roles\":5,\"permissions\":61}}"
+}

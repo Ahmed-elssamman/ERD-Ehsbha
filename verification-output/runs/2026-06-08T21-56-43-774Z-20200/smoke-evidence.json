@@ -1,0 +1,6 @@
+{
+  "runId": "2026-06-08T21-56-43-774Z-20200",
+  "generatedAt": "2026-06-08T21:58:22.618Z",
+  "status": "failed",
+  "detail": "Command failed: C:\\Program Files\\nodejs\\node.exe C:\\Users\\ELsamman\\AppData\\Roaming\\npm\\node_modules\\npm\\bin\\npx-cli.js ts-node scripts/smoke.ts"
+}

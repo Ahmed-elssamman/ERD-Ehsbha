@@ -1,0 +1,16 @@
+{
+  "runId": "standalone",
+  "generatedAt": "2026-06-09T08:42:23.511Z",
+  "scannedFileCount": 680,
+  "gitStatus": [
+    "M docs/baseline/admin-route-audit.md",
+    "M docs/baseline/web-route-audit.md",
+    "M eslint.config.mjs",
+    "M package-lock.json",
+    "M package.json",
+    "M scripts/verification/lib/security-scan.mjs",
+    "M scripts/verification/tests/verify.test.mjs",
+    "M scripts/verification/verify.mjs"
+  ],
+  "findings": []
+}

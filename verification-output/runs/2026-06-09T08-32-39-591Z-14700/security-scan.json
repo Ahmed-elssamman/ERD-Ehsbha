@@ -1,0 +1,16 @@
+{
+  "runId": "2026-06-09T08-32-39-591Z-14700",
+  "generatedAt": "2026-06-09T08:33:53.033Z",
+  "scannedFileCount": 676,
+  "gitStatus": [
+    "M docs/baseline/admin-route-audit.md",
+    "M docs/baseline/web-route-audit.md",
+    "M eslint.config.mjs",
+    "M package-lock.json",
+    "M package.json",
+    "M scripts/verification/lib/security-scan.mjs",
+    "M scripts/verification/tests/verify.test.mjs",
+    "M scripts/verification/verify.mjs"
+  ],
+  "findings": []
+}

@@ -1,0 +1,716 @@
+{
+  "runId": "2026-06-08T21-56-43-774Z-20200",
+  "generatedAt": "2026-06-08T21:58:55.541Z",
+  "measurements": [
+    {
+      "application": "web",
+      "artifactPath": ".vite/manifest.json",
+      "type": "manifest",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 17909,
+      "compressedBytes": 2029,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/activity-YsfL_o5H.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 404,
+      "compressedBytes": 302,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/analytics-BLETQTKt.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 19189,
+      "compressedBytes": 2953,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/badge-BgCAwnF3.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 872,
+      "compressedBytes": 460,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/best-hours-Bumt6yqJ.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 7430,
+      "compressedBytes": 1775,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/car-CwzcKGx7.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 577,
+      "compressedBytes": 392,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/chart-error-boundary-B_Z4dCJK.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1260,
+      "compressedBytes": 534,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/charts-DC9d2qtY.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 435607,
+      "compressedBytes": 118377,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/community-c309iGwm.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 24999,
+      "compressedBytes": 5213,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/decisions-BvB7imui.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 5435,
+      "compressedBytes": 1420,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/dialog-BsMh3LkF.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 5526,
+      "compressedBytes": 1788,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/driver-score-Cg23zpa6.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 34978,
+      "compressedBytes": 5997,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/empty-state-Tr9oXt5P.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1533,
+      "compressedBytes": 558,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/expenses-CYZirHsG.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 16853,
+      "compressedBytes": 3238,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/eye-off-DhtED5Mp.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 599,
+      "compressedBytes": 378,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/eye-YQiiCJEY.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 426,
+      "compressedBytes": 305,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/forgot-password-Di22K1jb.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 9222,
+      "compressedBytes": 2190,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/forms-DUn43k21.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 79799,
+      "compressedBytes": 21894,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/guide-DeeByEE1.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 25232,
+      "compressedBytes": 4366,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/index-0OVoOJES.css",
+      "type": "stylesheet",
+      "category": "css",
+      "budgetBytes": 76800,
+      "rawBytes": 48084,
+      "compressedBytes": 8801,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/index-lqx9KTJ3.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 659211,
+      "compressedBytes": 192508,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/label-DiuqbREI.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1792,
+      "compressedBytes": 919,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/login-BJq93svL.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 7309,
+      "compressedBytes": 1913,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/maintenance-Rh4duv_c.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 15339,
+      "compressedBytes": 2937,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/motion-Cq4mCdAY.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 116364,
+      "compressedBytes": 38712,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/notifications-C1uVtyUm.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 13128,
+      "compressedBytes": 2767,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/page-header-C0W7LyRF.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1245,
+      "compressedBytes": 472,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/phone-Czvk1C1J.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 6950,
+      "compressedBytes": 1872,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/planner-Cu8dDc8n.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 11308,
+      "compressedBytes": 2026,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/query-R_V2PTYo.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 47102,
+      "compressedBytes": 14766,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/react-CkFy7lO0.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 121555,
+      "compressedBytes": 40095,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/register-18f12KGN.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 10908,
+      "compressedBytes": 2201,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/reset-password-i9kXFItN.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 8913,
+      "compressedBytes": 2034,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/reviews-nZoBfa70.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 20332,
+      "compressedBytes": 3969,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/select-bs1diNYX.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1402,
+      "compressedBytes": 720,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/settings-CkZpU_kR.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 57922,
+      "compressedBytes": 7516,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/simulator-Bw59dWyi.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 11901,
+      "compressedBytes": 2500,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/support-C77vcFsB.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 18332,
+      "compressedBytes": 3898,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/tabs-Dg3pwFdF.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1428,
+      "compressedBytes": 666,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/target-CReY1fha.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 396,
+      "compressedBytes": 267,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/textarea-D9Pt2FIz.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 745,
+      "compressedBytes": 476,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/time-Cbl108tv.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 690,
+      "compressedBytes": 323,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/trash-2-DWB140xN.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 527,
+      "compressedBytes": 353,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/trip-detail-f8v4rpcJ.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 10987,
+      "compressedBytes": 2226,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/trip-form-ftw305El.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 24274,
+      "compressedBytes": 5271,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/trip-new-CcHxJTNO.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 50147,
+      "compressedBytes": 9112,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/trips-list-BJU5kN-g.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 14101,
+      "compressedBytes": 3443,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/use-vehicle-selector-B_EBbL02.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 541,
+      "compressedBytes": 370,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/vehicle-health-BnTCe7JI.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 23540,
+      "compressedBytes": 4182,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/workbox-window.prod.es5-BBnX5xw4.js",
+      "type": "javascript",
+      "category": "route-js",
+      "budgetBytes": 153600,
+      "rawBytes": 5748,
+      "compressedBytes": 2357,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "assets/zod-BtkEYJaF.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 1049,
+      "compressedBytes": 550,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "favicon.svg",
+      "type": "image",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 501,
+      "compressedBytes": 312,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "icon-192.svg",
+      "type": "image",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 512,
+      "compressedBytes": 316,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "icon-512.svg",
+      "type": "image",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 518,
+      "compressedBytes": 321,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "index.html",
+      "type": "document",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 5901,
+      "compressedBytes": 2090,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "manifest.webmanifest",
+      "type": "manifest",
+      "category": "pwa",
+      "budgetBytes": 153600,
+      "rawBytes": 629,
+      "compressedBytes": 342,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "offline.html",
+      "type": "document",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 3526,
+      "compressedBytes": 1607,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "robots.txt",
+      "type": "metadata",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 371,
+      "compressedBytes": 194,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "sitemap.xml",
+      "type": "metadata",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 422,
+      "compressedBytes": 197,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "sw.js",
+      "type": "javascript",
+      "category": "pwa",
+      "budgetBytes": 153600,
+      "rawBytes": 8096,
+      "compressedBytes": 2694,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "web",
+      "artifactPath": "workbox-dab1d896.js",
+      "type": "javascript",
+      "category": "pwa",
+      "budgetBytes": 153600,
+      "rawBytes": 182154,
+      "compressedBytes": 38759,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": ".vite/manifest.json",
+      "type": "manifest",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 1043,
+      "compressedBytes": 301,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "admin-icon.svg",
+      "type": "image",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 558,
+      "compressedBytes": 345,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/charts-CcJVydts.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 418720,
+      "compressedBytes": 114609,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/forms-CnGXd-Oz.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 79513,
+      "compressedBytes": 21804,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/index-BwqiKJL1.css",
+      "type": "stylesheet",
+      "category": "css",
+      "budgetBytes": 76800,
+      "rawBytes": 23073,
+      "compressedBytes": 5251,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/index-RfVDuZh3.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 769395,
+      "compressedBytes": 193813,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/motion-DwflQkkw.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 116183,
+      "compressedBytes": 38684,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/query-C1lbcptw.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 43043,
+      "compressedBytes": 13518,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "assets/react-B8fvbjlW.js",
+      "type": "javascript",
+      "category": "entry-js",
+      "budgetBytes": 256000,
+      "rawBytes": 120707,
+      "compressedBytes": 39763,
+      "budgetStatus": "within"
+    },
+    {
+      "application": "admin",
+      "artifactPath": "index.html",
+      "type": "document",
+      "category": "asset",
+      "budgetBytes": 512000,
+      "rawBytes": 901,
+      "compressedBytes": 404,
+      "budgetStatus": "within"
+    }
+  ]
+}
