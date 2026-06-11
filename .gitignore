@@ -19,3 +19,10 @@ apps/api/test-results/
 specs/*/baseline-report.json
 *.report.json
 dev-dist/
+
+# Universal
+Thumbs.db
+*.swp
+
+# Contract comparison temporary checkout
+base-contracts/

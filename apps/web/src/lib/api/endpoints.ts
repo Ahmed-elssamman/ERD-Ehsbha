@@ -1,5 +1,13 @@
 import axios from 'axios';
 import { api, apiBaseUrl, unwrap } from './client';
+// Shared contract schemas available via @ehsbha/api-contracts:
+//   auth: driverLoginSchema, driverRefreshSchema, passwordResetSchema, driverProfileSchema
+//   vehicles: vehicleSchema, createVehicleSchema, updateVehicleSchema, appSourceSchema, areaSchema
+//   trips: tripSchema, createTripSchema, batchTripSchema
+//   operations: expenseSchema, createExpenseSchema, fuelEntrySchema, maintenanceSchema, odometerEntrySchema, sessionSchema, goalSchema
+//   analytics: analyticsSummarySchema, forecastSchema, recommendationSchema, scoreSchema
+//   communications: communityPostSchema, reviewSchema, supportTicketSchema, notificationSchema, publicReviewSchema
+//   OCR: ocrRequestSchema, ocrResultSchema (see ocr.api.ts)
 
 /** A vanilla axios instance for endpoints that should not send Authorization. */
 const publicApi = axios.create({

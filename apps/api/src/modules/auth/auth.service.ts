@@ -26,6 +26,14 @@ export interface AuthResult {
   refreshToken: string;
 }
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.UNAUTHENTICATED} - when credentials are invalid, refresh token is invalid/expired/reused, or reset request is invalid
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when user, email, or phone is not found during lookup/recovery
+ * - {@link GOVERNED_ERROR_REGISTRY.CONFLICT} - when phone or email is already registered
+ * - {@link GOVERNED_ERROR_REGISTRY.FORBIDDEN} - when user lacks permission to perform action
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when input data fails validation
+ */
 @Injectable()
 export class AuthService {
   private readonly env = loadEnv();

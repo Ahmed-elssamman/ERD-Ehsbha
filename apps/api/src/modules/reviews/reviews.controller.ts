@@ -37,6 +37,10 @@ export class ReviewsController {
     return this.svc.summary();
   }
 
+  /**
+   * Paginated list of platform reviews.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get()
   list(@Query(new ZodValidationPipe(ListReviewsSchema)) q: ListReviewsDto) {
     return this.svc.list(q);

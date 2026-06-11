@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ehsbha.local/schemas/contract-catalog.schema.json",
+  "title": "Ehsbha Contract Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "apiVersion",
+    "generatedAt",
+    "operations"
+  ],
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "apiVersion": {
+      "const": "v1"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    }
+  },
+  "$defs": {
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "application",
+        "role",
+        "migrationStatus",
+        "owner"
+      ],
+      "properties": {
+        "application": {
+          "enum": [
+            "api",
+            "web",
+            "admin",
+            "external"
+          ]
+        },
+        "sourcePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "role": {
+          "enum": [
+            "producer",
+            "consumer",
+            "documentation"
+          ]
+        },
+        "migrationStatus": {
+          "enum": [
+            "local",
+            "migrating",
+            "shared",
+            "excluded"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "followUp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "defaultSize",
+        "maximumSize",
+        "stableSort"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "cursor",
+            "offset"
+          ]
+        },
+        "defaultSize": {
+          "const": 25
+        },
+        "maximumSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "stableSort": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "exceptionOwner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exceptionReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "header",
+        "retentionHours",
+        "scope"
+      ],
+      "properties": {
+        "header": {
+          "const": "Idempotency-Key"
+        },
+        "retentionHours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scope": {
+          "const": "realm-actor-operation-key"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "transport",
+        "realm",
+        "lifecycle",
+        "successSchema",
+        "failureCodes",
+        "consumers",
+        "compatibility",
+        "owner"
+      ],
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*){2,}$"
+        },
+        "transport": {
+          "enum": [
+            "http",
+            "event"
+          ]
+        },
+        "method": {
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/api/v1/"
+        },
+        "realm": {
+          "enum": [
+            "public",
+            "driver",
+            "admin",
+            "system"
+          ]
+        },
+        "lifecycle": {
+          "enum": [
+            "active",
+            "scaffold",
+            "obsolete",
+            "inactive"
+          ]
+        },
+        "requestSchemas": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "successSchema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "failureCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          }
+        },
+        "pagination": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/pagination"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "idempotency": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/idempotency"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "consumers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/consumer"
+          }
+        },
+        "compatibility": {
+          "enum": [
+            "additive-compatible",
+            "behaviorally-changed",
+            "incompatible"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "followUp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

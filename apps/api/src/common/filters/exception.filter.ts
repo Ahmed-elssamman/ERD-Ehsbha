@@ -1,107 +1,100 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
-import { Request, Response } from 'express';
-import { Prisma } from '@prisma/client';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common'
+import { Request, Response } from 'express'
+import { API_VERSION, CONTRACT_VERSION, GOVERNED_ERROR_REGISTRY, normalizeErrorCode, getErrorDefinition, FieldIssue } from '@ehsbha/api-contracts/core'
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp()
+    const response = ctx.getResponse<Response>()
+    const request = ctx.getRequest<Request>()
+    const requestId = request.requestContext?.requestId || generateFallbackId()
 
-  catch(exception: unknown, host: ArgumentsHost): void {
-    const ctx = host.switchToHttp();
-    const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<Request>();
-
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let code = 'INTERNAL_ERROR';
-    let message = 'Internal server error';
-    let details: unknown = undefined;
+    let httpStatus = HttpStatus.INTERNAL_SERVER_ERROR
+    let code = 'INTERNAL_ERROR'
+    let message = 'An unexpected error occurred'
+    let details: FieldIssue[] | undefined
 
     if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const resp = exception.getResponse();
-      if (typeof resp === 'string') {
-        message = resp;
-        code = httpStatusToCode(status);
-      } else if (typeof resp === 'object' && resp !== null) {
-        const r = resp as Record<string, unknown>;
-        code = (r.code as string) ?? httpStatusToCode(status);
-        message = (r.message as string) ?? message;
-        details = r.issues ?? r.details;
+      httpStatus = exception.getStatus()
+      const exResponse = exception.getResponse()
+
+      if (typeof exResponse === 'object' && exResponse !== null) {
+        const exObj = exResponse as Record<string, unknown>
+        code = (exObj.code as string) || codeFromHttpStatus(httpStatus)
+        message = (exObj.message as string) || exception.message
+        if (Array.isArray(exObj.details)) {
+          details = exObj.details.map((d: Record<string, unknown>) => ({
+            path: String(d.path || ''),
+            code: String(d.code || ''),
+            message: String(d.message || ''),
+          }))
+        }
+      } else {
+        message = typeof exResponse === 'string' ? exResponse : exception.message
+        code = codeFromHttpStatus(httpStatus)
       }
-    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      const mapped = mapPrismaError(exception);
-      status = mapped.status;
-      code = mapped.code;
-      message = mapped.message;
-      // Always surface the Prisma code + meta in logs — without it
-      // "DB_ERROR" tells the operator nothing about which constraint /
-      // column / table actually failed.
-      this.logger.error(
-        `Prisma ${exception.code} on ${req.method} ${req.url}: ${exception.message}`,
-        JSON.stringify(exception.meta ?? {}),
-      );
-    } else if (exception instanceof Prisma.PrismaClientValidationError) {
-      status = 400;
-      code = 'PRISMA_VALIDATION';
-      message = 'Invalid data sent to the database';
-      this.logger.error(`Prisma validation error on ${req.method} ${req.url}`, exception.message);
-    } else if (exception instanceof Error) {
-      message = exception.message;
     }
 
-    if (status >= 500) {
-      this.logger.error(
-        `${req.method} ${req.url} -> ${status} ${code}: ${message}`,
-        exception instanceof Error ? exception.stack : undefined,
-      );
-    } else {
-      this.logger.warn(`${req.method} ${req.url} -> ${status} ${code}: ${message}`);
+    const normalizedCode = normalizeErrorCode(code)
+    const definition = getErrorDefinition(normalizedCode)
+
+    if (definition) {
+      httpStatus = definition.httpStatus
     }
 
-    res.status(status).json({
+    if (normalizedCode === 'INTERNAL_ERROR' || normalizedCode === 'CONTRACT_VIOLATION') {
+      const safeMessage = message !== 'An unexpected error occurred' && normalizedCode !== 'INTERNAL_ERROR'
+        ? message
+        : 'An unexpected error occurred'
+      response.status(httpStatus).json({
+        error: {
+          code: normalizedCode,
+          message: safeMessage,
+          messageKey: definition?.messageKey || null,
+        },
+        meta: {
+          requestId,
+          serverTime: new Date().toISOString(),
+          apiVersion: API_VERSION,
+          contractVersion: CONTRACT_VERSION,
+        },
+      })
+      return
+    }
+
+    response.status(httpStatus).json({
       error: {
-        code,
+        code: normalizedCode,
         message,
-        details,
+        messageKey: definition?.messageKey || null,
+        ...(details ? { details } : {}),
       },
       meta: {
-        path: req.url,
-        method: req.method,
+        requestId,
         serverTime: new Date().toISOString(),
+        apiVersion: API_VERSION,
+        contractVersion: CONTRACT_VERSION,
       },
-    });
+    })
   }
 }
 
-function httpStatusToCode(status: number): string {
-  switch (status) {
-    case 400: return 'BAD_REQUEST';
-    case 401: return 'UNAUTHORIZED';
-    case 403: return 'FORBIDDEN';
-    case 404: return 'NOT_FOUND';
-    case 409: return 'CONFLICT';
-    case 422: return 'UNPROCESSABLE';
-    case 429: return 'RATE_LIMITED';
-    default:  return status >= 500 ? 'INTERNAL_ERROR' : 'ERROR';
-  }
+function generateFallbackId(): string {
+  return `fallback-${Date.now().toString(36)}`
 }
 
-function mapPrismaError(err: Prisma.PrismaClientKnownRequestError): { status: number; code: string; message: string } {
-  switch (err.code) {
-    case 'P2002':
-      return { status: 409, code: 'DUPLICATE', message: 'Resource already exists' };
-    case 'P2025':
-      return { status: 404, code: 'NOT_FOUND', message: 'Resource not found' };
-    case 'P2003':
-      return { status: 400, code: 'FOREIGN_KEY', message: 'Related resource does not exist' };
-    default:
-      return { status: 500, code: 'DB_ERROR', message: 'Database error' };
+function codeFromHttpStatus(status: number): string {
+  const map: Record<number, string> = {
+    400: 'VALIDATION_ERROR',
+    401: 'UNAUTHENTICATED',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    409: 'CONFLICT',
+    429: 'RATE_LIMITED',
+    500: 'INTERNAL_ERROR',
+    502: 'CONTRACT_VIOLATION',
+    503: 'SERVICE_UNAVAILABLE',
   }
+  return map[status] || 'INTERNAL_ERROR'
 }

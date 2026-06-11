@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
+// Shared notification schemas available via @ehsbha/api-contracts (notification schemas in communications.ts)
 
 export const RegisterDeviceSchema = z.object({
   token: z.string().min(10),
@@ -8,12 +9,18 @@ export const RegisterDeviceSchema = z.object({
 });
 export type RegisterDeviceDto = z.infer<typeof RegisterDeviceSchema>;
 
+/** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListNotificationsSchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 export type ListNotificationsDto = z.infer<typeof ListNotificationsSchema>;
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a notification is not found for the given driver
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when input data fails Zod validation
+ */
 @Injectable()
 export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}

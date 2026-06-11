@@ -8,6 +8,16 @@
 
 **Input**: User description: "Read plan.md and create a specification for Phase 1 - Shared Platform Foundation and API Contracts only."
 
+## Clarifications
+
+### Session 2026-06-11
+
+- Q: How should shared contracts handle unknown fields in requests and responses? → A: Reject unknown request fields; ignore unknown response fields.
+- Q: How should the initial shared-contract migration be deployed? → A: Require one coordinated API, web, and admin deployment.
+- Q: What are the platform-wide pagination bounds? → A: Default 25 items; maximum 100 items.
+- Q: How should a client handle a contract-version mismatch? → A: Reject the response with a contract-version mismatch error.
+- Q: What outcome should a duplicate idempotency key produce? → A: Same key and payload returns the original result; changed payload returns conflict.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consume One Authoritative Contract (Priority: P1)
@@ -171,8 +181,12 @@ behavior, and incompatible changes require an explicit transition plan.
 - An identifier from one domain or security realm is supplied where another identifier is
   expected.
 - A response includes additional fields during a compatibility window.
-- A client and service report incompatible contract versions.
-- A write is retried after the first attempt succeeded but the response was lost.
+- A client and service report incompatible contract versions; the client rejects the response
+  without processing its operation data and surfaces a normalized contract-version mismatch.
+- A write is retried after the first attempt succeeded but the response was lost; the same
+  idempotency key and payload return the original result without another business effect.
+- An idempotency key is reused with a different payload; the service returns a conflict and does
+  not execute the changed operation.
 - A shared contract accidentally imports application-specific, persistence, browser, or
   service-framework behavior.
 - An alias, dynamic import, generated file, or transitive dependency bypasses a simple source
@@ -212,9 +226,12 @@ behavior, and incompatible changes require an explicit transition plan.
   request identifier.
 - **FR-012**: Service responses MUST identify the active API version and contract version in a
   consistent location.
+- **FR-012A**: When a response reports an unsupported contract version, the client MUST reject
+  the response without processing its operation data, preserve the request identifier for
+  diagnosis, and surface a normalized contract-version mismatch outcome.
 - **FR-013**: The platform MUST define bounded cursor and offset pagination conventions,
-  including defaults, maximum page sizes, continuation behavior, empty results, sorting, and
-  invalid-page handling.
+  including a default page size of 25 items, a maximum page size of 100 items, continuation
+  behavior, empty results, sorting, and invalid-page handling.
 - **FR-014**: Platform-wide values MUST represent money as integer minor units, distance in
   meters, duration in seconds, and instants as unambiguous UTC timestamps.
 - **FR-015**: Shared identifiers and common value types MUST prevent accidental substitution of
@@ -224,11 +241,13 @@ behavior, and incompatible changes require an explicit transition plan.
 - **FR-017**: The driver and administration applications MUST each provide one consistent
   mechanism for validating and unwrapping success responses and normalizing failure responses.
 - **FR-018**: Client retry rules MUST prohibit automatic retries for validation, authentication,
-  authorization, and deterministic conflict failures.
+  authorization, deterministic conflict failures, and contract-version mismatches.
 - **FR-019**: Automatic retry of safe reads MUST be bounded and limited to documented transient
   conditions.
 - **FR-020**: Retryable writes whose duplication could create incorrect state MUST support a
-  stable idempotency identifier and a defined duplicate outcome.
+  stable idempotency identifier. Repeating the same identifier with the same payload MUST return
+  the original result without another business effect; reusing it with a different payload MUST
+  return a conflict without executing the changed operation.
 - **FR-021**: Each active client domain MUST define stable data lookup identities and document
   which related data is refreshed or updated after a successful mutation.
 - **FR-022**: Administration clients MUST distinguish forbidden access, stale permission state,
@@ -263,21 +282,28 @@ behavior, and incompatible changes require an explicit transition plan.
 - **FR-035**: Phase 1 MUST NOT redesign authentication flows, replace security realms, add new
   domain capabilities, complete scaffold administration workflows, implement offline
   synchronization, or introduce billing behavior.
+- **FR-036**: The initial Phase 1 contract migration MUST be released as one coordinated API,
+  driver application, and administration application deployment. The migration MUST NOT rely on
+  temporary legacy response compatibility between those deployment units.
 
 ### Contract and Data Requirements
 
-- **CR-001**: Every request contract MUST state accepted fields, required fields, unknown-field
-  behavior, value constraints, and whether repeated submission requires idempotency.
+- **CR-001**: Every request contract MUST state accepted fields, required fields, value
+  constraints, and whether repeated submission requires idempotency. All unknown request fields
+  MUST be rejected. Idempotent requests MUST define how payload equivalence is determined.
 - **CR-002**: Every success contract MUST state operation data, shared metadata, units, timestamps,
-  nullability, and compatibility behavior for additional fields.
+  and nullability. Consumers MUST ignore unknown response fields so additive response changes
+  remain compatible.
 - **CR-003**: Every failure contract MUST state stable error code, safe message behavior,
   field-level details when relevant, request identity, and whether retry is allowed.
-- **CR-004**: Pagination contracts MUST state mode, default and maximum size, stable ordering,
+- **CR-004**: Pagination contracts MUST state mode, use the platform default of 25 items and
+  maximum of 100 items unless an approved exception is documented, and define stable ordering,
   continuation or offset metadata, filter/sort binding, and empty-page behavior.
 - **CR-005**: Shared value contracts MUST define integer minor-unit money, meters, seconds,
   identifiers, locale, timezone, and common enumerations without application-specific behavior.
 - **CR-006**: Contract identity MUST distinguish API version from contract version and define how
-  supported consumers react to a mismatch.
+  supported consumers react to a mismatch. Unsupported versions MUST produce a normalized
+  contract-version mismatch error rather than warning and continuing.
 - **CR-007**: The contract catalog MUST identify every active service, driver, and administration
   consumer and provide a migration status for any former local duplicate.
 - **CR-008**: Contract changes MUST classify compatibility impact as additive-compatible,
@@ -326,8 +352,8 @@ behavior, and incompatible changes require an explicit transition plan.
   presentation behavior.
 - **NFR-006**: Existing driver, administration, and service deployment units MUST remain
   independently buildable and deployable.
-- **NFR-007**: Compatible contract changes MUST support independent deployment order during the
-  documented compatibility window.
+- **NFR-007**: After the coordinated Phase 1 migration, compatible additive contract changes MUST
+  support independent deployment order during their documented compatibility window.
 - **NFR-008**: Incompatible contract changes MUST be blocked until coordinated rollout and
   recovery expectations are documented and verified.
 - **NFR-009**: Shared packages MUST remain small enough that adopting them does not cause either
@@ -418,8 +444,11 @@ behavior, and incompatible changes require an explicit transition plan.
   each operation must select and document one mode consistently.
 - Existing API versioning remains in place while contract version identity is added as separate
   compatibility metadata.
-- Additive optional fields are backward-compatible when existing consumers ignore them safely;
-  changed meanings, units, required fields, or error semantics are incompatible.
+- The initial Phase 1 migration uses a coordinated API, driver application, and administration
+  application deployment rather than a staged legacy-response compatibility window.
+- After that migration, additive optional response fields are backward-compatible when existing
+  consumers ignore them safely; changed meanings, units, required fields, or error semantics are
+  incompatible.
 - Shared visual values are in scope only to establish application-neutral tokens. Shared pages,
   layouts, navigation, authentication state, and domain workflows are out of scope.
 - OpenAPI or equivalent service documentation is an output of the authoritative contracts, not a

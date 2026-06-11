@@ -4,6 +4,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
 import { CreateTripDto, CreateTripSchema, ListTripsDto, UpdateTripDto } from './dto/trips.dto';
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a trip is not found for the given driver
+ * - {@link GOVERNED_ERROR_REGISTRY.CONFLICT} - when a conflict occurs during trip operations
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when batch item input fails Zod validation
+ */
 @Injectable()
 export class TripsService {
   private readonly logger = new Logger(TripsService.name);

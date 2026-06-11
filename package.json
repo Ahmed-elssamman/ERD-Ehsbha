@@ -18,10 +18,12 @@
     "web:build": "npm --workspace @ehsbha/web run build",
     "web:preview": "npm --workspace @ehsbha/web run preview",
     "web:typecheck": "npm --workspace @ehsbha/web run typecheck",
+    "web:test": "npm --workspace @ehsbha/web run test",
     "admin:dev": "npm --workspace @ehsbha/admin run dev",
     "admin:build": "npm --workspace @ehsbha/admin run build",
     "admin:preview": "npm --workspace @ehsbha/admin run preview",
     "admin:typecheck": "npm --workspace @ehsbha/admin run typecheck",
+    "admin:test": "npm --workspace @ehsbha/admin run test",
     "dev": "npm-run-all -p api:dev web:dev",
     "dev:admin": "npm-run-all -p api:dev admin:dev",
     "dev:all": "npm-run-all -p api:dev web:dev admin:dev",
@@ -35,6 +37,17 @@
     "test:coverage": "npm --workspace @ehsbha/api run test:coverage",
     "test:e2e": "node scripts/verification/not-applicable.mjs --exit-zero e2e \"E2E not implemented in Phase 0\"",
     "test:verification": "node --test scripts/verification/tests/*.test.mjs",
+    "packages:build": "npm run packages:build:types && npm run packages:build:cjs && npm run packages:build:esm",
+    "packages:build:types": "tsc -b tsconfig.packages.json",
+    "packages:build:cjs": "npm --workspace @ehsbha/shared-types run build:cjs && npm --workspace @ehsbha/api-contracts run build:cjs && npm --workspace @ehsbha/ui-tokens run build:cjs",
+    "packages:build:esm": "npm --workspace @ehsbha/shared-types run build:esm && npm --workspace @ehsbha/api-contracts run build:esm && npm --workspace @ehsbha/ui-tokens run build:esm",
+    "packages:typecheck": "tsc -b tsconfig.packages.json --noEmit",
+    "packages:test": "npm --workspace @ehsbha/shared-types run test && npm --workspace @ehsbha/api-contracts run test",
+    "contracts:generate": "node scripts/contracts/generate-catalog.mjs && node scripts/contracts/generate-openapi.mjs",
+    "contracts:inventory": "node scripts/contracts/inventory-consumers.mjs",
+    "verify:contracts": "node scripts/contracts/verify-contracts.mjs",
+    "verify:boundaries": "node scripts/verification/verify-boundaries.mjs",
+    "verify:frontend-isolation": "node scripts/verification/verify-frontend-isolation.mjs",
     "verify:prerequisites": "node scripts/verification/check-prerequisites.mjs",
     "verify:measure": "node scripts/verification/measure-builds.mjs",
     "verify:routes": "node scripts/verification/audit-routes.mjs",
@@ -43,9 +56,12 @@
     "verify": "node scripts/verification/verify.mjs"
   },
   "devDependencies": {
+    "@ehsbha/eslint-config": "*",
+    "dependency-cruiser": "^16.10.0",
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
-    "npm-run-all": "^4.1.5"
+    "npm-run-all": "^4.1.5",
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "ajv-formats": "^3.0.1"

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
 import { diffMinutes } from '../../common/utils/date';
+// Shared session schemas available via @ehsbha/api-contracts (sessionSchema)
 
 export const StartSessionSchema = z.object({
   driverAppId: z.string().min(1),

@@ -6,6 +6,7 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminManagementService } from './admin-management.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin management schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
 const CreateAdminSchema = z.object({
   email: z.string().email().max(120),

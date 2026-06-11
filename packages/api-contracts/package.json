@@ -1,0 +1,55 @@
+{
+  "name": "@ehsbha/api-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "commonjs",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "core": ["./dist/types/core/index.d.ts"],
+      "catalog": ["./dist/types/catalog/index.d.ts"],
+      "openapi": ["./dist/types/openapi/index.d.ts"]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./core": {
+      "import": "./dist/esm/core/index.js",
+      "require": "./dist/cjs/core/index.js",
+      "types": "./dist/types/core/index.d.ts"
+    },
+    "./catalog": {
+      "import": "./dist/esm/catalog/index.js",
+      "require": "./dist/cjs/catalog/index.js",
+      "types": "./dist/types/catalog/index.d.ts"
+    },
+    "./openapi": {
+      "import": "./dist/esm/openapi/index.js",
+      "require": "./dist/cjs/openapi/index.js",
+      "types": "./dist/types/openapi/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "@asteasolutions/zod-to-openapi": "7.3.4",
+    "@ehsbha/shared-types": "*"
+  }
+}

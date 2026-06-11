@@ -12,6 +12,14 @@ interface ListInput {
   includeDeleted?: boolean;
 }
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a trip is not found
+ * - {@link GOVERNED_ERROR_REGISTRY.ADMIN_PERMISSIONS_STALE} - when admin permissions are stale
+ * - {@link GOVERNED_ERROR_REGISTRY.ADMIN_MFA_REQUIRED} - when MFA verification is required for this action
+ * - {@link GOVERNED_ERROR_REGISTRY.SESSION_EXPIRED} - when the admin session has expired
+ * - {@link GOVERNED_ERROR_REGISTRY.FORBIDDEN} - when admin lacks permission for the action
+ */
 @Injectable()
 export class AdminTripsService {
   constructor(private readonly prisma: PrismaService) {}

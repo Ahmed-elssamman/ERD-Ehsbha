@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 import { AnalyticsService } from './analytics.service';
+// Shared analytics schemas available via @ehsbha/api-contracts (analytics schemas in analytics-intelligence.ts)
 
 const DateSchema = z.object({ date: z.coerce.date().optional() });
 const WeekSchema = z.object({

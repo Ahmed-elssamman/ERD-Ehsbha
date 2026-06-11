@@ -1,4 +1,7 @@
 import { adminApi } from './admin-client';
+// Shared admin schemas available via @ehsbha/api-contracts:
+//   admin-core: adminUserSchema, adminDriverSchema, adminTripSchema, adminVehicleSchema, dashboardSummarySchema
+//   admin-operations: moderationActionSchema, auditRecordSchema, roleSchema, adminSettingsSchema, healthCheckSchema
 
 export interface CursorPage<T> {
   items: T[];

@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
+// Shared expense schemas available via @ehsbha/api-contracts (createExpenseSchema, expenseSchema)
+// Local schemas include additional API-specific fields (vehicleId, dateTime, recurrence, clientMutationId)
 
 const Category = z.enum(['RENT', 'INSURANCE', 'FINE', 'TOLL', 'FOOD', 'PHONE', 'WASH', 'PARKING', 'OTHER']);
 

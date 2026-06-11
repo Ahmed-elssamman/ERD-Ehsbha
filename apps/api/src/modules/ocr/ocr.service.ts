@@ -59,6 +59,13 @@ interface ImageEvidence {
  *      ↓
  *   OcrExtractResponseDto
  */
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when file validation fails (no images, too many, unsupported MIME, too large, invalid image)
+ * - {@link GOVERNED_ERROR_REGISTRY.SERVICE_UNAVAILABLE} - when OCR provider (Azure) is busy, times out, or fails
+ * - {@link GOVERNED_ERROR_REGISTRY.PROVIDER_UNAVAILABLE} - when OCR auth is misconfigured or provider cannot be reached
+ * - {@link GOVERNED_ERROR_REGISTRY.INTERNAL_ERROR} - when an unexpected OCR failure occurs
+ */
 @Injectable()
 export class OcrService {
   private readonly logger = new Logger(OcrService.name);

@@ -6,6 +6,7 @@ import { AdminAuthService } from './admin-auth.service';
 import { AdminJwtAuthGuard } from './admin-jwt.guard';
 import { CurrentAdmin } from './current-admin.decorator';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin auth schemas available via @ehsbha/api-contracts (adminLoginSchema in auth-profile.ts)
 
 const AdminLoginSchema = z.object({
   email: z.string().email(),

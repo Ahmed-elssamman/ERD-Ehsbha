@@ -1,11 +1,11 @@
 import { z } from 'zod';
+import { adminLoginSchema } from '@ehsbha/api-contracts';
 
-export const AdminLoginRequestSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8).max(128),
-});
-export type AdminLoginRequest = z.infer<typeof AdminLoginRequestSchema>;
+// Shared admin login request schema (source of truth in @ehsbha/api-contracts)
+export { adminLoginSchema as AdminLoginRequestSchema };
+export type AdminLoginRequest = z.infer<typeof adminLoginSchema>;
 
+// Local response schemas (not yet in shared contracts)
 export const AdminLoginResponseSchema = z.union([
   z.object({
     mfaRequired: z.literal(false),
@@ -36,6 +36,9 @@ export const AdminRefreshRequestSchema = z.object({
   refreshToken: z.string(),
 });
 export type AdminRefreshRequest = z.infer<typeof AdminRefreshRequestSchema>;
+
+// Shared governed error codes from @ehsbha/api-contracts
+import { GOVERNED_ERROR_REGISTRY } from '@ehsbha/api-contracts/core';
 
 export const AdminAuthErrorCodes = [
   'ADMIN_UNAUTHENTICATED',

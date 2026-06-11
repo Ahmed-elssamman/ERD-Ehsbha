@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 
+// Local update schema — not yet in shared contracts (no driver profile update contract exists)
 const UpdateDriverSchema = z.object({
   displayName: z.string().min(2).max(80).optional(),
   photoUrl: z.string().url().nullable().optional(),

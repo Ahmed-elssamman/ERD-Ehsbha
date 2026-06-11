@@ -6,6 +6,7 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminBulkService } from './admin-bulk.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin bulk schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
 const BulkBody = z.object({
   ids: z.array(z.string().min(1)).min(1).max(200),

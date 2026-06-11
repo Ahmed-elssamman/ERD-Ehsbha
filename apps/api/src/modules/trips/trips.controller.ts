@@ -21,6 +21,10 @@ import {
 export class TripsController {
   constructor(private readonly svc: TripsService) {}
 
+  /**
+   * Paginated list of the current driver's trips.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get()
   list(
     @CurrentDriverId() driverId: string,

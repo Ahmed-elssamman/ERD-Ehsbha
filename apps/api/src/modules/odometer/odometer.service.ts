@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { startOfUtcDay } from '../../common/utils/date';
+// Shared odometer schemas available via @ehsbha/api-contracts (odometerEntrySchema)
 
 export const SetDailyOdometerSchema = z.object({
   date: z.coerce.date().optional(),

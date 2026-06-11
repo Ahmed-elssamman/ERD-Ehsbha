@@ -1,4 +1,6 @@
 import { api, unwrap } from './client';
+// Shared OCR schemas available via @ehsbha/api-contracts (ocrRequestSchema, ocrResultSchema in trip-ocr.ts)
+// Local response types include API-specific fields (confidence, warnings, imageHashes)
 
 export type OcrPlatform = 'UBER' | 'INDRIVE' | 'DIDI' | 'CAREEM';
 export type OcrPaymentMethod = 'cash' | 'card' | 'wallet' | 'unknown';

@@ -6,7 +6,9 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminCommunityService } from './admin-community.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin community schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
+/** @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit). Supports sort by createdAt desc and filter by isHidden. */
 const ListQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -22,6 +24,11 @@ const ReasonBodySchema = z.object({
 export class AdminCommunityController {
   constructor(private readonly svc: AdminCommunityService) {}
 
+  /**
+   * Paginated list of community posts.
+   * @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit).
+   * Filters: isHidden. Default sort: createdAt desc.
+   */
   @Get('posts')
   @RequirePermissions('community.read')
   list(@Query(new ZodValidationPipe(ListQuerySchema)) q: z.infer<typeof ListQuerySchema>) {

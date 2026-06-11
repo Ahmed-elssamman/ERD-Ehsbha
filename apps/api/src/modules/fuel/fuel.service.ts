@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
+// Shared fuel schemas available via @ehsbha/api-contracts (fuelEntrySchema)
 
 export const CreateFuelSchema = z.object({
   vehicleId: z.string().min(1),

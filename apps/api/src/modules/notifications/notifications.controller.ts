@@ -19,6 +19,10 @@ export class NotificationsController {
     private readonly digest: DailyDigestService,
   ) {}
 
+  /**
+   * Paginated list of notifications for the current driver.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get()
   list(
     @CurrentDriverId() driverId: string,

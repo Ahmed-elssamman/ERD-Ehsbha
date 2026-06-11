@@ -6,7 +6,9 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminUsersService } from './admin-users.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin user schemas available via @ehsbha/api-contracts (admin schemas in admin-core.ts)
 
+/** @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit). Supports sort by createdAt desc and filter by status, search. */
 const ListQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -34,6 +36,11 @@ const BulkActionBodySchema = z.object({
 export class AdminUsersController {
   constructor(private readonly svc: AdminUsersService) {}
 
+  /**
+   * Paginated list of users.
+   * @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit).
+   * Filters: status, search. Default sort: createdAt desc.
+   */
   @Get()
   @RequirePermissions('users.read')
   list(@Query(new ZodValidationPipe(ListQuerySchema)) q: z.infer<typeof ListQuerySchema>) {

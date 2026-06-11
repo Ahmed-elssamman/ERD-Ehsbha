@@ -31,6 +31,8 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
+  // Bootstrap order: request-context middleware (via AppModule.configure) →
+  // global prefix → body limits → CORS → exception filter → response interceptor
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new TransformResponseInterceptor());
 

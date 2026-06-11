@@ -6,6 +6,7 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminSettingsService } from './admin-settings.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin settings schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
 const UpdateSettingSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean(), z.null(), z.record(z.any()), z.array(z.any())]),

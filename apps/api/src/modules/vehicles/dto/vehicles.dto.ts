@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import { vehicleSchema as sharedVehicleSchema } from '@ehsbha/api-contracts';
+
+// Shared response contract (passthrough) — re-exported for consumers
+export { sharedVehicleSchema as VehicleResponseSchema };
+
+// --- Local request schemas (API-specific fields not yet in shared contracts) ---
 
 const VehicleTypeEnum = z.enum(['CAR', 'BIKE']);
 const FuelTypeEnum = z.enum(['PETROL_80', 'PETROL_92', 'PETROL_95', 'DIESEL', 'CNG', 'ELECTRIC']);

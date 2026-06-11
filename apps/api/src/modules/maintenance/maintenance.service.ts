@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { computeMaintenanceRisk, RiskInput } from '../analytics/engines/maintenance.engine';
+// Shared maintenance schemas available via @ehsbha/api-contracts (maintenanceSchema)
 
 export const CreateMaintenanceRecordSchema = z.object({
   maintenanceItemId: z.string().min(1),

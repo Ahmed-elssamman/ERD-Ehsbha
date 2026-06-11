@@ -1,8 +1,10 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import globals from 'globals';
+import boundaryConfig from '@ehsbha/eslint-config';
 
 export default [
+  ...boundaryConfig,
   {
     ignores: [
       '**/dist/**',

@@ -7,6 +7,12 @@ import {
 } from './dto/vehicles.dto';
 import { computeVehicleCostPerKm } from '../analytics/engines/vehicle-cost.engine';
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a vehicle is not found for the given driver
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when input data fails validation
+ * - {@link GOVERNED_ERROR_REGISTRY.FORBIDDEN} - when user lacks permission to access the vehicle
+ */
 @Injectable()
 export class VehiclesService {
   constructor(private readonly prisma: PrismaService) {}

@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import { tripSchema as sharedTripSchema } from '@ehsbha/api-contracts';
+
+// Shared response contract (passthrough) — re-exported for consumers
+export { sharedTripSchema as TripResponseSchema };
+
+// --- Local request schemas (API-specific fields not yet in shared contracts) ---
 
 export const CreateTripSchema = z.object({
   vehicleId: z.string().min(1),
@@ -63,6 +69,7 @@ export const BatchDeleteTripsSchema = z.object({
 });
 export type BatchDeleteTripsDto = z.infer<typeof BatchDeleteTripsSchema>;
 
+/** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListTripsSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Prisma, CommunityCategory, ReactionKind } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
+// Shared community schemas available via @ehsbha/api-contracts (community schemas in communications.ts)
 
 const CATEGORY_VALUES = [
   'BEST_APPS',
@@ -19,6 +20,7 @@ const CATEGORY_VALUES = [
   'GENERAL',
 ] as const;
 
+/** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListPostsSchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -53,6 +55,12 @@ interface PostWithExtras {
   reactions: { kind: ReactionKind }[];
 }
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a post is not found
+ * - {@link GOVERNED_ERROR_REGISTRY.FORBIDDEN} - when a driver tries to delete another driver's post
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when input data fails Zod validation
+ */
 @Injectable()
 export class CommunityService {
   constructor(private readonly prisma: PrismaService) {}
