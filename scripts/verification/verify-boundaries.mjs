@@ -4,7 +4,7 @@ let exitCode = 0
 
 try {
   console.log('Running ESLint boundary checks...')
-  execSync('npx eslint . --max-warnings 0', { stdio: 'inherit' })
+  execSync('npx eslint . --max-warnings 0', { stdio: 'inherit', shell: true })
   console.log('ESLint passed')
 } catch {
   console.error('ESLint found boundary violations')
@@ -13,7 +13,7 @@ try {
 
 try {
   console.log('\nRunning dependency-cruiser checks...')
-  execSync('npx depcruise --ts-config tsconfig.json --output-type dot apps packages | npx depcruise-wrap-stream-in-html > /dev/null', { stdio: 'inherit' })
+  execSync('npx depcruise --ts-config tsconfig.json --output-type err --validate .dependency-cruiser.cjs apps packages', { stdio: 'inherit', shell: true })
   console.log('dependency-cruiser passed')
 } catch {
   console.error('dependency-cruiser found violations')

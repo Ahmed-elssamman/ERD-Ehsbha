@@ -1,4 +1,4 @@
-import { getAllOperations } from '../../packages/api-contracts/src/catalog/registry.js'
+import { getAllOperations } from '../../packages/api-contracts/dist/cjs/index.js'
 
 const operations = getAllOperations()
 const consumerMap = new Map()

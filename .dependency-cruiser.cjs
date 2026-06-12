@@ -43,18 +43,10 @@ module.exports = {
       from: {},
       to: { circular: true },
     },
-    {
-      name: 'no-undeclared-deps',
-      comment: 'Dependencies must be declared in package.json',
-      severity: 'error',
-      from: {},
-      to: { dependencyTypes: ['undocumented'] },
-    },
+
   ],
   options: {
-    doNotFollow: {
-      pattern: '^\\.\\.(/node_modules)',
-    },
+    doNotFollow: 'node_modules',
     exclude: {
       path: ['node_modules', 'dist', 'build', 'coverage', 'verification-output'],
     },

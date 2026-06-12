@@ -1,27 +1,23 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
-import { getAllOperations } from '../../../packages/api-contracts/dist/types/index.js';
-import * as authSchemas from '../../../packages/api-contracts/dist/types/domains/auth-profile.js';
-import * as vehicleSchemas from '../../../packages/api-contracts/dist/types/domains/vehicle-app-area.js';
-import * as tripSchemas from '../../../packages/api-contracts/dist/types/domains/trip-ocr.js';
-import * as opsSchemas from '../../../packages/api-contracts/dist/types/domains/operations.js';
-import * as analyticsSchemas from '../../../packages/api-contracts/dist/types/domains/analytics-intelligence.js';
-import * as commSchemas from '../../../packages/api-contracts/dist/types/domains/communications.js';
-import * as adminCoreSchemas from '../../../packages/api-contracts/dist/types/domains/admin-core.js';
-import * as adminOpsSchemas from '../../../packages/api-contracts/dist/types/domains/admin-operations.js';
-import * as platformSchemas from '../../../packages/api-contracts/dist/types/domains/platform-operations.js';
+import { getAllOperations } from '../../../packages/api-contracts/dist/cjs/index.js';
+import { createRequire } from 'module';
+
+const _require = createRequire(import.meta.url);
 
 function collectSchemas() {
-  const map = {};
-  const sources = [
-    authSchemas, vehicleSchemas, tripSchemas, opsSchemas,
-    analyticsSchemas, commSchemas, adminCoreSchemas, adminOpsSchemas, platformSchemas,
+  const domains = [
+    'auth-profile', 'vehicle-app-area', 'trip-ocr', 'operations',
+    'analytics-intelligence', 'communications', 'admin-core', 'admin-operations',
+    'platform-operations',
   ];
-  for (const source of sources) {
-    for (const [name, value] of Object.entries(source)) {
+  const map = {};
+  for (const name of domains) {
+    const mod = _require(`../../../packages/api-contracts/dist/cjs/domains/${name}.js`);
+    for (const [key, value] of Object.entries(mod)) {
       if (value && typeof value === 'object' && '_def' in value) {
-        map[name] = value;
+        map[key] = value;
       }
     }
   }

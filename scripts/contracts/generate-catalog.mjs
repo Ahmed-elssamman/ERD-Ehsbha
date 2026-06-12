@@ -15,7 +15,7 @@ const catalog = {
     path: op.path,
     realm: op.realm,
     lifecycle: op.lifecycle,
-    requestSchemas: op.requestSchemas || {},
+    request: op.request || {},
     successSchema: op.successData || '',
     failureCodes: op.failureCodes || [],
     pagination: op.pagination || null,

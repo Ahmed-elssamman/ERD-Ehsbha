@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosInstance } from 'axios'
 
 export function createDriverClient(baseURL: string): AxiosInstance {
   const client = axios.create({

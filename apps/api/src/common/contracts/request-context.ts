@@ -1,5 +1,5 @@
 import { v4 as uuidv4, validate as isValidUuid } from 'uuid'
-import { Request } from 'express'
+import type { Request } from 'express'
 
 export interface RequestContext {
   requestId: string
@@ -7,6 +7,7 @@ export interface RequestContext {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       requestContext: RequestContext

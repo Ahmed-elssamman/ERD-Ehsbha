@@ -37,9 +37,6 @@ export const AdminRefreshRequestSchema = z.object({
 });
 export type AdminRefreshRequest = z.infer<typeof AdminRefreshRequestSchema>;
 
-// Shared governed error codes from @ehsbha/api-contracts
-import { GOVERNED_ERROR_REGISTRY } from '@ehsbha/api-contracts/core';
-
 export const AdminAuthErrorCodes = [
   'ADMIN_UNAUTHENTICATED',
   'ADMIN_FORBIDDEN',
