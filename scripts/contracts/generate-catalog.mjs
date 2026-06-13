@@ -1,43 +1,48 @@
-import { getAllOperations } from '../../packages/api-contracts/dist/cjs/index.js'
-import { writeFileSync, mkdirSync, existsSync } from 'fs'
-import { resolve } from 'path'
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { getAllOperations } from '../../packages/api-contracts/dist/cjs/index.js';
+import { buildCatalogData } from './catalog-data.mjs';
 
-const OUTPUT_DIR = resolve(import.meta.dirname, '../../verification-output/contracts')
+const OUTPUT_DIR = resolve(import.meta.dirname, '../../verification-output/contracts');
 
-const catalog = {
-  contractVersion: '1.0.0',
-  apiVersion: 'v1',
-  generatedAt: new Date().toISOString(),
-  operations: getAllOperations().map(op => ({
-    operationId: op.operationId,
-    transport: op.transport,
-    method: op.method,
-    path: op.path,
-    realm: op.realm,
-    lifecycle: op.lifecycle,
-    request: op.request || {},
-    successSchema: op.successData || '',
-    failureCodes: op.failureCodes || [],
-    pagination: op.pagination || null,
-    idempotency: op.idempotency || null,
-    consumers: (op.consumers || []).map(c => ({
-      application: c.application,
-      sourcePath: c.sourcePath || null,
-      role: c.role,
-      migrationStatus: c.migrationStatus || 'shared',
-      owner: c.owner,
-      followUp: c.followUp || null,
-    })),
-    compatibility: op.compatibility || 'additive-compatible',
-    owner: op.owner || '',
-    followUp: op.followUp || null,
-  })),
+export async function generateCatalog() {
+  const { catalog, routes, consumers, diagnostics } = await buildCatalogData(getAllOperations());
+  const blockingDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
+  if (blockingDiagnostics.length > 0) {
+    const details = blockingDiagnostics.map((diagnostic) => `- ${diagnostic.message}`).join('\n');
+    throw new Error(`Contract catalog generation failed:\n${details}`);
+  }
+  const publicCatalog = {
+    ...catalog,
+    operations: catalog.operations.map(({
+      controller: _controller,
+      handler: _handler,
+      sourceLine: _sourceLine,
+      ...operation
+    }) => operation),
+  };
+
+  if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(OUTPUT_DIR, 'contract-catalog.json'),
+    `${JSON.stringify(publicCatalog, null, 2)}\n`,
+    'utf-8',
+  );
+  writeFileSync(
+    resolve(OUTPUT_DIR, 'controller-routes.json'),
+    `${JSON.stringify(routes, null, 2)}\n`,
+    'utf-8',
+  );
+  writeFileSync(
+    resolve(OUTPUT_DIR, 'consumer-inventory.json'),
+    `${JSON.stringify(consumers, null, 2)}\n`,
+    'utf-8',
+  );
+  return publicCatalog;
 }
 
-if (!existsSync(OUTPUT_DIR)) {
-  mkdirSync(OUTPUT_DIR, { recursive: true })
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const catalog = await generateCatalog();
+  console.log(`Catalog written with ${catalog.operations.length} operations`);
 }
-
-const catalogPath = resolve(OUTPUT_DIR, 'contract-catalog.json')
-writeFileSync(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8')
-console.log(`Catalog written to ${catalogPath}`)

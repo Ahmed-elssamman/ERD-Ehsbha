@@ -863,3 +863,31 @@ model AdminSetting {
 
   @@map("admin_settings")
 }
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+  RETRYABLE_FAILURE
+}
+
+model IdempotencyRecord {
+  id             String            @id @default(cuid())
+  realm          String
+  actorId        String            @map("actor_id")
+  operationId    String            @map("operation_id")
+  key            String
+  requestHash    String            @map("request_hash")
+  status         IdempotencyStatus @default(IN_PROGRESS)
+  responseStatus Int?              @map("response_status")
+  responseBody   Json?             @map("response_body")
+  resourceType   String?           @map("resource_type")
+  resourceId     String?           @map("resource_id")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  completedAt    DateTime?         @map("completed_at")
+  expiresAt      DateTime          @map("expires_at")
+
+  @@unique([realm, actorId, operationId, key])
+  @@index([expiresAt])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@map("idempotency_records")
+}

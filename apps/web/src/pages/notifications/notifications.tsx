@@ -7,15 +7,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n';
+import { dailyDigestDataSchema } from '@ehsbha/api-contracts';
 import { NotificationsApi, type AppNotification, type DailyDigestData } from '@/lib/api/endpoints';
 import { formatDate, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { DailyDigestCard } from '@/components/notifications/daily-digest-card';
 
 function digestPayload(n: AppNotification): DailyDigestData | null {
-  const d = n.data as { kind?: string } | null | undefined;
-  if (!d || d.kind !== 'DAILY_DIGEST') return null;
-  return n.data as unknown as DailyDigestData;
+  const result = dailyDigestDataSchema.safeParse(n.data);
+  return result.success ? result.data : null;
 }
 
 export function NotificationsPage() {
@@ -27,7 +27,7 @@ export function NotificationsPage() {
   });
 
   const markMut = useMutation({
-    mutationFn: (id: string) => NotificationsApi.markRead(id) as Promise<unknown>,
+    mutationFn: (id: string) => NotificationsApi.markRead(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 

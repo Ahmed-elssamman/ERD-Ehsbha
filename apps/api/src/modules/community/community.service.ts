@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, CommunityCategory, ReactionKind } from '@prisma/client';
+import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '@ehsbha/api-contracts';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 // Shared community schemas available via @ehsbha/api-contracts (community schemas in communications.ts)
@@ -23,7 +24,7 @@ const CATEGORY_VALUES = [
 /** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListPostsSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   category: z.enum(CATEGORY_VALUES).optional(),
   sort: z.enum(['latest', 'trending', 'top']).default('latest'),
   mine: z.coerce.boolean().optional(),

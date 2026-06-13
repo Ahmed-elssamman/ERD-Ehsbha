@@ -32,7 +32,7 @@ export function DecisionsPage() {
   });
 
   const dismissMut = useMutation({
-    mutationFn: (id: string) => RecommendationsApi.dismiss(id) as Promise<unknown>,
+    mutationFn: (id: string) => RecommendationsApi.dismiss(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recommendations'] });
       qc.invalidateQueries({ queryKey: ['decisions'] });

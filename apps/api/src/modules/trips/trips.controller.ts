@@ -15,6 +15,7 @@ import {
   UpdateTripDto,
   UpdateTripSchema,
 } from './dto/trips.dto';
+import { IdempotentOperation } from '../../common/decorators/idempotent-operation.decorator';
 
 @Controller('trips')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +35,11 @@ export class TripsController {
   }
 
   @Post()
+  @IdempotentOperation({
+    operationId: 'driver.trips.create',
+    realm: 'driver',
+    requestSchema: CreateTripSchema,
+  })
   create(
     @CurrentDriverId() driverId: string,
     @Body(new ZodValidationPipe(CreateTripSchema)) dto: CreateTripDto,
@@ -50,6 +56,11 @@ export class TripsController {
    * a misbehaving client from spamming the aggregates pipeline.
    */
   @Post('batch')
+  @IdempotentOperation({
+    operationId: 'driver.trips.batch',
+    realm: 'driver',
+    requestSchema: BatchCreateTripsSchema,
+  })
   async createBatch(
     @CurrentDriverId() driverId: string,
     @Body(new ZodValidationPipe(BatchCreateTripsSchema)) dto: BatchCreateTripsDto,
@@ -63,6 +74,11 @@ export class TripsController {
    * Status is 200 (not 204) because the body contains per-id errors.
    */
   @Post('batch-delete')
+  @IdempotentOperation({
+    operationId: 'driver.trips.post-batch-delete',
+    realm: 'driver',
+    requestSchema: BatchDeleteTripsSchema,
+  })
   async removeBatch(
     @CurrentDriverId() driverId: string,
     @Body(new ZodValidationPipe(BatchDeleteTripsSchema)) dto: BatchDeleteTripsDto,

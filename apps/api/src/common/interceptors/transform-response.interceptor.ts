@@ -6,7 +6,7 @@ import { API_VERSION, CONTRACT_VERSION, RESPONSE_HEADERS } from '@ehsbha/api-con
 
 @Injectable()
 export class TransformResponseInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request>()
 
     return next.handle().pipe(
@@ -21,25 +21,36 @@ export class TransformResponseInterceptor implements NestInterceptor {
         res.setHeader(RESPONSE_HEADERS.API_VERSION, API_VERSION)
         res.setHeader(RESPONSE_HEADERS.CONTRACT_VERSION, CONTRACT_VERSION)
 
-        if (data === undefined || data === null) {
-          res.status(204)
-          return
+        const responseData = data === undefined || data === null ? { ok: true } : data
+        if (res.statusCode === 204) res.status(200)
+        const meta = {
+          ...(isEnvelope(responseData) ? normalizeMeta(responseData.meta) : {}),
+          requestId,
+          serverTime: new Date().toISOString(),
+          apiVersion: API_VERSION,
+          contractVersion: CONTRACT_VERSION,
         }
 
-        if (typeof data === 'object' && data !== null && 'meta' in data && 'data' in data) {
-          return data
+        if (isEnvelope(responseData)) {
+          return {
+            ...responseData,
+            meta,
+          }
         }
 
         return {
-          data,
-          meta: {
-            requestId,
-            serverTime: new Date().toISOString(),
-            apiVersion: API_VERSION,
-            contractVersion: CONTRACT_VERSION,
-          },
+          data: responseData,
+          meta,
         }
       }),
     )
   }
+}
+
+function isEnvelope(value: unknown): value is { data: unknown; meta: unknown } {
+  return typeof value === 'object' && value !== null && 'data' in value && 'meta' in value
+}
+
+function normalizeMeta(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null ? value as Record<string, unknown> : {}
 }

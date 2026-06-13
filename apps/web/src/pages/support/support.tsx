@@ -290,7 +290,7 @@ function TicketRow({ ticket, index }: { ticket: SupportTicket; index: number }) 
   const [expanded, setExpanded] = useState(false);
 
   const closeMut = useMutation({
-    mutationFn: () => SupportApi.close(ticket.id) as Promise<unknown>,
+    mutationFn: () => SupportApi.close(ticket.id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['support-tickets'] }),
   });
 

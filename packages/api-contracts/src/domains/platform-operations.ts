@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { registerOperation } from '../catalog/registry'
-import { EmptySuccessDataSchema } from '../core/envelope'
 
 export const healthSchema = z.object({
   status: z.enum(['healthy', 'degraded', 'unhealthy']),
@@ -13,45 +12,53 @@ export const readinessSchema = z.object({
   checks: z.record(z.boolean()).optional(),
 }).passthrough()
 
-export const syncPullSchema = z.object({
-  lastSyncAt: z.string(),
-  resources: z.array(z.string()),
+export const PullSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(200),
 }).strict()
 
-export const syncPushSchema = z.object({
-  resources: z.array(z.record(z.unknown())),
-  lastSyncAt: z.string(),
+export const syncMutationSchema = z.object({
+  clientMutationId: z.string().min(8).max(64),
+  kind: z.enum(['trip.create', 'fuel.create', 'expense.create', 'session.start', 'session.end']),
+  payload: z.record(z.unknown()),
 }).strict()
+
+export const PushSchema = z.object({
+  mutations: z.array(syncMutationSchema).min(1).max(50),
+}).strict()
+
+export const syncPullResponseSchema = z.object({
+  cursor: z.string(),
+  entities: z.record(z.unknown()),
+}).passthrough()
+
+export const syncMutationResultSchema = z.object({
+  clientMutationId: z.string(),
+  status: z.enum(['APPLIED', 'VALIDATION_ERROR', 'CONFLICT', 'INTERNAL_ERROR']),
+  data: z.unknown().optional(),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+  }).passthrough().optional(),
+}).passthrough()
 
 export const syncPushResponseSchema = z.object({
-  resources: z.array(z.record(z.unknown())),
-  lastSyncAt: z.string(),
+  results: z.array(syncMutationResultSchema),
 }).passthrough()
 
-export const deviceTokenSchema = z.object({
-  token: z.string().min(1).max(512),
-  platform: z.enum(['android', 'ios']),
-}).strict()
-
-export const maintenanceCatalogSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  estimatedCostPiastres: z.number().int().min(0).optional(),
-  recommendedIntervalMeters: z.number().int().min(0).optional(),
-}).passthrough()
+const producer = [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }] as const
 
 registerOperation({
-  operationId: 'platform.health.liveness',
+  operationId: 'platform.health.get',
   transport: 'http',
   method: 'GET',
-  path: '/api/v1/health/liveness',
+  path: '/api/v1/health',
   realm: 'system',
   lifecycle: 'active',
   request: {},
   successData: 'healthSchema',
   failureCodes: [],
-  consumers: [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }],
+  consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
   pagination: null,
@@ -60,16 +67,16 @@ registerOperation({
 })
 
 registerOperation({
-  operationId: 'platform.health.readiness',
+  operationId: 'platform.ready.get',
   transport: 'http',
   method: 'GET',
-  path: '/api/v1/health/readiness',
+  path: '/api/v1/ready',
   realm: 'system',
   lifecycle: 'active',
   request: {},
   successData: 'readinessSchema',
   failureCodes: [],
-  consumers: [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }],
+  consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
   pagination: null,
@@ -84,10 +91,10 @@ registerOperation({
   path: '/api/v1/sync/pull',
   realm: 'driver',
   lifecycle: 'active',
-  request: { body: 'syncPullSchema' },
-  successData: 'syncPushResponseSchema',
+  request: { body: 'PullSchema' },
+  successData: 'syncPullResponseSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
-  consumers: [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }],
+  consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
   pagination: null,
@@ -102,46 +109,10 @@ registerOperation({
   path: '/api/v1/sync/push',
   realm: 'driver',
   lifecycle: 'active',
-  request: { body: 'syncPushSchema' },
-  successData: 'healthSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
-  consumers: [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }],
-  compatibility: 'additive-compatible',
-  owner: 'platform',
-  pagination: null,
-  idempotency: null,
-  followUp: null,
-})
-
-registerOperation({
-  operationId: 'platform.device-token.register',
-  transport: 'http',
-  method: 'POST',
-  path: '/api/v1/devices/tokens',
-  realm: 'driver',
-  lifecycle: 'active',
-  request: { body: 'deviceTokenSchema' },
-  successData: 'EmptySuccessDataSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
-  consumers: [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }],
-  compatibility: 'additive-compatible',
-  owner: 'platform',
-  pagination: null,
-  idempotency: null,
-  followUp: null,
-})
-
-registerOperation({
-  operationId: 'platform.maintenance.catalog',
-  transport: 'http',
-  method: 'GET',
-  path: '/api/v1/maintenance/catalog',
-  realm: 'driver',
-  lifecycle: 'active',
-  request: {},
-  successData: 'maintenanceCatalogSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
-  consumers: [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }],
+  request: { body: 'PushSchema' },
+  successData: 'syncPushResponseSchema',
+  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'CONFLICT'],
+  consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
   pagination: null,

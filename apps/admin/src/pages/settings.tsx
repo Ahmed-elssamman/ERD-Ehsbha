@@ -15,9 +15,9 @@ import { readApiError } from '@/lib/api-error';
 
 interface Setting {
   key: string;
-  description: string;
+  description: string | null;
   value: unknown;
-  isDefault: boolean;
+  isDefault?: boolean;
   updatedAt: string | null;
   updatedById: string | null;
 }
@@ -35,7 +35,7 @@ export function SettingsPage() {
 function SettingsList() {
   const { data, isLoading, error } = useQuery<Setting[]>({
     queryKey: ['admin', 'settings'],
-    queryFn: () => settingsApi.list() as Promise<Setting[]>,
+    queryFn: () => settingsApi.list(),
   });
 
   if (isLoading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;

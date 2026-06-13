@@ -38,11 +38,11 @@ export function SupportPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'support', { status }],
-    queryFn: () => supportApi.list({ status: status === 'ALL' ? undefined : status, limit: 100 }) as Promise<{ items: Row[] }>,
+    queryFn: () => supportApi.list({ status: status === 'ALL' ? undefined : status, limit: 100 }),
   });
   const { data: summary } = useQuery({
     queryKey: ['admin', 'support', 'summary'],
-    queryFn: () => supportApi.summary() as Promise<{ byStatus: { open: number; inReview: number; planned: number; resolved: number; closed: number } }>,
+    queryFn: () => supportApi.summary(),
   });
 
   const bulkMutation = useMutation({

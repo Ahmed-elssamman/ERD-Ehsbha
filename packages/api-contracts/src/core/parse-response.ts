@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { ResponseMetaSchema, SuccessEnvelopeSchema, EmptySuccessDataSchema } from './envelope'
-import { FailureEnvelopeSchema, FieldIssueSchema, normalizeErrorCode, getErrorDefinition } from './errors'
-import { isSupportedMajorVersion, parseSemanticVersion } from './version'
+import { ResponseMetaSchema, SuccessEnvelopeSchema } from './envelope'
+import { FailureEnvelopeSchema, normalizeErrorCode, getErrorDefinition } from './errors'
+import { isSupportedMajorVersion } from './version'
 import type { FieldIssue } from './errors'
 
 export interface ParsedSuccess<T> {
@@ -33,11 +33,11 @@ export interface ParsedUnknownError {
 
 export type ParseResult<T> = ParsedSuccess<T> | ParsedFailure | ParsedContractMismatch | ParsedUnknownError
 
-export function parseSuccessResponse<T>(
-  dataSchema: z.ZodType<T>,
+export function parseSuccessResponse<S extends z.ZodTypeAny>(
+  dataSchema: S,
   body: unknown,
-): ParseResult<T> {
-  const metaResult = ResponseMetaSchema.safeParse((body as any)?.meta)
+): ParseResult<z.output<S>> {
+  const metaResult = ResponseMetaSchema.safeParse(metaFrom(body))
   const contractVersion = metaResult.success ? metaResult.data.contractVersion : 'unknown'
 
   if (!isSupportedMajorVersion(contractVersion)) {
@@ -53,22 +53,35 @@ export function parseSuccessResponse<T>(
     return { kind: 'unknown', meta: null }
   }
 
-  const envelopeSchema = SuccessEnvelopeSchema(dataSchema)
-  const result = envelopeSchema.safeParse(body)
-  if (!result.success) {
+  const envelopeResult = SuccessEnvelopeSchema(z.unknown()).safeParse(body)
+  if (!envelopeResult.success) {
     return { kind: 'unknown', meta: metaResult.data }
   }
+
+  const dataResult = dataSchema.safeParse(envelopeResult.data.data)
+  if (!dataResult.success) {
+    return { kind: 'unknown', meta: envelopeResult.data.meta }
+  }
+
   return {
     kind: 'success',
-    data: result.data.data as T,
-    meta: result.data.meta,
+    data: dataResult.data,
+    meta: envelopeResult.data.meta,
   }
 }
 
 export function parseFailureResponse(body: unknown): ParseResult<never> {
+  const metaResult = ResponseMetaSchema.safeParse(metaFrom(body))
+  if (metaResult.success && !isSupportedMajorVersion(metaResult.data.contractVersion)) {
+    return {
+      kind: 'contract-mismatch',
+      meta: metaResult.data,
+      receivedVersion: metaResult.data.contractVersion,
+      expectedMajor: 1,
+    }
+  }
   const result = FailureEnvelopeSchema.safeParse(body)
   if (!result.success) {
-    const metaResult = ResponseMetaSchema.safeParse((body as any)?.meta)
     return {
       kind: 'unknown',
       meta: metaResult.success ? metaResult.data : null,
@@ -87,6 +100,12 @@ export function parseFailureResponse(body: unknown): ParseResult<never> {
     details: error.details ?? null,
     meta: result.data.meta,
   }
+}
+
+function metaFrom(body: unknown): unknown {
+  return body !== null && typeof body === 'object' && 'meta' in body
+    ? body.meta
+    : undefined
 }
 
 export function redactFieldIssues(issues: FieldIssue[]): FieldIssue[] {

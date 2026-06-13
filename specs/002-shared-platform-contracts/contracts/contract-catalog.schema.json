@@ -112,6 +112,12 @@
             "type": "string"
           }
         },
+        "filterBinding": {
+          "type": "boolean"
+        },
+        "emptyPageBehavior": {
+          "type": "string"
+        },
         "exceptionOwner": {
           "type": [
             "string",
@@ -139,6 +145,14 @@
           "const": "Idempotency-Key"
         },
         "retentionHours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumKeyLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maximumKeyLength": {
           "type": "integer",
           "minimum": 1
         },

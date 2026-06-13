@@ -18,11 +18,11 @@ export const FailureEnvelopeSchema = z.object({
   }),
   meta: z.object({
     requestId: z.string().min(16).max(128),
-    serverTime: z.string(),
+    serverTime: z.string().datetime({ offset: true }),
     apiVersion: z.literal('v1'),
-    contractVersion: z.string(),
-  }),
-})
+    contractVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+  }).passthrough(),
+}).passthrough()
 
 export type FailureEnvelope = z.infer<typeof FailureEnvelopeSchema>
 

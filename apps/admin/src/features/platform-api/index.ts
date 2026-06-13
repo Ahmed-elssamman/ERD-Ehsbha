@@ -1,5 +1,5 @@
 export { createAdminClient } from './client'
-export { parseResponse, parseError } from './parse'
+export { parseResponse, parseError, parseData } from './parse'
 export { AdminPlatformError } from './errors'
 export { shouldRetry, getRetryAfterMs, isRetryableHttpStatus, isNetworkError } from './retry'
 export { generateIdempotencyKey, getIdempotencyHeader } from './idempotency'

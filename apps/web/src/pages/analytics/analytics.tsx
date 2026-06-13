@@ -140,35 +140,24 @@ function WindowSelector({ value, onChange }: { value: WindowKey; onChange: (w: W
 function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
   const { t, locale, dir } = useI18n();
   const [w, setW] = useState<WindowKey>('7d');
-  const { data, isLoading } = useQuery<{
-    windowDays: number;
-    items: Array<{
-      name?: string;
-      appName?: string;
-      color: string | null;
-      netProfitPiastres: number;
-      profitPerKmPiastres: number;
-      tripCount: number;
-    }>;
-  }>({
+  const { data, isLoading } = useQuery({
     queryKey: ['analytics', kind, w],
-    queryFn: () => (kind === 'apps' ? (AnalyticsApi.apps(w) as Promise<unknown>) : (AnalyticsApi.areas(w) as Promise<unknown>)) as Promise<{
-      windowDays: number;
-      items: Array<{
-        name?: string;
-        appName?: string;
-        color: string | null;
-        netProfitPiastres: number;
-        profitPerKmPiastres: number;
-        tripCount: number;
-      }>;
-    }>,
+    queryFn: async () => {
+      if (kind === 'apps') {
+        const result = await AnalyticsApi.apps(w);
+        return {
+          windowDays: result.windowDays,
+          items: result.items.map((item) => ({ ...item, name: item.appName })),
+        };
+      }
+      return AnalyticsApi.areas(w);
+    },
   });
 
   const items = data?.items ?? [];
 
   const chartData = items.map((it) => ({
-    name: it.name ?? it.appName ?? '—',
+    name: it.name,
     net: it.netProfitPiastres / 100,
     color: it.color ?? '#34D399',
   }));
@@ -334,4 +323,3 @@ function SummaryCard({ label, value, loading }: { label: string; value: string; 
     </Card>
   );
 }
-

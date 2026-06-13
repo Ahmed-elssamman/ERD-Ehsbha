@@ -36,7 +36,7 @@ export function VehiclesPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'vehicles'],
-    queryFn: () => vehiclesApi.list({ limit: 100 }) as Promise<{ items: Row[] }>,
+    queryFn: () => vehiclesApi.list({ limit: 100 }),
   });
 
   const bulkDeleteMut = useMutation({

@@ -1,30 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
+import { adminDashboardOverviewSchema } from '@ehsbha/api-contracts';
+import { parseData } from '@/features/platform-api';
 import { adminApi } from '@/lib/api/admin-client';
 import { useI18n } from '@/i18n/provider';
 import { cn, formatNumber, formatPercent } from '@/lib/utils';
-
-interface KpiBox {
-  value: number;
-  deltaPct: number | null;
-  sparkline: number[];
-}
-
-interface Overview {
-  range: string;
-  generatedAt: string;
-  users: { total: KpiBox; active30d: KpiBox; newToday: KpiBox; newThisWeek: KpiBox; newThisMonth: KpiBox };
-  drivers: { total: KpiBox; active: KpiBox; inactive: KpiBox; retentionPct: KpiBox };
-  trips: { total: KpiBox; today: KpiBox; weekly: KpiBox; monthly: KpiBox };
-  business: { growthRatePct: KpiBox; engagementRatePct: KpiBox; retentionRatePct: KpiBox; conversionRatePct: KpiBox };
-}
 
 function useDashboard() {
   return useQuery({
     queryKey: ['admin', 'dashboard', '7d'],
     queryFn: async () => {
-      const { data } = await adminApi.get('/admin/dashboard/overview', { params: { range: '7d' } });
-      return data as Overview;
+      const response = await adminApi.get('/admin/dashboard/overview', { params: { range: '7d' } });
+      return parseData(adminDashboardOverviewSchema, response.data, 'admin.dashboard.overview');
     },
   });
 }

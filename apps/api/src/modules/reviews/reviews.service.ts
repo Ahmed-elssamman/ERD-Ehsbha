@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '@ehsbha/api-contracts';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -14,7 +15,7 @@ export type UpsertReviewDto = z.infer<typeof UpsertReviewSchema>;
 /** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListReviewsSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   rating: z.coerce.number().int().min(1).max(5).optional(),
 });
 export type ListReviewsDto = z.infer<typeof ListReviewsSchema>;

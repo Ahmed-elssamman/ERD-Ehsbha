@@ -54,26 +54,7 @@ export function TripDetailPage() {
     );
   }
 
-  const trip = data as {
-    id: string;
-    startedAt: string;
-    endedAt: string;
-    grossPiastres: number;
-    receivedPiastres: number | null;
-    tipPiastres: number;
-    commissionPiastres: number;
-    tollPiastres: number;
-    parkingPiastres: number;
-    totalKmMeters: number;
-    paidKmMeters: number;
-    emptyKmMeters: number;
-    notes: string | null;
-    driverId: string;
-    driver: { displayName: string; user: { phone: string; email: string | null } };
-    driverApp: { customName: string | null; appSource: { name: string; code: string } };
-    vehicle: { id: string; type: string; make: string | null; model: string | null; year: number | null };
-    area: { name: string } | null;
-  };
+  const trip = data;
 
   const durationMin = Math.max(0, Math.round((new Date(trip.endedAt).getTime() - new Date(trip.startedAt).getTime()) / 60000));
 

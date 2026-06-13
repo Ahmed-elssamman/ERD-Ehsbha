@@ -40,7 +40,7 @@ export function DriversPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'drivers', { search }],
-    queryFn: () => driversApi.list({ search: search || undefined, limit: 100 }) as Promise<{ items: Row[] }>,
+    queryFn: () => driversApi.list({ search: search || undefined, limit: 100 }),
   });
 
   const bulkMutation = useMutation({

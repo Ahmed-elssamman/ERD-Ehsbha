@@ -42,7 +42,7 @@ export function TripsPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'trips', { includeDeleted }],
-    queryFn: () => tripsApi.list({ limit: 100, includeDeleted }) as Promise<{ items: Row[] }>,
+    queryFn: () => tripsApi.list({ limit: 100, includeDeleted }),
   });
 
   const bulkMutation = useMutation({

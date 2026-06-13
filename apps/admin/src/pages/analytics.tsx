@@ -20,23 +20,12 @@ import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/i18n/provider';
 import { formatNumber, formatPiastres } from '@/lib/utils';
 
-interface Overview {
-  since: string;
-  tripsByApp: Array<{ driverAppId: string; appName: string; tripCount: number; grossPiastres: number }>;
-  tripsByDay: Array<{ day: string; trips: number; gross: number }>;
-  tripsByArea: Array<{ areaId: string | null; areaName: string; tripCount: number; grossPiastres: number }>;
-  topDriversByProfit: Array<{ driverId: string; year: number; month: number; netProfitPiastres: number; phone: string; displayName: string }>;
-  topPosts: Array<{ id: string; title: string; category: string; likeCount: number; driverId: string; driverDisplayName: string }>;
-  topTicketSubjects: Array<{ category: string; status: string; count: number }>;
-  totals: { grossPiastres: number; netProfitPiastres: number; totalKmMeters: number; fuelPiastres: number };
-}
-
 export function AnalyticsPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'analytics', 'overview'],
-    queryFn: () => analyticsApi.overview() as Promise<Overview>,
+    queryFn: () => analyticsApi.overview(),
   });
 
   if (isLoading) {

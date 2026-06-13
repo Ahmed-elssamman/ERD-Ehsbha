@@ -7,24 +7,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/i18n/provider';
 import { formatNumber } from '@/lib/utils';
 
-interface Snapshot {
-  checks: Record<string, { ok: boolean; message: string }>;
-  counts: {
-    users: number;
-    drivers: number;
-    trips: number;
-    activeDriverRefreshTokens: number;
-    activeAdminRefreshTokens: number;
-    openSupportTickets: number;
-  };
-  generatedAt: string;
-}
-
 export function HealthPage() {
   const { t } = useI18n();
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'health'],
-    queryFn: () => miscApi.health() as Promise<Snapshot>,
+    queryFn: () => miscApi.health(),
     refetchInterval: 30_000,
   });
 

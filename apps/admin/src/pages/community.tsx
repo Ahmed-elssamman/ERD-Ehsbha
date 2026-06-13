@@ -38,7 +38,7 @@ export function CommunityPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'community', { isHidden }],
-    queryFn: () => communityApi.list({ isHidden, limit: 100 }) as Promise<{ items: Post[] }>,
+    queryFn: () => communityApi.list({ isHidden, limit: 100 }),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'community'] });

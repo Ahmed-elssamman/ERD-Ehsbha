@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common'
 import { Request, Response, NextFunction } from 'express'
-import { createRequestContext, generateRequestId } from '../contracts/request-context'
+import { createRequestContext } from '../contracts/request-context'
 
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {

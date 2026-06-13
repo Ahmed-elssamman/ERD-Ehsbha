@@ -1,28 +1,13 @@
-import { getAllOperations } from '../../packages/api-contracts/dist/cjs/index.js'
+import { extractApiConsumers } from '../verification/lib/extract-api-consumers.mjs';
 
-const operations = getAllOperations()
-const consumerMap = new Map()
+const consumers = await extractApiConsumers();
+const counts = consumers.reduce((result, consumer) => {
+  result[consumer.application] = (result[consumer.application] || 0) + 1;
+  return result;
+}, {});
 
-for (const op of operations) {
-  for (const consumer of op.consumers) {
-    const key = `${consumer.application}:${consumer.role}`
-    if (!consumerMap.has(key)) {
-      consumerMap.set(key, [])
-    }
-    consumerMap.get(key).push({
-      operationId: op.operationId,
-      path: op.path,
-      method: op.method,
-      migrationStatus: consumer.migrationStatus,
-      owner: consumer.owner,
-    })
-  }
-}
-
-console.log('Consumer Inventory:')
-for (const [key, ops] of consumerMap) {
-  console.log(`\n${key} (${ops.length} operations):`)
-  for (const op of ops) {
-    console.log(`  ${op.method || 'N/A'} ${op.path || op.operationId} [${op.migrationStatus}] - ${op.owner}`)
-  }
-}
+console.log(JSON.stringify({
+  total: consumers.length,
+  counts,
+  consumers,
+}, null, 2));

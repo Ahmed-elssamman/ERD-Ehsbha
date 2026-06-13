@@ -10,27 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { useI18n } from '@/i18n/provider';
 
-interface Alert {
-  id: string;
-  code: string;
-  severity: 'info' | 'medium' | 'high' | 'critical';
-  title: string;
-  body: string;
-  resolvedAt: string | null;
-  createdAt: string;
-}
-
-interface Outbound {
-  id: string;
-  channel: 'PUSH' | 'INAPP';
-  title: string;
-  body: string;
-  sentAt: string;
-  readAt: string | null;
-  driverPhone: string;
-  driverDisplayName: string;
-}
-
 const SEVERITY_VARIANT = {
   info: 'default',
   medium: 'warning',
@@ -74,7 +53,7 @@ function AlertsTab() {
   const { t } = useI18n();
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'alerts'],
-    queryFn: () => notificationsApi.alerts({ limit: 30 }) as Promise<{ items: Alert[] }>,
+    queryFn: () => notificationsApi.alerts({ limit: 30 }),
   });
 
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>;
@@ -118,7 +97,7 @@ function OutboundTab() {
   const { t } = useI18n();
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'outbound-notifs'],
-    queryFn: () => notificationsApi.outbound({ limit: 30 }) as Promise<{ items: Outbound[] }>,
+    queryFn: () => notificationsApi.outbound({ limit: 30 }),
   });
 
   if (isLoading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>;

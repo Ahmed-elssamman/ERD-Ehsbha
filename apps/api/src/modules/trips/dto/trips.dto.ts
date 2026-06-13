@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { tripSchema as sharedTripSchema } from '@ehsbha/api-contracts';
+import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE, tripSchema as sharedTripSchema } from '@ehsbha/api-contracts';
 
 // Shared response contract (passthrough) — re-exported for consumers
 export { sharedTripSchema as TripResponseSchema };
@@ -76,6 +76,6 @@ export const ListTripsSchema = z.object({
   appId: z.string().optional(),
   areaId: z.string().optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 export type ListTripsDto = z.infer<typeof ListTripsSchema>;

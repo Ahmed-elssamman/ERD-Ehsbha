@@ -1,6 +1,7 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common'
 import { Request, Response } from 'express'
-import { API_VERSION, CONTRACT_VERSION, GOVERNED_ERROR_REGISTRY, normalizeErrorCode, getErrorDefinition, FieldIssue } from '@ehsbha/api-contracts/core'
+import { randomUUID } from 'crypto'
+import { API_VERSION, CONTRACT_VERSION, RESPONSE_HEADERS, normalizeErrorCode, getErrorDefinition, FieldIssue } from '@ehsbha/api-contracts/core'
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -42,6 +43,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (definition) {
       httpStatus = definition.httpStatus
     }
+    response.setHeader(RESPONSE_HEADERS.REQUEST_ID, requestId)
+    response.setHeader(RESPONSE_HEADERS.API_VERSION, API_VERSION)
+    response.setHeader(RESPONSE_HEADERS.CONTRACT_VERSION, CONTRACT_VERSION)
+    if (normalizedCode === 'IDEMPOTENCY_IN_PROGRESS') response.setHeader('Retry-After', '1')
 
     if (normalizedCode === 'INTERNAL_ERROR' || normalizedCode === 'CONTRACT_VIOLATION') {
       const safeMessage = message !== 'An unexpected error occurred' && normalizedCode !== 'INTERNAL_ERROR'
@@ -81,7 +86,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 }
 
 function generateFallbackId(): string {
-  return `fallback-${Date.now().toString(36)}`
+  return randomUUID()
 }
 
 function codeFromHttpStatus(status: number): string {

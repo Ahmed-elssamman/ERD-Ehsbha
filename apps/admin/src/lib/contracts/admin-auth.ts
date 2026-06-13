@@ -1,40 +1,22 @@
 import { z } from 'zod';
-import { adminLoginSchema } from '@ehsbha/api-contracts';
+import {
+  adminLoginSchema,
+  adminLoginResponseSchema,
+  adminMfaVerifySchema,
+  adminRefreshSchema,
+} from '@ehsbha/api-contracts';
 
 // Shared admin login request schema (source of truth in @ehsbha/api-contracts)
 export { adminLoginSchema as AdminLoginRequestSchema };
 export type AdminLoginRequest = z.infer<typeof adminLoginSchema>;
 
-// Local response schemas (not yet in shared contracts)
-export const AdminLoginResponseSchema = z.union([
-  z.object({
-    mfaRequired: z.literal(false),
-    accessToken: z.string(),
-    refreshToken: z.string(),
-    admin: z.object({
-      id: z.string(),
-      email: z.string(),
-      displayName: z.string(),
-      roles: z.array(z.string()),
-      permissions: z.array(z.string()),
-    }),
-  }),
-  z.object({
-    mfaRequired: z.literal(true),
-    challengeId: z.string(),
-  }),
-]);
+export const AdminLoginResponseSchema = adminLoginResponseSchema;
 export type AdminLoginResponse = z.infer<typeof AdminLoginResponseSchema>;
 
-export const AdminMfaVerifyRequestSchema = z.object({
-  challengeId: z.string(),
-  code: z.string().regex(/^\d{6}$/),
-});
+export const AdminMfaVerifyRequestSchema = adminMfaVerifySchema;
 export type AdminMfaVerifyRequest = z.infer<typeof AdminMfaVerifyRequestSchema>;
 
-export const AdminRefreshRequestSchema = z.object({
-  refreshToken: z.string(),
-});
+export const AdminRefreshRequestSchema = adminRefreshSchema;
 export type AdminRefreshRequest = z.infer<typeof AdminRefreshRequestSchema>;
 
 export const AdminAuthErrorCodes = [

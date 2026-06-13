@@ -43,6 +43,21 @@ function argumentText(call, ts) {
     : '';
 }
 
+function validationSchemaName(parameter, bindingName, ts) {
+  for (const decorator of decorators(parameter, ts)) {
+    const binding = decoratorCall(decorator, bindingName, ts);
+    if (!binding) continue;
+    const pipe = binding.arguments.find((argument) =>
+      ts.isNewExpression(argument)
+      && ts.isIdentifier(argument.expression)
+      && argument.expression.text === 'ZodValidationPipe',
+    );
+    const schema = pipe?.arguments?.[0];
+    return schema && ts.isIdentifier(schema) ? schema.text : null;
+  }
+  return null;
+}
+
 function endpointPath(prefix, methodPath) {
   return `/api/v1/${[prefix, methodPath].filter(Boolean).join('/')}`.replace(/\/+/g, '/');
 }
@@ -80,6 +95,16 @@ export async function extractApiEndpoints(directory = resolve(repoRoot(), 'apps/
               path: endpointPath(prefix, argumentText(call, ts)),
               source: relative(repoRoot(), filePath).replace(/\\/g, '/'),
               line: source.getLineAndCharacterOfPosition(member.getStart(source)).line + 1,
+              controller: statement.name?.text || null,
+              handler: ts.isIdentifier(member.name) ? member.name.text : null,
+              requestSchemas: Object.fromEntries(
+                [
+                  ['body', member.parameters.map((parameter) =>
+                    validationSchemaName(parameter, 'Body', ts)).find(Boolean)],
+                  ['query', member.parameters.map((parameter) =>
+                    validationSchemaName(parameter, 'Query', ts)).find(Boolean)],
+                ].filter(([, schema]) => schema),
+              ),
             });
           }
         }

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '@ehsbha/api-contracts';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 // Shared notification schemas available via @ehsbha/api-contracts (notification schemas in communications.ts)
@@ -12,7 +13,7 @@ export type RegisterDeviceDto = z.infer<typeof RegisterDeviceSchema>;
 /** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListNotificationsSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 export type ListNotificationsDto = z.infer<typeof ListNotificationsSchema>;
 

@@ -63,13 +63,13 @@ export function DriverDetailPage() {
 
   const { data, isLoading, error } = useQuery<DriverData>({
     queryKey: ['admin', 'driver', id],
-    queryFn: () => driversApi.get(id) as Promise<DriverData>,
+    queryFn: () => driversApi.get(id),
     enabled: Boolean(id),
   });
 
   const recentTrips = useQuery<RecentTrip[]>({
     queryKey: ['admin', 'driver', id, 'trips'],
-    queryFn: () => driversApi.recentTrips(id, 20) as Promise<RecentTrip[]>,
+    queryFn: () => driversApi.recentTrips(id, 20),
     enabled: Boolean(id) && tab === 'trips',
   });
 

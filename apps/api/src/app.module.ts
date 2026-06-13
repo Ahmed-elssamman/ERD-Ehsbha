@@ -26,11 +26,13 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SupportModule } from './modules/support/support.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
+import { IdempotencyModule } from './modules/idempotency/idempotency.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
+    IdempotencyModule,
     AuthModule,
     AdminModule,
     UsersModule,

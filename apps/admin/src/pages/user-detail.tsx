@@ -76,25 +76,7 @@ export function UserDetailPage() {
     );
   }
 
-  const u = data as {
-    id: string;
-    phone: string;
-    email: string | null;
-    status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
-    locale: string;
-    timezone: string;
-    createdAt: string;
-    driver: {
-      id: string;
-      displayName: string;
-      baseCity: string | null;
-      photoUrl: string | null;
-      vehicles: Array<{ id: string; type: string; make: string | null; model: string | null; year: number | null }>;
-      driverApps: Array<{ id: string; commissionPct: string; enabled: boolean; appSource: { code: string; name: string } }>;
-      _count: { trips: number; fuelLogs: number; expenses: number; maintenanceRecords: number };
-    } | null;
-    _count: { supportTickets: number; deviceTokens: number };
-  };
+  const u = data;
 
   return (
     <div className="mx-auto max-w-5xl">

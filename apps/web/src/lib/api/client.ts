@@ -1,5 +1,7 @@
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { useAuth } from '@/stores/auth.store';
+import { driverAuthResultSchema } from '@ehsbha/api-contracts';
+import { parseData } from '@/features/platform-api';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000/api/v1';
 
@@ -44,13 +46,13 @@ api.interceptors.response.use(
             { refreshToken: state.refreshToken },
             { timeout: 15_000 },
           );
-          const data = resp.data?.data ?? resp.data;
+          const data = parseData(driverAuthResultSchema, resp.data, 'driver.auth.refresh');
           useAuth.getState().setSession({
             user: data.user,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           });
-          return data.accessToken as string;
+          return data.accessToken;
         } catch {
           useAuth.getState().clear();
           return null;
@@ -70,14 +72,6 @@ api.interceptors.response.use(
   },
 );
 
-/** Unwraps the `{ data, meta }` envelope used by the backend interceptor. */
-export function unwrap<T>(payload: unknown): T {
-  if (payload && typeof payload === 'object' && 'data' in (payload as Record<string, unknown>)) {
-    return (payload as { data: T }).data;
-  }
-  return payload as T;
-}
-
 export interface ApiErrorShape {
   code: string;
   message: string;
@@ -86,12 +80,24 @@ export interface ApiErrorShape {
 /** Pulls a clean error code/message out of an axios error from this backend. */
 export function readApiError(err: unknown): ApiErrorShape {
   if (axios.isAxiosError(err)) {
-    const body = err.response?.data as { error?: ApiErrorShape; message?: string } | undefined;
-    if (body?.error?.code) return body.error;
+    const body = err.response?.data;
+    if (
+      body !== null
+      && typeof body === 'object'
+      && 'error' in body
+      && body.error !== null
+      && typeof body.error === 'object'
+      && 'code' in body.error
+      && 'message' in body.error
+      && typeof body.error.code === 'string'
+      && typeof body.error.message === 'string'
+    ) {
+      return { code: body.error.code, message: body.error.message };
+    }
     if (err.code === 'ERR_NETWORK' || !err.response) {
       return { code: 'NETWORK', message: 'Network unreachable' };
     }
-    return { code: 'UNKNOWN', message: body?.message ?? err.message };
+    return { code: 'UNKNOWN', message: err.message };
   }
   return { code: 'UNKNOWN', message: 'Unknown error' };
 }

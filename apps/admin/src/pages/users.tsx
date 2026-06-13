@@ -40,7 +40,7 @@ export function UsersPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'users', { search }],
-    queryFn: () => usersApi.list({ search: search || undefined, limit: 100 }) as Promise<{ items: Row[] }>,
+    queryFn: () => usersApi.list({ search: search || undefined, limit: 100 }),
   });
 
   const bulkMutation = useMutation({
