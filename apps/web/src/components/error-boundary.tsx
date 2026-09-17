@@ -12,7 +12,7 @@ export function RouteErrorBoundary() {
   useEffect(() => {
     if (error) {
       // Keep this — surfaces silent failures in dev consoles
-      // eslint-disable-next-line no-console
+
       console.error('[route error]', error);
     }
   }, [error]);

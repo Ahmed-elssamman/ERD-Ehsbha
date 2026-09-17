@@ -2,6 +2,7 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from
 import { Request, Response } from 'express'
 import { randomUUID } from 'crypto'
 import { API_VERSION, CONTRACT_VERSION, RESPONSE_HEADERS, normalizeErrorCode, getErrorDefinition, FieldIssue } from '@ehsbha/api-contracts/core'
+import { DATABASE_UNAVAILABLE_MESSAGE, isPrismaConnectivityError } from '../../prisma/prisma-errors'
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -16,7 +17,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let message = 'An unexpected error occurred'
     let details: FieldIssue[] | undefined
 
-    if (exception instanceof HttpException) {
+    if (isPrismaConnectivityError(exception)) {
+      httpStatus = HttpStatus.SERVICE_UNAVAILABLE
+      code = 'SERVICE_UNAVAILABLE'
+      message = DATABASE_UNAVAILABLE_MESSAGE
+    } else if (exception instanceof HttpException) {
       httpStatus = exception.getStatus()
       const exResponse = exception.getResponse()
 
@@ -47,6 +52,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     response.setHeader(RESPONSE_HEADERS.API_VERSION, API_VERSION)
     response.setHeader(RESPONSE_HEADERS.CONTRACT_VERSION, CONTRACT_VERSION)
     if (normalizedCode === 'IDEMPOTENCY_IN_PROGRESS') response.setHeader('Retry-After', '1')
+    if (normalizedCode === 'SERVICE_UNAVAILABLE') response.setHeader('Retry-After', '2')
 
     if (normalizedCode === 'INTERNAL_ERROR' || normalizedCode === 'CONTRACT_VIOLATION') {
       const safeMessage = message !== 'An unexpected error occurred' && normalizedCode !== 'INTERNAL_ERROR'

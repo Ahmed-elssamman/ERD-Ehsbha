@@ -1,6 +1,6 @@
+import { VehicleOdometerSource } from '@ehsbha/shared-types'
 import { z } from 'zod'
 import { registerOperation } from '../catalog/registry'
-import { EmptySuccessDataSchema } from '../core/envelope'
 
 const VehicleTypeEnum = z.enum(['CAR', 'BIKE'])
 const FuelTypeEnum = z.enum(['PETROL_80', 'PETROL_92', 'PETROL_95', 'DIESEL', 'CNG', 'ELECTRIC'])
@@ -87,7 +87,9 @@ export const driverVehicleSchema = z.object({
   fuelType: FuelTypeEnum,
   tankLiters: z.number(),
   baselineKmPerLiter: z.number(),
-  odometerMeters: z.number().int(),
+  odometerMeters: z.number().int().nonnegative().safe().nullable(),
+  odometerSource: z.nativeEnum(VehicleOdometerSource), odometerSourceId: z.string().nullable(),
+  odometerAsOf: z.string().datetime({ offset: true }).nullable(), odometerVersion: z.number().int().positive(),
   isActive: z.boolean(),
   fuelTankCostPiastres: z.number().int().nullable().optional(),
   fuelTankKmRange: z.number().nullable().optional(),
@@ -121,7 +123,7 @@ export const CreateVehicleSchema = z.object({
   fuelType: FuelTypeEnum,
   tankLiters: z.number().int().min(1).max(500).default(45),
   baselineKmPerLiter: z.number().positive().max(100).default(12),
-  odometerMeters: z.number().int().min(0).default(0),
+  odometerMeters: z.number().int().nonnegative().safe().nullable().optional(),
   isActive: z.boolean().default(true),
 }).strict()
 
@@ -132,7 +134,8 @@ export const createVehicleSchema = z.object({
   color: z.string().optional(),
 }).strict()
 
-export const UpdateVehicleSchema = CreateVehicleSchema.partial()
+export const UpdateVehicleSchema = CreateVehicleSchema.partial().extend({ expectedOdometerVersion: z.number().int().positive().optional() }).strict()
+  .refine((value) => !('odometerMeters' in value) || value.expectedOdometerVersion != null, 'Reload the current mileage before correcting it')
 
 export const UpdateVehicleCostsSchema = z.object({
   fuelTankCostPiastres: z.number().int().min(0).nullable().optional(),
@@ -338,7 +341,7 @@ registerOperation({
   successData: 'driverVehicleSchema',
   failureCodes: ['UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -356,7 +359,7 @@ registerOperation({
   successData: 'driverVehicleSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'CONFLICT'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -374,7 +377,7 @@ registerOperation({
   successData: 'driverVehicleSchema',
   failureCodes: ['UNAUTHENTICATED', 'NOT_FOUND'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -392,7 +395,7 @@ registerOperation({
   successData: 'driverVehicleSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'NOT_FOUND', 'CONFLICT'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -410,7 +413,7 @@ registerOperation({
   successData: 'driverVehicleSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'NOT_FOUND', 'CONFLICT'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,

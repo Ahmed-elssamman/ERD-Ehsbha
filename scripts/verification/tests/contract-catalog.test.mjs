@@ -1,16 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 // Import from the main entry to trigger side-effect registration of all domain operations
 import { getAllOperations, getActiveOperations } from '../../../packages/api-contracts/dist/types/index.js';
 import { getErrorDefinition } from '../../../packages/api-contracts/dist/types/core/errors.js';
-
-const catalogSchemaPath = resolve(import.meta.dirname, '../../../specs/002-shared-platform-contracts/contracts/contract-catalog.schema.json');
-
-function loadCatalogSchema() {
-  return JSON.parse(readFileSync(catalogSchemaPath, 'utf-8'));
-}
 
 describe('contract catalog', () => {
   it('has unique operation IDs across all operations', () => {
@@ -66,7 +58,7 @@ describe('contract catalog', () => {
 
   it('catalog JSON schema validates against the generated catalog', () => {
     const catalog = {
-      contractVersion: '1.0.0',
+      contractVersion: '2.0.0',
       apiVersion: 'v1',
       generatedAt: new Date().toISOString(),
       operations: getAllOperations().map(op => ({

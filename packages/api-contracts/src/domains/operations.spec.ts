@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { expenseSchema, fuelEntrySchema, maintenanceSchema, odometerEntrySchema, sessionSchema, goalSchema } from './operations'
+import { expenseSchema, fuelEntrySchema, goalSchema } from './operations'
 
 describe('operations contracts', () => {
   it('validates expense', () => {

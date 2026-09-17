@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { businessDay, businessDateKey } from '@ehsbha/shared-types';
 
 export type DashboardRange = '1d' | '7d' | '30d' | '90d';
 
@@ -30,8 +31,8 @@ export class AdminDashboardService {
     const since = new Date(now.getTime() - days * 24 * 3600_000);
     const prevSince = new Date(now.getTime() - 2 * days * 24 * 3600_000);
 
-    const startOfToday = new Date(now);
-    startOfToday.setHours(0, 0, 0, 0);
+    const today = businessDay(businessDateKey(now));
+    const startOfToday = today.start;
     const startOfWeek = new Date(now.getTime() - 7 * 24 * 3600_000);
     const startOfMonth = new Date(now.getTime() - 30 * 24 * 3600_000);
     const since30 = new Date(now.getTime() - 30 * 24 * 3600_000);
@@ -56,7 +57,7 @@ export class AdminDashboardService {
       flaggedPosts,
     ] = await Promise.all([
       this.prisma.user.count(),
-      this.prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: startOfToday, lt: today.end } } }),
       this.prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
       this.prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
       this.prisma.user.count({ where: { createdAt: { gte: since } } }),
@@ -70,7 +71,7 @@ export class AdminDashboardService {
       }),
       this.prisma.driver.count(),
       this.prisma.trip.count(),
-      this.prisma.trip.count({ where: { startedAt: { gte: startOfToday } } }),
+      this.prisma.trip.count({ where: { deletedAt: null, startedAt: { gte: startOfToday, lt: today.end } } }),
       this.prisma.trip.count({ where: { startedAt: { gte: startOfWeek } } }),
       this.prisma.trip.count({ where: { startedAt: { gte: startOfMonth } } }),
       this.prisma.trip.count({ where: { startedAt: { gte: since } } }),

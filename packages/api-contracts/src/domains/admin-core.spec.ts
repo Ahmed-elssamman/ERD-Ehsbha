@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { adminUserSchema, adminDriverSchema, adminTripSchema, adminVehicleSchema } from './admin-core'
+import { adminDriverSchema } from './admin-core'
 
 describe('admin-core contracts', () => {
   it('validates admin driver view', () => {

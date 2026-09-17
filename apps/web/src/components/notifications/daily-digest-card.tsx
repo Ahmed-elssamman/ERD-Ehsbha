@@ -1,125 +1,35 @@
-import { Target, Clock, MapPin, Sparkles, Compass, RotateCcw } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/i18n';
 import { formatMoney } from '@/lib/format';
 import type { DailyDigestData } from '@/lib/api/endpoints';
 
-interface Props {
-  data: DailyDigestData;
-}
-
-/**
- * Visual renderer for the morning DAILY_DIGEST notification. Unlike a plain
- * text notification, the digest carries structured insights — we surface
- * the target as a hero number, then list each tip with its own icon so the
- * driver scans it in one glance.
- *
- * Designed for the notifications inbox row; the parent supplies the
- * timestamp, read/unread chrome, and mark-as-read button.
- */
+interface Props { data: DailyDigestData }
 export function DailyDigestCard({ data }: Props) {
   const { t, locale } = useI18n();
-  const { insights, tips } = data;
-  const targetEgp = insights.todayTargetPiastres ?? null;
-
-  return (
-    <div className="space-y-3">
-      {targetEgp != null ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2 }}
-          className="flex items-center gap-3 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-3"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-            <Target className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">
-              {t('notifications.digest.todayTargetLabel')}
-            </p>
-            <p className="num-tabular text-lg font-bold text-primary">
-              {formatMoney(targetEgp, locale)}
-            </p>
-            {insights.monthlyGoalPiastres != null ? (
-              <p className="text-[11px] text-muted-foreground">
-                {t('notifications.digest.monthlyContext', {
-                  earned: Math.round(insights.earnedThisMonthPiastres / 100),
-                  goal: Math.round(insights.monthlyGoalPiastres / 100),
-                  days: insights.remainingDaysInMonth,
-                })}
-              </p>
-            ) : null}
-          </div>
-        </motion.div>
-      ) : null}
-
-      {tips.length > 0 ? (
-        <ul className="space-y-2">
-          {tips
-            .filter((tip) => tip.key !== 'tip.todayTarget')
-            .map((tip, i) => (
-              <motion.li
-                key={`${tip.key}-${i}`}
-                initial={{ opacity: 0, x: locale === 'ar' ? 8 : -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.18, delay: i * 0.04 }}
-                className="flex items-start gap-2.5 rounded-lg border bg-background p-2.5"
-              >
-                <TipIcon kind={tip.key} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-snug">{renderTip(t, tip, insights, locale)}</p>
-                </div>
-              </motion.li>
-            ))}
-        </ul>
-      ) : null}
-
-      {/* Yesterday's snapshot — a small footer chip when there's data. */}
-      {insights.yesterdayNetPiastres !== 0 ? (
-        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
-          <Badge variant="muted" className="gap-1">
-            <RotateCcw className="h-3 w-3" aria-hidden />
-            {t('notifications.digest.yesterdayNet', {
-              egp: Math.round(insights.yesterdayNetPiastres / 100),
-            })}
-          </Badge>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function TipIcon({ kind }: { kind: string }) {
-  // Each tip key gets a distinct icon so the inbox feels organised. Falls
-  // back to the sparkle for unknown tips so a future server-side tip kind
-  // still renders gracefully.
-  const className = 'mt-0.5 h-4 w-4 shrink-0 text-primary';
-  switch (kind) {
-    case 'tip.bestHour':
-      return <Clock className={className} aria-hidden />;
-    case 'tip.bestApp':
-      return <Compass className={className} aria-hidden />;
-    case 'tip.avoidArea':
-      return <MapPin className={className} aria-hidden />;
-    case 'tip.emptyKm':
-      return <RotateCcw className={className} aria-hidden />;
-    default:
-      return <Sparkles className={className} aria-hidden />;
-  }
-}
-
-function renderTip(
-  t: (key: string, vars?: Record<string, string | number>) => string,
-  tip: { key: string; vars: Record<string, string | number> },
-  insights: DailyDigestData['insights'],
-  _locale: 'ar' | 'en',
-): string {
-  // The backend already serialises a localised string into the notification
-  // body, but the structured tips array lets us re-render in the user's
-  // currently selected locale even if the digest was created in another.
-  // For unknown keys, the raw key is returned (visible in dev as a hint).
-  void insights;
-  return t(`notifications.digest.${tip.key.replace(/^tip\./, 'tip.')}`, tip.vars);
+  if (!('version' in data)) return <div className="space-y-2 text-sm">
+    <p>{t('notifications.digest.legacy')}</p>
+    {data.insights.yesterdayNetPiastres ? <p>{t('notifications.digest.recordedYesterday', { amount: formatMoney(data.insights.yesterdayNetPiastres, locale) })}</p> : null}
+  </div>;
+  const value = data.insights;
+  const hour = value.bestStartHour ? new Intl.DateTimeFormat(locale, { hour: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, 0, 1, value.bestStartHour.hour))) : '';
+  const hasComparison = value.bestStartHour || value.highestAppTotal || value.lowerAreaRate;
+  return <div className="space-y-3 text-sm">
+    <p className="text-muted-foreground">{t('notifications.digest.captured', { date: data.snapshotDate })}</p>
+    {value.todayTargetPiastres !== null ? <div className="space-y-1 rounded-lg border p-3">
+      <p>{t('notifications.digest.goalTarget')}</p><p className="text-lg font-semibold num-tabular">{formatMoney(value.todayTargetPiastres, locale)}</p>
+      {value.goalTargetPiastres !== null && value.earnedBeforeTodayPiastres !== null && value.remainingGoalDays !== null ? <p className="text-muted-foreground">{t('notifications.digest.goalContext', {
+        start: value.goalStartDate ?? '', end: value.goalEndDate ?? '', earned: formatMoney(value.earnedBeforeTodayPiastres, locale),
+        goal: formatMoney(value.goalTargetPiastres, locale), days: value.remainingGoalDays,
+      })}</p> : null}
+    </div> : null}
+    {value.yesterdayNetPiastres !== null ? <p>{t('notifications.digest.recordedYesterday', { amount: formatMoney(value.yesterdayNetPiastres, locale) })}</p> : null}
+    {value.yesterdayEmptyRatioBp !== null ? <p>{t('notifications.digest.emptyShare', { percentage: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(value.yesterdayEmptyRatioBp / 10000) })}</p> : null}
+    {hasComparison ? <div className="space-y-2 rounded-lg border p-3">
+      <p className="font-medium">{t('notifications.digest.window', { start: data.windowStartDate, end: data.windowEndDate, count: data.sourceTripCount ?? 0 })}</p>
+      {value.bestStartHour ? <p>{t('notifications.digest.startHour', { hour, amount: formatMoney(value.bestStartHour.earningsPerTripHourPiastres, locale), count: value.bestStartHour.tripCount })}</p> : null}
+      {value.highestAppTotal ? <p>{t('notifications.digest.appTotal', { name: value.highestAppTotal.appName, amount: formatMoney(value.highestAppTotal.earningsPiastres, locale), count: value.highestAppTotal.tripCount })}</p> : null}
+      {value.lowerAreaRate ? <p>{t('notifications.digest.areaRate', { name: value.lowerAreaRate.areaName, amount: formatMoney(value.lowerAreaRate.earningsPerPaidKmPiastres, locale), count: value.lowerAreaRate.tripCount })}</p> : null}
+      <p className="text-muted-foreground">{t('notifications.digest.comparisonLimits')}</p>
+    </div> : null}
+    {data.sourceTripCount === null ? <p>{t('notifications.digest.comparisonUnavailable')}</p> : null}
+  </div>;
 }

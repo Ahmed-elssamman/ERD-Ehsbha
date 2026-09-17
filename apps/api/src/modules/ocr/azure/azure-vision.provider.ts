@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AzureVisionClient } from './azure-vision.client';
 import { AzureDocumentIntelligenceClient } from './azure-document-intelligence.client';
 import type { AzureDocReceiptResult, AzureReadResult } from './types';
+import { OcrRecognitionProvider } from '../ocr-recognition.provider';
+import { filterChromeLines } from '../image-processing/chrome-filter';
+import type { ImageSignals } from '../types';
 
 export interface AzureAnalyzeResult {
   read: AzureReadResult;
@@ -21,19 +24,28 @@ export interface AzureAnalyzeResult {
  * failing the request.
  */
 @Injectable()
-export class AzureVisionProvider {
+export class AzureVisionProvider extends OcrRecognitionProvider {
   private readonly logger = new Logger(AzureVisionProvider.name);
 
   constructor(
     private readonly read: AzureVisionClient,
     private readonly di: AzureDocumentIntelligenceClient,
-  ) {}
+  ) { super(); }
+
+  async recognize(image: Buffer): Promise<ImageSignals> {
+    const result = await this.analyze(image);
+    const read = filterChromeLines(result.read);
+    return {
+      read: { text: read.text, lines: read.lines, words: read.lines.flatMap((line) => line.words), meanConfidence: read.meanConfidence },
+      receipt: result.receipt,
+    };
+  }
 
   async analyze(image: Buffer): Promise<AzureAnalyzeResult> {
     const readPromise = this.read.read(image);
     const receiptPromise = this.di.isEnabled()
-      ? this.di.analyzeReceipt(image).catch((err) => {
-          this.logger.warn(`DI receipt fell back to null: ${(err as Error).message}`);
+      ? this.di.analyzeReceipt(image).catch(() => {
+          this.logger.warn('Optional receipt analysis unavailable');
           return null;
         })
       : Promise.resolve(null);

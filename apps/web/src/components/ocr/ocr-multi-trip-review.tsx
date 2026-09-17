@@ -1,415 +1,220 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { OcrCandidateStatus, type OcrConfirmationReceipt } from '@ehsbha/api-contracts';
+import { formatLocalDateTime, resolveLocalDateTime, localDateTimeInstants, LocalTimeOccurrence, TripIncomeMode } from '@ehsbha/shared-types';
+import { LocalTimeChoice } from '@/components/ui/local-time-choice';
+import { parseLocalTimeChoice } from '@/components/ui/local-time-choice.control';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/i18n';
-import type {
-  OcrExtractResponseDto,
-  OcrParsedTripDto,
-  OcrPaymentMethod,
-  OcrTripResultDto,
-} from '@/lib/api/ocr.api';
+import type { DriverApp, Vehicle } from '@/lib/api/endpoints';
+import type { OcrExtractResponseDto, OcrTripResultDto } from '@/lib/api/ocr.api';
+import { findDriverAppForPlatform, validateOcrTrip, type OcrSaveOutcome, type OcrSelectedTrip } from '@/lib/ocr/ocr-to-trip';
+import { OCR_REVIEW_FIELDS, OCR_PAYMENT_OPTIONS, OCR_INCOME_OPTIONS, OcrFieldKind } from './ocr-review.control';
 import { OcrConfidenceBadge } from './ocr-confidence-badge';
 import { OcrWarningList } from './ocr-warning-list';
+import type { OcrReviewCard as CardState, OcrReviewDraft } from '@/lib/ocr/ocr-review.model';
+export type { OcrReviewDraft } from '@/lib/ocr/ocr-review.model';
 
 interface Props {
   result: OcrExtractResponseDto;
-  onApply: (edited: OcrExtractResponseDto) => void;
+  vehicles: Vehicle[];
+  apps: DriverApp[];
+  loading: boolean;
+  lookupError: boolean;
+  onRetryLookups: () => void;
+  onApply: (selected: OcrSelectedTrip[]) => Promise<OcrSaveOutcome>;
   onDiscard: () => void;
-  /** Async-saving state from the parent (bulk-create in flight). When true,
-   * the form is locked and the apply button shows a progress label so the
-   * driver knows N round-trips are happening. */
-  saving?: boolean;
-  /** Non-fatal error shown above the action footer (e.g. missing vehicle/app,
-   * partial save). The parent owns the i18n string. */
-  statusMessage?: { kind: 'error' | 'success'; text: string } | null;
+  saving: boolean;
+  draft: OcrReviewDraft | null;
+  onDraftChange: (draft: OcrReviewDraft) => void;
+  confirmations: OcrConfirmationReceipt[];
 }
 
-interface CardState {
-  parsed: OcrParsedTripDto;
-  expanded: boolean;
+function initializeCard(candidate: OcrTripResultDto, apps: DriverApp[]): CardState {
+  const values: Record<string, string> = {};
+  for (const control of OCR_REVIEW_FIELDS) {
+    const value = candidate.parsed[control.field];
+    values[control.field] = control.kind === OcrFieldKind.DateTime && typeof value === 'string'
+      ? formatLocalDateTime(value) ?? '' : value == null ? '' : String(value);
+  }
+  values.paymentMethod = candidate.parsed.paymentMethod;
+  const incomeMode = candidate.parsed.grossEgp == null && candidate.parsed.commissionEgp == null ? TripIncomeMode.TakeHome : TripIncomeMode.Breakdown;
+  return {
+    candidate, values, driverAppId: findDriverAppForPlatform(apps, candidate.evidence?.platform ?? null)?.id ?? '',
+    selected: candidate.evidence?.status === OcrCandidateStatus.Ready,
+    incomeMode, expanded: false, saved: false, editedFields: [], failureCode: '',
+  };
 }
 
-/**
- * Renders a scrollable list of trip cards extracted from an Uber summary
- * screen ("ملخص الدخل"). Each card is collapsed by default to a one-line
- * summary; tapping expands an inline edit form with the trip's key fields.
- *
- * Layout principles:
- *   - Single column, vertical stack — works on phone and desktop alike.
- *   - The list container caps at ~60vh and scrolls smoothly so the global
- *     dialog footer remains visible (driver always sees the "Apply all"
- *     button without losing context).
- *   - Each card is keyboard-accessible (button-as-summary, focus rings).
- */
-export function OcrMultiTripReview({ result, onApply, onDiscard, saving, statusMessage }: Props) {
-  const { t, locale } = useI18n();
-  const [cards, setCards] = useState<CardState[]>(() =>
-    result.trips.map((t) => ({ parsed: { ...t.parsed }, expanded: false })),
-  );
+function editedCandidate(card: CardState): OcrTripResultDto {
+  let parsed = { ...card.candidate.parsed };
+  for (const control of OCR_REVIEW_FIELDS) {
+    const text = (card.values[control.field] ?? '').trim();
+    let value: string | number | null = text || null;
+    if (control.kind === OcrFieldKind.DateTime) {
+      const original = card.candidate.parsed[control.field];
+      value = resolveLocalDateTime(text, parseLocalTimeChoice(card.values[`${control.field}Occurrence`] ?? ''), typeof original === 'string' ? original : null);
+    }
+    else if (control.kind !== OcrFieldKind.Text) value = text === '' ? null : Number(text);
+    parsed = { ...parsed, [control.field]: value };
+  }
+  const payment = OCR_PAYMENT_OPTIONS.find((option) => option.value === card.values.paymentMethod);
+  if (card.incomeMode === TripIncomeMode.TakeHome) parsed = { ...parsed, grossEgp: null, commissionEgp: null, receivedEgp: null };
+  else parsed.earningsEgp = null;
+  parsed.paymentMethod = payment?.value ?? 'unknown';
+  return { ...card.candidate, parsed };
+}
 
-  // Reset internal state when a fresh result comes in (e.g. user discards
-  // and re-extracts).
+export function OcrMultiTripReview({ result, vehicles, apps, loading, lookupError, onRetryLookups, onApply, onDiscard, saving, draft, onDraftChange, confirmations }: Props) {
+  const { t, tf, locale } = useI18n();
+  const activeVehicles = useMemo(() => vehicles.filter((vehicle) => vehicle.isActive), [vehicles]);
+  const enabledApps = useMemo(() => apps.filter((app) => app.enabled), [apps]);
+  const [vehicleChoice, setVehicleChoice] = useState(draft?.vehicleChoice ?? '');
+  const vehicleId = vehicleChoice || (activeVehicles.length === 1 ? activeVehicles[0].id : '');
+  const [cards, setCards] = useState(() => draft?.cards ?? result.trips.map((candidate) => initializeCard(candidate, apps)));
   useEffect(() => {
-    setCards(result.trips.map((t) => ({ parsed: { ...t.parsed }, expanded: false })));
-  }, [result]);
+    const acknowledged = new Set(confirmations.map((receipt) => receipt.candidateId));
+    setCards((previous) => previous.some((card) => !card.saved && acknowledged.has(card.candidate.evidence?.id ?? ''))
+      ? previous.map((card) => acknowledged.has(card.candidate.evidence?.id ?? '') ? { ...card, saved: true, selected: false } : card) : previous);
+  }, [confirmations]);
+  // Mark the capture as saving before the edited selection can paint with the
+  // previous "saved" status. Persistence itself remains asynchronous.
+  useLayoutEffect(() => { onDraftChange({ cards, vehicleChoice }); }, [cards, vehicleChoice, onDraftChange]);
+  const [status, setStatus] = useState('');
+  const views = cards.map((card, index) => {
+    const candidate = editedCandidate(card);
+    const driverAppId = card.driverAppId || findDriverAppForPlatform(enabledApps, candidate.evidence?.platform ?? null)?.id || '';
+    const selection = { candidate, vehicleId, driverAppId };
+    return { card, index, selection, validation: validateOcrTrip(selection) };
+  });
+  const selected = views.filter((view) => view.card.selected && !view.card.saved);
+  const ready = views.filter((view) => !view.card.saved && view.card.candidate.evidence?.status === OcrCandidateStatus.Ready && view.validation.input);
+  const remaining = views.filter((view) => !view.card.saved);
+  const reviewCount = remaining.length - ready.length;
+  const canSave = !loading && !lookupError && selected.length > 0 && selected.every((view) => view.validation.input != null);
 
-  const updateCard = useCallback((idx: number, parsed: Partial<OcrParsedTripDto>) => {
-    setCards((prev) =>
-      prev.map((c, i) => (i === idx ? { ...c, parsed: { ...c.parsed, ...parsed } } : c)),
-    );
-  }, []);
-
-  const toggle = useCallback((idx: number) => {
-    setCards((prev) => prev.map((c, i) => (i === idx ? { ...c, expanded: !c.expanded } : c)));
-  }, []);
-
-  const handleApplyAll = () => {
-    const updatedTrips: OcrTripResultDto[] = cards.map((c, i) => ({
-      parsed: c.parsed,
-      fieldConfidences: result.trips[i]?.fieldConfidences ?? {},
-    }));
-    onApply({
-      ...result,
-      trips: updatedTrips,
-      parsed: updatedTrips[0]?.parsed ?? result.parsed,
-      fieldConfidences: updatedTrips[0]?.fieldConfidences ?? result.fieldConfidences,
-    });
+  const update = (index: number, patch: Partial<CardState>) => {
+    setCards((previous) => previous.map((card, cardIndex) => cardIndex === index ? { ...card, ...patch } : card));
+  };
+  const editField = (index: number, field: string, value: string) => {
+    const card = cards[index];
+    const values = { ...card.values, [field]: value };
+    const editedFields = new Set([...card.editedFields, field]);
+    if (field === 'durationSec' && value.trim() && Number(value) > 0 && Number(value) <= 12 * 3600) {
+      const start = resolveLocalDateTime(values.startedAt, parseLocalTimeChoice(values.startedAtOccurrence ?? ''), card.candidate.parsed.startedAt);
+      if (start) {
+        const end = new Date(new Date(start).getTime() + Number(value) * 1000).toISOString();
+        values.endedAt = formatLocalDateTime(end) ?? '';
+        const first = localDateTimeInstants(values.endedAt)[0];
+        values.endedAtOccurrence = first?.slice(0, 19) === end.slice(0, 19) ? LocalTimeOccurrence.Earlier : LocalTimeOccurrence.Later;
+        editedFields.add('endedAt');
+      }
+    }
+    update(index, { values, editedFields: [...editedFields] });
+  };
+  const changeIncomeMode = (index: number, value: string) => {
+    const option = OCR_INCOME_OPTIONS.find((item) => item.value === value);
+    if (!option) return;
+    update(index, { incomeMode: option.value, selected: false });
+  };
+  const save = async () => {
+    if (!canSave || saving) return;
+    setStatus('');
+    try {
+      const outcome = await onApply(selected.map((view) => view.selection));
+      const saved = new Set(outcome.savedCandidateIds);
+      setCards((previous) => previous.map((card) => saved.has(card.candidate.evidence?.id ?? '') ? { ...card, saved: true, selected: false, failureCode: '' }
+        : { ...card, failureCode: outcome.failures?.find((failure) => failure.candidateId === card.candidate.evidence?.id)?.code ?? '' }));
+      setStatus(t('trips.ocr.savedPartial', { ok: saved.size, total: selected.length, fail: outcome.failedCandidateIds.length }));
+    } catch {
+      setStatus(t('trips.ocr.error.UNKNOWN'));
+    }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
-      className="space-y-3"
-    >
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold">
-            {t('trips.ocr.multiHeader', { n: cards.length })}
-          </p>
-          <p className="text-xs text-muted-foreground">{t('trips.ocr.reviewSubtitle')}</p>
-        </div>
-        <Badge variant="muted" title={t('trips.ocr.ocrConfidenceLabel')}>
-          {Math.round(result.ocrMeanConfidence * 100)}%
-        </Badge>
+    <div className="space-y-4" aria-busy={saving}>
+      <header className="space-y-1" aria-live="polite">
+        <p className="font-semibold">{t('trips.ocr.multiHeader', { n: result.trips.length })}</p>
+        <p className="text-sm text-muted-foreground">{t('trips.ocr.readyCounts', { ready: ready.length, review: reviewCount })}</p>
       </header>
-
-      <div
-        className={[
-          'space-y-2 rounded-xl border bg-muted/30 p-2 transition-opacity',
-          // The parent Dialog body is already a scroll container — don't
-          // nest another one (causes double-scroll where the trackpad fights
-          // for which container to scroll). Just let the list grow naturally
-          // and let the dialog scroll vertically.
-          saving ? 'pointer-events-none opacity-60' : '',
-        ].join(' ')}
-        aria-busy={saving || undefined}
-      >
-        {cards.map((card, i) => (
-          <TripCard
-            key={i}
-            index={i + 1}
-            state={card}
-            fieldConfidences={result.trips[i]?.fieldConfidences ?? {}}
-            locale={locale}
-            t={t}
-            onToggle={() => toggle(i)}
-            onChange={(patch) => updateCard(i, patch)}
-          />
-        ))}
-      </div>
-
-      <OcrWarningList warnings={result.warnings} />
-
-      {statusMessage ? (
-        <p
-          className={[
-            'rounded-lg border p-2 text-xs',
-            statusMessage.kind === 'error'
-              ? 'border-destructive/40 bg-destructive/10 text-destructive'
-              : 'border-success/40 bg-success/10 text-success',
-          ].join(' ')}
-          role={statusMessage.kind === 'error' ? 'alert' : 'status'}
-        >
-          {statusMessage.text}
-        </p>
-      ) : null}
-
-      <footer className="flex flex-wrap items-center justify-end gap-2 pt-1">
-        <Button variant="ghost" onClick={onDiscard} disabled={saving}>
-          {t('trips.ocr.discard')}
-        </Button>
-        <Button onClick={handleApplyAll} loading={saving} disabled={saving}>
-          {saving
-            ? t('trips.ocr.savingMulti', { n: cards.length })
-            : t('trips.ocr.applyAll', { n: cards.length })}
-        </Button>
-      </footer>
-    </motion.div>
-  );
-}
-
-interface TripCardProps {
-  index: number;
-  state: CardState;
-  fieldConfidences: Record<string, number>;
-  locale: 'ar' | 'en';
-  t: (key: string, vars?: Record<string, string | number>) => string;
-  onToggle: () => void;
-  onChange: (patch: Partial<OcrParsedTripDto>) => void;
-}
-
-function TripCard({ index, state, fieldConfidences, locale, t, onToggle, onChange }: TripCardProps) {
-  const { parsed, expanded } = state;
-  const summary = useMemo(() => buildSummary(parsed, t), [parsed, t]);
-
-  return (
-    <div
-      className="rounded-lg border bg-background shadow-sm"
-      style={{ scrollSnapAlign: 'start' }}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-3 p-3 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        <span className="flex min-w-0 flex-1 items-center gap-2">
-          <Badge variant={expanded ? 'default' : 'muted'} className="shrink-0">
-            {t('trips.ocr.multiTripLabel', { n: index })}
-          </Badge>
-          <span className="min-w-0 flex-1 truncate text-sm">{summary}</span>
-        </span>
-        <ChevronIcon expanded={expanded} />
-      </button>
-
-      <AnimatePresence initial={false}>
-        {expanded ? (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden"
-          >
-            <div className="space-y-3 border-t p-3">
-              <Row
-                label={t('trips.field.received')}
-                confidence={fieldConfidences.receivedEgp}
-                unit="EGP"
-              >
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  min="0"
-                  value={numToString(parsed.receivedEgp)}
-                  onChange={(e) => onChange({ receivedEgp: parseNum(e.target.value) })}
-                  dir="ltr"
-                  className="text-end num-tabular"
-                />
-              </Row>
-              <div className="grid grid-cols-2 gap-2">
-                <Row
-                  label={t('trips.ocr.fieldPaidKm')}
-                  confidence={fieldConfidences.paidKm}
-                  unit="km"
-                >
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min="0"
-                    value={numToString(parsed.paidKm)}
-                    onChange={(e) => onChange({ paidKm: parseNum(e.target.value) })}
-                    dir="ltr"
-                    className="text-end num-tabular"
-                  />
-                </Row>
-                <DurationRow
-                  durationSec={parsed.durationSec}
-                  confidence={fieldConfidences.durationSec}
-                  t={t}
-                  onChange={(durationSec) => onChange({ durationSec })}
-                />
+      {lookupError ? <div role="alert"><p>{t('trips.ocr.lookupFailed')}</p><Button variant="secondary" onClick={onRetryLookups}>{t('common.retry')}</Button></div> : null}
+      {loading ? <p role="status">{t('common.loading')}</p> : null}
+      {!loading && (!activeVehicles.length || !enabledApps.length) ? <p role="status">{t('trips.ocr.needVehicleOrApp')}</p> : null}
+      <label className="block space-y-1">
+        <span className="text-sm font-medium">{t('trips.field.vehicle')}</span>
+        <select value={vehicleId} onChange={(event) => setVehicleChoice(event.target.value)} disabled={saving} className="min-h-11 w-full rounded-lg border bg-background px-3">
+          <option value="">{t('trips.ocr.chooseVehicle')}</option>
+          {activeVehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{[vehicle.make, vehicle.model].filter(Boolean).join(' ') || t(`vehicles.type.${vehicle.type}`)}</option>)}
+        </select>
+      </label>
+      <p className="text-xs text-muted-foreground">{t('trips.ocr.cairoTimes')}</p>
+      <div className="space-y-3">
+        {views.filter((view) => !view.card.saved).map(({ card, index, selection, validation }) => {
+          const evidence = card.candidate.evidence;
+          const candidateId = evidence?.id ?? String(index);
+          const fare = selection.candidate.parsed.earningsEgp ?? selection.candidate.parsed.receivedEgp ?? selection.candidate.parsed.grossEgp;
+          const amount = fare == null ? t('trips.ocr.amountMissing') : new Intl.NumberFormat(locale, { style: 'currency', currency: 'EGP' }).format(fare);
+          const duplicate = evidence?.status === OcrCandidateStatus.Duplicate;
+          return (
+            <section key={candidateId} className="rounded-xl border bg-background">
+              {card.failureCode ? <p role="alert" className="px-3 pt-3 text-sm text-destructive">{tf(`trips.ocr.error.${card.failureCode}`, t('trips.ocr.error.OCR_CONFIRMATION_RETRY'))}</p> : null}
+              <div className="flex items-center gap-2 p-3">
+                <label className="flex min-h-11 min-w-11 items-center justify-center">
+                  <input type="checkbox" checked={card.selected} disabled={saving || !validation.input} onChange={(event) => update(index, { selected: event.target.checked })} aria-label={t('trips.ocr.selectTrip', { n: index + 1 })} className="size-5 accent-primary" />
+                </label>
+                <button type="button" disabled={saving} onClick={() => update(index, { expanded: !card.expanded })} aria-expanded={card.expanded} aria-controls={`ocr-card-${candidateId}`} className="min-h-11 flex-1 text-start focus-visible:ring-2 focus-visible:ring-primary">
+                  <span className="block font-medium">{t('trips.ocr.multiTripLabel', { n: index + 1 })} · {amount}</span>
+                  <span className="text-xs text-muted-foreground">{t(duplicate ? 'trips.ocr.possibleDuplicate' : validation.input ? 'trips.ocr.reviewAndSelect' : 'trips.ocr.completeMissing')}</span>
+                </button>
               </div>
-              <Row
-                label={t('trips.field.startedAt')}
-                confidence={fieldConfidences.startedAt}
-              >
-                <Input
-                  type="datetime-local"
-                  value={toLocalDatetime(parsed.startedAt)}
-                  onChange={(e) =>
-                    onChange({ startedAt: fromLocalDatetime(e.target.value, parsed.startedAt) })
-                  }
-                  dir="ltr"
-                />
-              </Row>
-              <Row
-                label={t('trips.ocr.fieldPickup')}
-                confidence={fieldConfidences.pickup}
-              >
-                <Input
-                  value={parsed.pickup ?? ''}
-                  onChange={(e) => onChange({ pickup: e.target.value || null })}
-                  dir={locale === 'ar' ? 'rtl' : 'ltr'}
-                />
-              </Row>
-              <Row
-                label={t('trips.ocr.fieldDestination')}
-                confidence={fieldConfidences.destination}
-              >
-                <Input
-                  value={parsed.destination ?? ''}
-                  onChange={(e) => onChange({ destination: e.target.value || null })}
-                  dir={locale === 'ar' ? 'rtl' : 'ltr'}
-                />
-              </Row>
-              <Row
-                label={t('trips.ocr.fieldPayment')}
-                confidence={fieldConfidences.paymentMethod}
-              >
-                <select
-                  value={parsed.paymentMethod}
-                  onChange={(e) =>
-                    onChange({ paymentMethod: e.target.value as OcrPaymentMethod })
-                  }
-                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
-                >
-                  <option value="cash">{t('trips.ocr.paymentCash')}</option>
-                  <option value="card">{t('trips.ocr.paymentCard')}</option>
-                  <option value="wallet">{t('trips.ocr.paymentWallet')}</option>
-                  <option value="unknown">{t('trips.ocr.paymentUnknown')}</option>
-                </select>
-              </Row>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+              {card.expanded ? (
+                <div id={`ocr-card-${candidateId}`} className="space-y-4 border-t p-3">
+                  <label className="block space-y-1"><span className="text-sm">{t('trips.field.app')}</span>
+                    <select value={selection.driverAppId} onChange={(event) => update(index, { driverAppId: event.target.value })} disabled={saving} className="min-h-11 w-full rounded-lg border bg-background px-3">
+                      <option value="">{t('trips.ocr.chooseApp')}</option>
+                      {enabledApps.map((app) => <option key={app.id} value={app.id}>{app.customName ?? app.appSource?.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="block space-y-1"><span className="text-sm">{t('trips.finance.mode')}</span>
+                    <select aria-label={t('trips.finance.mode')} value={card.incomeMode} onChange={(event) => changeIncomeMode(index, event.target.value)} disabled={saving} className="min-h-11 w-full rounded-lg border bg-background px-3">
+                      {OCR_INCOME_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}
+                    </select>
+                  </label>
+                  {card.incomeMode === TripIncomeMode.TakeHome ? <p className="text-sm text-muted-foreground">{t('trips.finance.takeHomeHint')}</p> : null}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {OCR_REVIEW_FIELDS.map((control) => {
+                      if (control.incomeMode && control.incomeMode !== card.incomeMode) return null;
+                      const numeric = control.kind === OcrFieldKind.Money || control.kind === OcrFieldKind.Distance || control.kind === OcrFieldKind.Duration;
+                      const originalTime = card.candidate.parsed[control.field];
+                      return <div key={control.field} className="space-y-1"><label className="block space-y-1">
+                        <span className="flex items-center justify-between gap-2 text-sm">{t(control.field === 'tipEgp' && card.incomeMode === TripIncomeMode.TakeHome ? 'trips.finance.includedTip' : control.labelKey)}{card.editedFields.includes(control.field) ? <span className="text-xs text-muted-foreground">{t('trips.ocr.editedValue')}</span> : <OcrConfidenceBadge confidence={card.candidate.fieldConfidences[control.field] ?? null} />}</span>
+                        <Input value={card.values[control.field] ?? ''} type={control.kind === OcrFieldKind.DateTime ? 'datetime-local' : numeric ? 'number' : 'text'} inputMode={numeric ? 'decimal' : 'text'} step={numeric ? 'any' : 1} min={numeric ? 0 : ''} disabled={saving} dir={numeric || control.kind === OcrFieldKind.DateTime ? 'ltr' : 'auto'}
+                          onChange={(event) => editField(index, control.field, event.target.value)} className="min-h-11" />
+                      </label>
+                        {control.kind === OcrFieldKind.DateTime ? <LocalTimeChoice value={card.values[control.field] ?? ''}
+                          choice={parseLocalTimeChoice(card.values[`${control.field}Occurrence`] ?? '')} label={t(control.labelKey)} disabled={saving}
+                          original={typeof originalTime === 'string' ? originalTime : null}
+                          onChange={(choice) => editField(index, `${control.field}Occurrence`, choice)} /> : null}
+                      </div>;
+                    })}
+                    <label className="block space-y-1"><span className="text-sm">{t('trips.ocr.fieldPayment')}</span><select value={card.values.paymentMethod} onChange={(event) => update(index, { values: { ...card.values, paymentMethod: event.target.value } })} disabled={saving} className="min-h-11 w-full rounded-lg border bg-background px-3">{OCR_PAYMENT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}</select></label>
+                  </div>
+                  {validation.issueKeys.length ? <ul className="space-y-1 text-sm text-destructive" aria-live="polite">{validation.issueKeys.map((key) => <li key={key}>{t(`trips.ocr.validation.${key}`)}</li>)}</ul> : null}
+                  <OcrWarningList warnings={evidence?.warnings ?? []} />
+                  <details><summary className="min-h-11 cursor-pointer py-3 text-sm">{t('trips.ocr.rawText')}</summary><pre dir="auto" className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 text-sm">{evidence?.rawText}</pre></details>
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
+      </div>
+      {status ? <p role="status" className="rounded-lg border p-3 text-sm">{status}</p> : null}
+      {confirmations.length ? <p className="text-sm text-muted-foreground" role="status">{t('trips.ocr.previouslySaved', { n: confirmations.length })}</p> : null}
+      {confirmations.some((receipt) => receipt.deleted) ? <p className="text-sm">{t('trips.ocr.previouslyDeleted')}</p> : null}
+      <footer className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t bg-background py-3">
+        <Button variant="ghost" onClick={onDiscard} disabled={saving} className="min-h-11">{t('common.close')}</Button>
+        <Button onClick={save} loading={saving} disabled={!canSave || saving} className="min-h-11">{t('trips.ocr.saveSelected', { n: selected.length })}</Button>
+      </footer>
     </div>
   );
-}
-
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className={`shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-interface RowProps {
-  label: string;
-  confidence?: number | null;
-  unit?: string;
-  children: React.ReactNode;
-}
-function Row({ label, confidence, unit, children }: RowProps) {
-  return (
-    <label className="block space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
-          {label}
-          {unit ? <span className="ms-1 text-muted-foreground/70">({unit})</span> : null}
-        </span>
-        <OcrConfidenceBadge confidence={confidence ?? null} />
-      </div>
-      {children}
-    </label>
-  );
-}
-
-interface DurationRowProps {
-  durationSec: number | null;
-  confidence?: number | null;
-  t: TripCardProps['t'];
-  onChange: (durationSec: number | null) => void;
-}
-function DurationRow({ durationSec, confidence, t, onChange }: DurationRowProps) {
-  const minutes = durationSec == null ? '' : String(Math.floor(durationSec / 60));
-  const seconds = durationSec == null ? '' : String(durationSec % 60);
-  const set = (m: string, s: string) => {
-    if (m === '' && s === '') return onChange(null);
-    onChange((Number(m) || 0) * 60 + (Number(s) || 0));
-  };
-  return (
-    <Row
-      label={t('trips.tripDuration')}
-      confidence={confidence}
-      unit={t('trips.ocr.minSecUnit')}
-    >
-      <div className="flex items-center gap-1.5">
-        <Input
-          type="number"
-          inputMode="numeric"
-          min="0"
-          value={minutes}
-          onChange={(e) => set(e.target.value, seconds)}
-          dir="ltr"
-          className="w-16 text-end num-tabular"
-        />
-        <span className="text-xs text-muted-foreground">m</span>
-        <Input
-          type="number"
-          inputMode="numeric"
-          min="0"
-          max="59"
-          value={seconds}
-          onChange={(e) => set(minutes, e.target.value)}
-          dir="ltr"
-          className="w-16 text-end num-tabular"
-        />
-        <span className="text-xs text-muted-foreground">s</span>
-      </div>
-    </Row>
-  );
-}
-
-function buildSummary(p: OcrParsedTripDto, t: TripCardProps['t']): string {
-  const parts: string[] = [];
-  if (p.receivedEgp != null) parts.push(`${p.receivedEgp.toFixed(2)} EGP`);
-  if (p.paidKm != null) parts.push(`${p.paidKm} km`);
-  const route = [p.pickup, p.destination].filter(Boolean).join(' → ');
-  if (route) parts.push(route);
-  return parts.length > 0 ? parts.join(' · ') : t('trips.ocr.multiCollapseHint');
-}
-
-function parseNum(s: string): number | null {
-  if (s.trim() === '') return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-
-function numToString(v: number | null | undefined): string {
-  return v == null || !Number.isFinite(v) ? '' : String(v);
-}
-
-function toLocalDatetime(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalDatetime(local: string, fallback: string | null): string | null {
-  if (!local) return null;
-  const d = new Date(local);
-  if (Number.isNaN(d.getTime())) return fallback;
-  return d.toISOString();
 }

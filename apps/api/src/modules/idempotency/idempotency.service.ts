@@ -74,6 +74,13 @@ export function canonicalJson(value: unknown): string {
 
 function canonicalize(value: unknown): Prisma.InputJsonValue | null {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'bigint') {
+    const number = Number(value);
+    if (!Number.isSafeInteger(number)) throw new TypeError('Idempotency payload integer exceeds safe JSON precision');
+    return number;
+  }
+  if (value instanceof Prisma.Decimal) return canonicalize(value.toNumber());
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) throw new TypeError('Idempotency payload contains a non-finite number');
     return value;

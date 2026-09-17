@@ -1,6 +1,8 @@
+import { DevicePlatform, NotificationKind, DigestSnapshotVersion } from '@ehsbha/shared-types'
 import { z } from 'zod'
 import { registerOperation } from '../catalog/registry'
 import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '../core/pagination'
+import { reportReadyDataSchema } from './report-records'
 
 const CATEGORY_VALUES = [
   'BEST_APPS',
@@ -73,24 +75,14 @@ export const acknowledgedResultSchema = z.object({
 }).passthrough()
 
 export const RegisterDeviceSchema = z.object({
-  token: z.string().min(10),
-  platform: z.enum(['ios', 'android', 'web']),
+  token: z.string().min(10).max(4096),
+  platform: z.nativeEnum(DevicePlatform),
 }).strict()
 
 export const ListNotificationsSchema = z.object({
-  cursor: z.string().optional(),
+  cursor: z.string().min(1).max(2048).optional(),
   limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 }).strict()
-
-export const appNotificationSchema = z.object({
-  id: z.string(),
-  channel: z.string(),
-  title: z.string(),
-  body: z.string(),
-  sentAt: z.string(),
-  readAt: z.string().nullable(),
-  data: z.record(z.unknown()).nullable().optional(),
-}).passthrough()
 
 export const notificationSchema = z.object({
   id: z.string(),
@@ -103,11 +95,6 @@ export const notificationSchema = z.object({
   createdAt: z.string(),
 }).passthrough()
 
-export const notificationsListSchema = z.object({
-  items: z.array(appNotificationSchema),
-  nextCursor: z.string().nullable(),
-}).passthrough()
-
 export const deviceTokenRecordSchema = z.object({
   id: z.string(),
   userId: z.string(),
@@ -117,8 +104,8 @@ export const deviceTokenRecordSchema = z.object({
   createdAt: z.string().optional(),
 }).passthrough()
 
-export const dailyDigestDataSchema = z.object({
-  kind: z.literal('DAILY_DIGEST'),
+export const legacyDailyDigestDataSchema = z.object({
+  kind: z.literal(NotificationKind.DailyDigest),
   locale: z.enum(['ar', 'en']),
   insights: z.object({
     todayTargetPiastres: z.number().nullable(),
@@ -140,7 +127,7 @@ export const dailyDigestDataSchema = z.object({
       egpPerKm: z.number(),
     }).strict().nullable(),
     emptyKmRatioYesterday: z.number().nullable(),
-    yesterdayNetPiastres: z.number(),
+    yesterdayNetPiastres: z.number().nullable(),
   }).strict(),
   tips: z.array(z.object({
     key: z.string(),
@@ -148,8 +135,43 @@ export const dailyDigestDataSchema = z.object({
   }).strict()),
 }).strict()
 
+const digestMoney = z.number().int().safe();
+const digestDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const currentDailyDigestDataSchema = z.object({
+  kind: z.literal(NotificationKind.DailyDigest), version: z.literal(DigestSnapshotVersion.Current),
+  snapshotDate: digestDate, windowStartDate: digestDate, windowEndDate: digestDate,
+  sourceTripCount: z.number().int().nonnegative().nullable(),
+  insights: z.object({
+    todayTargetPiastres: digestMoney.nullable(), goalTargetPiastres: digestMoney.nullable(),
+    goalStartDate: digestDate.nullable(), goalEndDate: digestDate.nullable(),
+    earnedBeforeTodayPiastres: digestMoney.nullable(), remainingGoalDays: z.number().int().positive().nullable(),
+    bestStartHour: z.object({ hour: z.number().int().min(0).max(23), earningsPerTripHourPiastres: digestMoney, tripCount: z.number().int().min(3) }).strict().nullable(),
+    highestAppTotal: z.object({ appId: z.string(), appName: z.string(), earningsPiastres: digestMoney, tripCount: z.number().int().positive() }).strict().nullable(),
+    lowerAreaRate: z.object({ areaId: z.string(), areaName: z.string(), earningsPerPaidKmPiastres: digestMoney, tripCount: z.number().int().min(5) }).strict().nullable(),
+    yesterdayEmptyRatioBp: z.number().int().min(0).max(10000).nullable(), yesterdayNetPiastres: digestMoney.nullable(),
+  }).strict(),
+}).strict();
+export const dailyDigestDataSchema = z.union([currentDailyDigestDataSchema, legacyDailyDigestDataSchema]);
+export const notificationDataSchema = z.union([dailyDigestDataSchema, reportReadyDataSchema]);
+
 export const dailyDigestTriggerResultSchema = z.object({
   notificationId: z.string(),
+}).passthrough()
+
+export const appNotificationSchema = z.object({
+  id: z.string(),
+  channel: z.string(),
+  kind: z.nativeEnum(NotificationKind),
+  title: z.string(),
+  body: z.string(),
+  sentAt: z.string(),
+  readAt: z.string().nullable(),
+  data: notificationDataSchema.nullable(),
+}).passthrough()
+
+export const notificationsListSchema = z.object({
+  items: z.array(appNotificationSchema),
+  nextCursor: z.string().nullable(),
 }).passthrough()
 
 export const publicReviewSchema = z.object({
@@ -259,9 +281,9 @@ registerOperation({
   lifecycle: 'active',
   request: { query: 'ListNotificationsSchema' },
   successData: 'notificationsListSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
+  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'INVALID_CURSOR'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: { mode: 'cursor', defaultSize: DEFAULT_PAGE_SIZE, maximumSize: MAXIMUM_PAGE_SIZE, stableSort: ['sentAt:desc', 'id:desc'], exceptionOwner: null, exceptionReason: null },
   idempotency: null,
@@ -279,7 +301,7 @@ registerOperation({
   successData: 'appNotificationSchema',
   failureCodes: ['UNAUTHENTICATED', 'NOT_FOUND'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -297,7 +319,7 @@ registerOperation({
   successData: 'deviceTokenRecordSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'CONFLICT'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -313,9 +335,9 @@ registerOperation({
   lifecycle: 'active',
   request: {},
   successData: 'dailyDigestTriggerResultSchema',
-  failureCodes: ['UNAUTHENTICATED', 'NOT_FOUND'],
+  failureCodes: ['UNAUTHENTICATED', 'DIGEST_INSUFFICIENT_DATA'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,

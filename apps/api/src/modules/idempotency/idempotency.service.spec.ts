@@ -41,6 +41,20 @@ describe('IdempotencyService', () => {
     });
   });
 
+  it('preserves validated dates in hashes instead of treating every date as an empty object', () => {
+    const first = new Date('2026-09-16T08:00:00Z');
+    const second = new Date('2026-09-16T09:00:00Z');
+    expect(service.hashRequest({ startedAt: first })).not.toBe(service.hashRequest({ startedAt: second }));
+    expect(service.hashRequest({ startedAt: first })).toBe(service.hashRequest({ startedAt: first.toISOString() }));
+  });
+
+  it('stores exact JSON money and dates for replay and rejects unsafe integer conversion', async () => {
+    const startedAt = new Date('2026-09-16T08:00:00Z');
+    await service.complete('idem_1', 201, { earningsPiastres: 8500n, startedAt });
+    expect(repository.complete).toHaveBeenCalledWith('idem_1', 201, { earningsPiastres: 8500, startedAt: startedAt.toISOString() });
+    await expect(service.complete('idem_2', 201, { earningsPiastres: 9007199254740993n })).rejects.toThrow('safe JSON precision');
+  });
+
   it('replays the completed response for the same key and payload', async () => {
     repository.claim.mockResolvedValue({
       kind: 'existing',

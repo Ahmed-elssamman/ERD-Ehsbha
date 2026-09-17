@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma, UserStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -102,7 +103,9 @@ export class AuthService {
       where: { phone: { in: egyPhoneLookupCandidates(dto.phone) } },
       include: { driver: true },
     });
-    if (!user) throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid phone or password' });
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid phone or password' });
+    }
 
     const ok = await argon2.verify(user.passwordHash, dto.password);
     if (!ok) throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid phone or password' });
@@ -122,50 +125,62 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string): Promise<AuthResult> {
-    const tokenHash = sha256(refreshToken);
-    const row = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { user: { include: { driver: true } } },
-    });
-    if (!row) {
-      throw new UnauthorizedException({ code: 'REFRESH_INVALID', message: 'Invalid refresh token' });
-    }
+    const result = await this.prisma.$transaction(async (database) => {
+      const tokenHash = sha256(refreshToken);
+      const row = await database.refreshToken.findUnique({
+        where: { tokenHash },
+        include: { user: { include: { driver: true } } },
+      });
+      if (!row) {
+        throw new UnauthorizedException({ code: 'UNAUTHENTICATED', message: 'Invalid refresh token' });
+      }
 
-    if (row.revokedAt) {
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: row.userId, revokedAt: null },
+      if (row.revokedAt || row.user.status !== UserStatus.ACTIVE) {
+        await database.refreshToken.updateMany({
+          where: { userId: row.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        return null;
+      }
+
+      if (row.expiresAt.getTime() <= Date.now()) {
+        throw new UnauthorizedException({ code: 'SESSION_EXPIRED', message: 'Refresh token expired' });
+      }
+
+      const consumed = await database.refreshToken.updateMany({
+        where: { id: row.id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-      throw new UnauthorizedException({ code: 'REFRESH_REUSED', message: 'Refresh token reused — all sessions revoked' });
-    }
+      if (consumed.count !== 1) {
+        await database.refreshToken.updateMany({
+          where: { userId: row.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        return null;
+      }
 
-    if (row.expiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedException({ code: 'REFRESH_EXPIRED', message: 'Refresh token expired' });
-    }
+      const tokens = await this.issueTokens(
+        row.user.id,
+        row.user.phone,
+        row.user.driver?.id ?? null,
+        row.deviceId,
+        database,
+      );
 
-    await this.prisma.refreshToken.update({
-      where: { id: row.id },
-      data: { revokedAt: new Date() },
+      return {
+        user: {
+          id: row.user.id,
+          phone: row.user.phone,
+          email: row.user.email,
+          locale: row.user.locale,
+          timezone: row.user.timezone,
+          driverId: row.user.driver?.id ?? null,
+        },
+        ...tokens,
+      };
     });
-
-    const tokens = await this.issueTokens(
-      row.user.id,
-      row.user.phone,
-      row.user.driver?.id ?? null,
-      row.deviceId ?? undefined,
-    );
-
-    return {
-      user: {
-        id: row.user.id,
-        phone: row.user.phone,
-        email: row.user.email,
-        locale: row.user.locale,
-        timezone: row.user.timezone,
-        driverId: row.user.driver?.id ?? null,
-      },
-      ...tokens,
-    };
+    if (!result) throw new UnauthorizedException({ code: 'UNAUTHENTICATED' });
+    return result;
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -230,21 +245,14 @@ export class AuthService {
     });
 
     const emailTarget = user.email.toLowerCase().trim();
-    const isProd = process.env.NODE_ENV === 'production';
-
     await this.mailer.sendResetCode(emailTarget, code, user.locale === 'en' ? 'en' : 'ar');
-
-    if (!isProd) {
-      // eslint-disable-next-line no-console
-      console.log(`[reset-password] user=${user.id} code=${code} email=${emailTarget} (dev only)`);
-    }
 
     return {
       sent: true,
       channel: 'email',
       emailMasked: maskEmail(user.email),
       expiresInMinutes,
-      ...(isProd ? {} : { devCode: code }),
+      ...(process.env.NODE_ENV === 'test' ? { devCode: code } : {}),
     };
   }
 
@@ -289,49 +297,53 @@ export class AuthService {
 
     const passwordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
 
-    await this.prisma.$transaction([
-      this.prisma.user.update({
+    await this.prisma.$transaction(async (database) => {
+      const consumed = await database.passwordResetToken.updateMany({
+        where: { id: token.id, usedAt: null, attempts: { lt: 5 }, expiresAt: { gt: new Date() } },
+        data: { usedAt: new Date() },
+      });
+      if (consumed.count !== 1) {
+        throw new UnauthorizedException({ code: 'RESET_INVALID', message: 'Invalid reset request' });
+      }
+      await database.user.update({
         where: { id: user.id },
         data: { passwordHash },
-      }),
-      this.prisma.passwordResetToken.update({
-        where: { id: token.id },
-        data: { usedAt: new Date() },
-      }),
-      // Revoke all active refresh tokens — force all devices to log in again.
-      this.prisma.refreshToken.updateMany({
+      });
+      await database.refreshToken.updateMany({
         where: { userId: user.id, revokedAt: null },
         data: { revokedAt: new Date() },
-      }),
-    ]);
+      });
+    });
   }
 
   private async issueTokens(
     userId: string,
     phone: string,
     driverId: string | null,
-    deviceId?: string,
+    deviceId: string | null = null,
+    database: Prisma.TransactionClient = this.prisma,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const accessToken = await this.jwt.signAsync(
-      { sub: userId, phone, driverId },
-      {
-        secret: this.env.JWT_ACCESS_SECRET,
-        expiresIn: this.env.JWT_ACCESS_TTL as any,
-      },
-    );
-
     const refreshToken = randomBytes(48).toString('base64url');
     const tokenHash = sha256(refreshToken);
     const expiresAt = new Date(Date.now() + parseDurationMs(this.env.JWT_REFRESH_TTL));
 
-    await this.prisma.refreshToken.create({
+    const session = await database.refreshToken.create({
       data: {
         userId,
         tokenHash,
-        deviceId: deviceId ?? null,
+        deviceId,
         expiresAt,
       },
     });
+
+    const accessToken = await this.jwt.signAsync(
+      { sub: userId, phone, driverId, sid: session.id },
+      {
+        secret: this.env.JWT_ACCESS_SECRET,
+        algorithm: 'HS256',
+        expiresIn: Math.floor(parseDurationMs(this.env.JWT_ACCESS_TTL) / 1000),
+      },
+    );
 
     return { accessToken, refreshToken };
   }
@@ -368,13 +380,13 @@ function maskEmail(email: string): string {
 
 function parseDurationMs(s: string): number {
   const m = /^(\d+)\s*(s|m|h|d)$/.exec(s.trim());
-  if (!m) return 30 * 24 * 60 * 60 * 1000;
+  if (!m) throw new Error('Unsupported token duration');
   const n = Number(m[1]);
   switch (m[2]) {
     case 's': return n * 1000;
     case 'm': return n * 60 * 1000;
     case 'h': return n * 60 * 60 * 1000;
     case 'd': return n * 24 * 60 * 60 * 1000;
-    default:  return 30 * 24 * 60 * 60 * 1000;
+    default: throw new Error('Unsupported token duration');
   }
 }

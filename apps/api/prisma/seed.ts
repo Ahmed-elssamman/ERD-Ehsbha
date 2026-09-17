@@ -1,7 +1,10 @@
-import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { AggregatesService } from '../src/modules/aggregates/aggregates.service';
+import { repairDriverAggregates } from '../src/modules/aggregates/aggregate-repair';
+import { isPrismaConnectivityError, summarizePrismaConnectivityError } from '../src/prisma/prisma-errors';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaService();
 
 const APP_CATALOG = [
   { code: 'UBER', name: 'Uber', defaultCommissionPct: 25 },
@@ -240,8 +243,8 @@ async function main() {
           driverId,
           vehicleId: vehicle.id,
           dateTime: new Date(day.getTime() + 9 * 3_600_000),
-          liters,
-          pricePerLiterPiastres: pricePerLiter,
+          quantity: liters,
+          pricePerUnitPiastres: pricePerLiter,
           totalPiastres: liters * pricePerLiter,
           odometerMeters: BigInt(odo),
           isFullTank: d % 8 === 0,
@@ -303,7 +306,7 @@ async function main() {
   });
 
   console.log('Recomputing aggregates…');
-  await recomputeAllAggregates(driverId);
+  await repairDriverAggregates(prisma, new AggregatesService(prisma), driverId);
 
   await seedCommunityAndReviews(driverId, passwordHash);
 
@@ -311,236 +314,28 @@ async function main() {
   console.log('Demo driver seeded from SMOKE_DRIVER_PASSWORD');
 }
 
-async function recomputeAllAggregates(driverId: string) {
-  const startUtcDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const isoYearWeek = (d: Date) => {
-    const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-    const dayNum = date.getUTCDay() || 7;
-    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-    const isoWeek = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-    return { isoYear: date.getUTCFullYear(), isoWeek };
-  };
+async function runWithConnectivityRetry<T>(work: () => Promise<T>): Promise<T> {
+  const retryDelays = [1500, 3000, 5000];
 
-  const trips = await prisma.trip.findMany({ where: { driverId } });
-  const fuels = await prisma.fuelLog.findMany({ where: { driverId } });
-  const expenses = await prisma.expense.findMany({ where: { driverId } });
-  const sessions = await prisma.session.findMany({ where: { driverId, endedAt: { not: null } } });
+  for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+    try {
+      await prisma.$connect();
+      return await work();
+    } catch (error) {
+      if (!isPrismaConnectivityError(error) || attempt === retryDelays.length) {
+        throw error;
+      }
 
-  type Daily = {
-    tripCount: number; totalKm: bigint; paidKm: bigint; emptyKm: bigint;
-    onlineMin: number; gross: bigint; tip: bigint; comm: bigint;
-    fuel: bigint; expense: bigint;
-  };
-  const byDay = new Map<string, Daily>();
-  const get = (key: string): Daily => {
-    if (!byDay.has(key)) byDay.set(key, {
-      tripCount: 0, totalKm: 0n, paidKm: 0n, emptyKm: 0n,
-      onlineMin: 0, gross: 0n, tip: 0n, comm: 0n,
-      fuel: 0n, expense: 0n,
-    });
-    return byDay.get(key)!;
-  };
-
-  for (const t of trips) {
-    const k = startUtcDay(t.startedAt).toISOString();
-    const r = get(k);
-    r.tripCount++;
-    r.totalKm += BigInt(t.totalKmMeters);
-    r.paidKm += BigInt(t.paidKmMeters);
-    r.emptyKm += BigInt(t.emptyKmMeters);
-    r.onlineMin += Math.round((t.endedAt.getTime() - t.startedAt.getTime()) / 60_000);
-    r.gross += BigInt(t.grossPiastres);
-    r.tip += BigInt(t.tipPiastres);
-    r.comm += BigInt(t.commissionPiastres);
-  }
-  for (const f of fuels) {
-    get(startUtcDay(f.dateTime).toISOString()).fuel += BigInt(f.totalPiastres);
-  }
-  for (const e of expenses) {
-    get(startUtcDay(e.dateTime).toISOString()).expense += BigInt(e.amountPiastres);
+      const delay = retryDelays[attempt];
+      console.warn(
+        `[seed] Prisma connectivity issue (${summarizePrismaConnectivityError(error)}). Retrying in ${delay}ms...`,
+      );
+      await prisma.$disconnect().catch(() => undefined);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
   }
 
-  const sessionMin = new Map<string, number>();
-  for (const s of sessions) {
-    const k = startUtcDay(s.startedAt).toISOString();
-    sessionMin.set(k, (sessionMin.get(k) ?? 0) + s.activeMinutes);
-  }
-
-  for (const [key, r] of byDay) {
-    const date = new Date(key);
-    const onlineMin = sessionMin.get(key) ?? r.onlineMin;
-    const grossNet = Number(r.gross + r.tip - r.comm);
-    const net = grossNet - Number(r.fuel) - Number(r.expense);
-    const totalKm = Number(r.totalKm);
-    const emptyKm = Number(r.emptyKm);
-    const profitPerKm = totalKm > 0 ? Math.round((net * 1000) / totalKm) : 0;
-    const profitPerHour = onlineMin > 0 ? Math.round((net * 60) / onlineMin) : 0;
-    const emptyRatioBp = totalKm > 0 ? Math.round((emptyKm / totalKm) * 10_000) : 0;
-
-    await prisma.dailyAggregate.upsert({
-      where: { driverId_date: { driverId, date } },
-      create: {
-        driverId, date,
-        tripCount: r.tripCount,
-        totalKmMeters: r.totalKm,
-        paidKmMeters: r.paidKm,
-        emptyKmMeters: r.emptyKm,
-        onlineMinutes: onlineMin,
-        grossPiastres: r.gross,
-        tipPiastres: r.tip,
-        commissionPiastres: r.comm,
-        fuelPiastres: r.fuel,
-        expensePiastres: r.expense,
-        netProfitPiastres: BigInt(net),
-        profitPerKmPiastres: profitPerKm,
-        profitPerHourPiastres: profitPerHour,
-        emptyRatioBp,
-      },
-      update: {
-        tripCount: r.tripCount,
-        totalKmMeters: r.totalKm,
-        paidKmMeters: r.paidKm,
-        emptyKmMeters: r.emptyKm,
-        onlineMinutes: onlineMin,
-        grossPiastres: r.gross,
-        tipPiastres: r.tip,
-        commissionPiastres: r.comm,
-        fuelPiastres: r.fuel,
-        expensePiastres: r.expense,
-        netProfitPiastres: BigInt(net),
-        profitPerKmPiastres: profitPerKm,
-        profitPerHourPiastres: profitPerHour,
-        emptyRatioBp,
-      },
-    });
-
-    const { isoYear, isoWeek } = isoYearWeek(date);
-    await prisma.weeklyAggregate.upsert({
-      where: { driverId_isoYear_isoWeek: { driverId, isoYear, isoWeek } },
-      create: {
-        driverId, isoYear, isoWeek,
-        tripCount: r.tripCount,
-        totalKmMeters: r.totalKm,
-        paidKmMeters: r.paidKm,
-        emptyKmMeters: r.emptyKm,
-        onlineMinutes: onlineMin,
-        grossPiastres: r.gross,
-        fuelPiastres: r.fuel,
-        expensePiastres: r.expense,
-        netProfitPiastres: BigInt(net),
-      },
-      update: {
-        tripCount: { increment: r.tripCount },
-        totalKmMeters: { increment: r.totalKm },
-        paidKmMeters: { increment: r.paidKm },
-        emptyKmMeters: { increment: r.emptyKm },
-        onlineMinutes: { increment: onlineMin },
-        grossPiastres: { increment: r.gross },
-        fuelPiastres: { increment: r.fuel },
-        expensePiastres: { increment: r.expense },
-        netProfitPiastres: { increment: BigInt(net) },
-      },
-    });
-
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth() + 1;
-    await prisma.monthlyAggregate.upsert({
-      where: { driverId_year_month: { driverId, year, month } },
-      create: {
-        driverId, year, month,
-        tripCount: r.tripCount,
-        totalKmMeters: r.totalKm,
-        paidKmMeters: r.paidKm,
-        emptyKmMeters: r.emptyKm,
-        onlineMinutes: onlineMin,
-        grossPiastres: r.gross,
-        fuelPiastres: r.fuel,
-        expensePiastres: r.expense,
-        netProfitPiastres: BigInt(net),
-      },
-      update: {
-        tripCount: { increment: r.tripCount },
-        totalKmMeters: { increment: r.totalKm },
-        paidKmMeters: { increment: r.paidKm },
-        emptyKmMeters: { increment: r.emptyKm },
-        onlineMinutes: { increment: onlineMin },
-        grossPiastres: { increment: r.gross },
-        fuelPiastres: { increment: r.fuel },
-        expensePiastres: { increment: r.expense },
-        netProfitPiastres: { increment: BigInt(net) },
-      },
-    });
-  }
-
-  type AppRow = { tripCount: number; gross: bigint; km: bigint; minutes: number; net: bigint };
-  const byAppDay = new Map<string, AppRow>();
-  for (const t of trips) {
-    const date = startUtcDay(t.startedAt).toISOString();
-    const k = `${t.driverAppId}|${date}`;
-    if (!byAppDay.has(k)) byAppDay.set(k, { tripCount: 0, gross: 0n, km: 0n, minutes: 0, net: 0n });
-    const r = byAppDay.get(k)!;
-    r.tripCount++;
-    r.gross += BigInt(t.grossPiastres);
-    r.km += BigInt(t.totalKmMeters);
-    r.minutes += Math.round((t.endedAt.getTime() - t.startedAt.getTime()) / 60_000);
-    r.net += BigInt(t.grossPiastres + t.tipPiastres - t.commissionPiastres);
-  }
-  for (const [k, r] of byAppDay) {
-    const [driverAppId, dateIso] = k.split('|');
-    await prisma.appDailyAggregate.upsert({
-      where: { driverId_driverAppId_date: { driverId, driverAppId, date: new Date(dateIso) } },
-      create: {
-        driverId, driverAppId, date: new Date(dateIso),
-        tripCount: r.tripCount,
-        grossPiastres: r.gross,
-        totalKmMeters: r.km,
-        onlineMinutes: r.minutes,
-        netProfitPiastres: r.net,
-      },
-      update: {
-        tripCount: r.tripCount,
-        grossPiastres: r.gross,
-        totalKmMeters: r.km,
-        onlineMinutes: r.minutes,
-        netProfitPiastres: r.net,
-      },
-    });
-  }
-
-  const byAreaDay = new Map<string, { tripCount: number; gross: bigint; km: bigint; net: bigint }>();
-  for (const t of trips) {
-    if (!t.areaId) continue;
-    const date = startUtcDay(t.startedAt).toISOString();
-    const k = `${t.areaId}|${date}`;
-    if (!byAreaDay.has(k)) byAreaDay.set(k, { tripCount: 0, gross: 0n, km: 0n, net: 0n });
-    const r = byAreaDay.get(k)!;
-    r.tripCount++;
-    r.gross += BigInt(t.grossPiastres);
-    r.km += BigInt(t.totalKmMeters);
-    r.net += BigInt(t.grossPiastres + t.tipPiastres - t.commissionPiastres);
-  }
-  for (const [k, r] of byAreaDay) {
-    const [areaId, dateIso] = k.split('|');
-    await prisma.areaDailyAggregate.upsert({
-      where: { driverId_areaId_date: { driverId, areaId, date: new Date(dateIso) } },
-      create: {
-        driverId, areaId, date: new Date(dateIso),
-        tripCount: r.tripCount,
-        grossPiastres: r.gross,
-        totalKmMeters: r.km,
-        netProfitPiastres: r.net,
-      },
-      update: {
-        tripCount: r.tripCount,
-        grossPiastres: r.gross,
-        totalKmMeters: r.km,
-        netProfitPiastres: r.net,
-      },
-    });
-  }
-
-  // (community / reviews seeding moved to dedicated function called from main())
+  throw new Error('Seed retry unexpectedly exhausted');
 }
 
 async function seedCommunityAndReviews(driverId: string, passwordHash: string) {
@@ -705,7 +500,7 @@ async function seedCommunityAndReviews(driverId: string, passwordHash: string) {
   });
 }
 
-main()
+runWithConnectivityRetry(main)
   .catch((e) => {
     console.error(e);
     process.exit(1);

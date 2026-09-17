@@ -22,12 +22,13 @@ function checkWindows() {
   return { code: PREREQ_CODES.WINDOWS_AUTHORITY, passed: true, message: 'Supported Windows environment' };
 }
 
-function checkNodeVersion() {
-  const major = parseInt(process.version.slice(1).split('.')[0], 10);
-  if (major < 22) {
-    return { code: PREREQ_CODES.NODE_VERSION, passed: false, message: `Node.js 22+ required, got ${process.version}` };
+export function checkNodeVersion(version = process.version) {
+  const [major, minor] = version.replace(/^v/, '').split('.').map(Number);
+  const supported = (major === 22 && minor >= 12) || major === 24 || major >= 26;
+  if (!supported) {
+    return { code: PREREQ_CODES.NODE_VERSION, passed: false, message: `Node.js 22.12+, 24.x, or 26+ required, got ${version}` };
   }
-  return { code: PREREQ_CODES.NODE_VERSION, passed: true, message: `Node.js ${process.version}` };
+  return { code: PREREQ_CODES.NODE_VERSION, passed: true, message: `Node.js ${version}` };
 }
 
 function checkNpm() {

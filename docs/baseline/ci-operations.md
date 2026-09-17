@@ -8,13 +8,17 @@
 
 ## Required CI Variables
 
-- `DATABASE_URL` — set to disposable PostgreSQL connection string
-- `JWT_DRIVER_SECRET` — non-production secret
-- `JWT_ADMIN_SECRET` — non-production secret
+- `NEON_DATABASE_URL_CI` — pooled Neon connection string for the disposable CI database
+- `NEON_DIRECT_URL_CI` — direct Neon connection string for Prisma CLI
+- `JWT_ACCESS_SECRET` — non-production driver auth secret
+- `JWT_REFRESH_SECRET` — non-production driver refresh secret
+- `ADMIN_JWT_ACCESS_SECRET` — non-production admin auth secret
+- `ADMIN_JWT_REFRESH_SECRET` — non-production admin refresh secret
 
 ## Disposable Database Behavior
 
-A PostgreSQL service container is started for each CI run with a disposable database name matching the `ehsbha_test_` prefix. The database is automatically destroyed when the job completes.
+CI connects to a dedicated Neon test database or branch whose database name starts with the
+`ehsbha_test_` prefix. Prisma runtime uses the pooled URL, while migrations use the direct URL.
 
 ## Artifact Retention
 

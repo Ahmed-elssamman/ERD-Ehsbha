@@ -303,7 +303,7 @@ function CostsDialog({
   // Sync form when switching between vehicles while the dialog is mounted
   useEffect(() => {
     reset(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [vehicle.id]);
 
   const saveMut = useMutation({

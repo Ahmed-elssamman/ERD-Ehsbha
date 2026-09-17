@@ -1,4 +1,3 @@
-const IANA_TIMEZONE_REGEX = /^[A-Za-z_]+(?:\/[A-Za-z_]+)*(?:\/[A-Za-z_]+)?$/
 const UTC_INSTANT_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
 const CALENDAR_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 

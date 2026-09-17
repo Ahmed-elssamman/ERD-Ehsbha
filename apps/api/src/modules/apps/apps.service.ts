@@ -51,6 +51,7 @@ export class AppsService {
         },
         include: { appSource: true },
       });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e?.code === 'P2002') {
         throw new ConflictException({ code: 'DRIVER_APP_DUPLICATE', message: 'You already added this app' });

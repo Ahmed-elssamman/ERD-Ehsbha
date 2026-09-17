@@ -4,56 +4,38 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 const composePath = resolve('apps/api/docker-compose.yml');
-const entrypointPath = resolve('apps/api/docker-entrypoint.sh');
 
 describe('docker-compose configuration', () => {
-  it('does not interpolate raw password into DATABASE_URL', () => {
+  it('does not define a local postgres service', () => {
+    const content = readFileSync(composePath, 'utf-8');
+    assert.ok(!content.includes('\n  postgres:'), 'docker-compose must not provision PostgreSQL locally');
+  });
+
+  it('requires Neon connection strings explicitly', () => {
     const content = readFileSync(composePath, 'utf-8');
     const apiService = content.split('\n  api:')[1]?.split('\nvolumes:')[0] || '';
-    assert.ok(!apiService.includes('DATABASE_URL: postgresql://ehsbha:${POSTGRES_PASSWORD}'),
-      'DATABASE_URL must not contain raw password interpolation');
+    assert.ok(apiService.includes('DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}'),
+      'api service must require DATABASE_URL');
+    assert.ok(apiService.includes('DIRECT_URL: ${DIRECT_URL:?DIRECT_URL is required}'),
+      'api service must require DIRECT_URL');
   });
 
-  it('sets individual DB environment variables instead of raw URL', () => {
+  it('loads the local env file for non-database settings', () => {
     const content = readFileSync(composePath, 'utf-8');
-    const apiService = content.split('\n  api:')[1]?.split('\nvolumes:')[0] || '';
-    assert.ok(apiService.includes('POSTGRES_PASSWORD:'),
-      'api service must set POSTGRES_PASSWORD env var');
-    assert.ok(apiService.includes('POSTGRES_HOST:'),
-      'api service must set POSTGRES_HOST env var');
-    assert.ok(apiService.includes('POSTGRES_DB:'),
-      'api service must set POSTGRES_DB env var');
+    assert.ok(content.includes('env_file:'), 'compose must use env_file');
+    assert.ok(content.includes('- .env'), 'compose must load apps/api/.env');
   });
 
-  it('uses entrypoint script to construct encoded DATABASE_URL', () => {
+  it('runs Prisma migrations before starting the API', () => {
     const content = readFileSync(composePath, 'utf-8');
-    assert.ok(content.includes('docker-entrypoint.sh'),
-      'compose must reference the entrypoint script');
+    assert.ok(content.includes('prisma migrate deploy'),
+      'compose must run Prisma migrations on startup');
   });
 
-  it('entrypoint script percent-encodes the password', () => {
-    const script = readFileSync(entrypointPath, 'utf-8');
-    assert.ok(script.includes('encodeURIComponent'),
-      'entrypoint must use encodeURIComponent for password');
-    assert.ok(script.includes('DATABASE_URL'),
-      'entrypoint must set DATABASE_URL');
-  });
-
-  it('entrypoint fails fast when POSTGRES_PASSWORD is missing', () => {
-    const script = readFileSync(entrypointPath, 'utf-8');
-    assert.ok(script.includes('exit 1'),
-      'entrypoint must exit 1 on missing password');
-    assert.ok(script.includes('POSTGRES_PASSWORD'),
-      'entrypoint must reference POSTGRES_PASSWORD');
-  });
-
-  it('entrypoint does not log the password or resulting URL', () => {
-    const script = readFileSync(entrypointPath, 'utf-8');
-    const lines = script.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
-    for (const line of lines) {
-      assert.ok(!line.includes('echo $DATABASE_URL'), 'must not echo DATABASE_URL');
-      assert.ok(!line.includes('echo $DB_PASS'), 'must not echo password');
-      assert.ok(!line.includes('echo "$DB_PASS"'), 'must not echo password with quotes');
-    }
+  it('does not contain obsolete POSTGRES_* variables or localhost assumptions', () => {
+    const content = readFileSync(composePath, 'utf-8');
+    assert.ok(!content.includes('POSTGRES_HOST'), 'compose must not use POSTGRES_HOST');
+    assert.ok(!content.includes('POSTGRES_PASSWORD'), 'compose must not use POSTGRES_PASSWORD');
+    assert.ok(!content.includes('localhost:5432'), 'compose must not reference localhost PostgreSQL');
   });
 });

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { TripIncomeMode, resolveTripFinancials, resolveLocalDateTime, LocalTimeOccurrence } from '@ehsbha/shared-types';
+import { LocalTimeChoice } from '@/components/ui/local-time-choice';
+import { tripFormSchema, TRIP_INCOME_OPTIONS, type TripFormInput } from './trip-form.control';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,92 +22,29 @@ import {
   type CreateTripInput,
   type TripItem,
 } from '@/lib/api/endpoints';
-import { toDatetimeLocalValue } from '@/lib/time';
+import { RecordDraftGate } from '@/components/record-drafts/record-draft-gate';
+import { RecordDraftNotice } from '@/components/record-drafts/record-draft-notice';
+import { useRecordDraftForm } from '@/hooks/use-record-draft-form';
+import { RecordDraftKind, RecordDraftError, parseDraftJson } from '@/lib/record-drafts/record-draft.model';
+import type { RecordDraftSession } from '@/lib/record-drafts/record-draft-session';
+import { tripDraftContextSchema, tripDraftFieldsSchema, tripDraftBodySchema, tripDraftDefaults, validateTripDraft, tripSaveUnconfirmed, tripErrorKey, TRIP_QUERY_KEYS } from './trip-draft.control';
 import { formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { OcrPlatform } from '@/lib/api/ocr.api';
-import { deriveClientMutationId, type PrefilledFormValues } from '@/lib/ocr/parsed-to-form';
-import { OcrConfidenceBadge } from '@/components/ocr/ocr-confidence-badge';
-import { OcrWarningList } from '@/components/ocr/ocr-warning-list';
-
-const schema = z
-  .object({
-    vehicleId: z.string().min(1),
-    driverAppId: z.string().min(1),
-    areaId: z.string().optional().nullable(),
-    startedAt: z.string().min(1),
-    endedAt: z.string().min(1),
-    grossEgp: z.coerce.number().min(0),
-    receivedEgp: z.coerce.number().min(0).optional(),
-    tipEgp: z.coerce.number().min(0).default(0),
-    commissionEgp: z.coerce.number().min(0).default(0),
-    commissionAuto: z.boolean().default(true),
-    tollEgp: z.coerce.number().min(0).default(0),
-    parkingEgp: z.coerce.number().min(0).default(0),
-    totalKm: z.coerce.number().min(0),
-    paidKm: z.coerce.number().min(0),
-    notes: z.string().max(500).optional().nullable(),
-  })
-  .refine((v) => new Date(v.endedAt) > new Date(v.startedAt), {
-    path: ['endedAt'],
-    message: 'end-before-start',
-  })
-  .refine((v) => v.paidKm <= v.totalKm, {
-    path: ['paidKm'],
-    message: 'paid-exceeds-total',
-  })
-  .refine(
-    (v) => v.receivedEgp == null || (v.receivedEgp as unknown as string) === '' || Number(v.receivedEgp) <= Number(v.grossEgp),
-    {
-      path: ['receivedEgp'],
-      message: 'received-exceeds-gross',
-    },
-  );
-
-type FormValues = z.input<typeof schema>;
 
 const egpToPiastres = (egp: number) => Math.round(egp * 100);
-const piastresToEgp = (p: number) => p / 100;
+interface Props { trip?: TripItem | null; scope?: string; resumeOnly?: boolean; onDone: (id: string) => void; onClose: () => void }
 
-export interface OcrPrefill {
-  values: PrefilledFormValues;
-  confidences: Record<string, number>;
-  imageHashes: string[];
-  platform: OcrPlatform | null;
-  warnings: string[];
+export function TripForm({ trip = null, scope, resumeOnly = false, onDone, onClose }: Props) {
+  return <RecordDraftGate inline kind={RecordDraftKind.Trip} scope={scope ?? trip?.id ?? 'new'} context={JSON.stringify({ trip })}
+    linkId={null} resumeOnly={resumeOnly} validate={validateTripDraft} onClose={onClose}>
+    {(session) => <TripEditor session={session} onDone={onDone} onClose={onClose} />}
+  </RecordDraftGate>;
 }
-
-interface Props {
-  trip?: TripItem | null;
-  onDone: (id: string) => void;
-  initialFromOcr?: OcrPrefill | null;
-}
-
-const OCR_TO_FIELD: Record<string, keyof FormValues> = {
-  grossEgp: 'grossEgp',
-  receivedEgp: 'receivedEgp',
-  tipEgp: 'tipEgp',
-  commissionEgp: 'commissionEgp',
-  tollEgp: 'tollEgp',
-  parkingEgp: 'parkingEgp',
-  totalKm: 'totalKm',
-  paidKm: 'paidKm',
-  startedAt: 'startedAt',
-  endedAt: 'endedAt',
-};
-
-function fieldConfidence(ocr: OcrPrefill | null | undefined, field: keyof FormValues): number | null {
-  if (!ocr) return null;
-  for (const [src, dst] of Object.entries(OCR_TO_FIELD)) {
-    if (dst === field) {
-      const v = ocr.confidences[src];
-      return typeof v === 'number' ? v : null;
-    }
-  }
-  return null;
-}
-
-export function TripForm({ trip, onDone, initialFromOcr }: Props) {
+function TripEditor({ session, onDone, onClose }: { session: RecordDraftSession; onDone: (id: string) => void; onClose: () => void }) {
+  const { trip } = parseDraftJson(session.initial.context, tripDraftContextSchema);
+  const receiptId = useRef<string | null>(null);
+  const hasUserInput = useRef(session.initial.fields !== null);
+  const shouldPersist = useCallback(() => hasUserInput.current, []);
   const { t, locale } = useI18n();
   const qc = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -113,203 +52,117 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
   const appsQ = useQuery({ queryKey: ['apps', 'mine'], queryFn: AppsApi.mine });
   const areasQ = useQuery({ queryKey: ['areas'], queryFn: AreasApi.list });
 
-  const defaultValues = useMemo<FormValues>(() => {
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    if (trip) {
-      return {
-        vehicleId: trip.vehicleId,
-        driverAppId: trip.driverAppId,
-        areaId: trip.areaId ?? '',
-        startedAt: toDatetimeLocalValue(new Date(trip.startedAt)),
-        endedAt: toDatetimeLocalValue(new Date(trip.endedAt)),
-        grossEgp: piastresToEgp(trip.grossPiastres),
-        receivedEgp: piastresToEgp(trip.grossPiastres - trip.commissionPiastres),
-        tipEgp: piastresToEgp(trip.tipPiastres),
-        commissionEgp: piastresToEgp(trip.commissionPiastres),
-        commissionAuto: false,
-        tollEgp: piastresToEgp(trip.tollPiastres ?? 0),
-        parkingEgp: piastresToEgp(trip.parkingPiastres ?? 0),
-        totalKm: trip.totalKmMeters / 1000,
-        paidKm: trip.paidKmMeters / 1000,
-        notes: trip.notes ?? '',
-      };
-    }
-    const base: FormValues = {
-      vehicleId: '',
-      driverAppId: '',
-      areaId: '',
-      startedAt: toDatetimeLocalValue(oneHourAgo),
-      endedAt: toDatetimeLocalValue(now),
-      grossEgp: 0,
-      receivedEgp: undefined,
-      tipEgp: 0,
-      commissionEgp: 0,
-      commissionAuto: true,
-      tollEgp: 0,
-      parkingEgp: 0,
-      totalKm: 0,
-      paidKm: 0,
-      notes: '',
-    };
-    if (initialFromOcr) {
-      const v = initialFromOcr.values;
-      return {
-        ...base,
-        ...(v.startedAt ? { startedAt: v.startedAt } : {}),
-        ...(v.endedAt ? { endedAt: v.endedAt } : {}),
-        ...(v.grossEgp != null ? { grossEgp: v.grossEgp } : {}),
-        ...(v.receivedEgp != null ? { receivedEgp: v.receivedEgp } : {}),
-        ...(v.tipEgp != null ? { tipEgp: v.tipEgp } : {}),
-        ...(v.commissionEgp != null ? { commissionEgp: v.commissionEgp } : {}),
-        ...(v.commissionAuto != null ? { commissionAuto: v.commissionAuto } : {}),
-        ...(v.tollEgp != null ? { tollEgp: v.tollEgp } : {}),
-        ...(v.parkingEgp != null ? { parkingEgp: v.parkingEgp } : {}),
-        ...(v.totalKm != null ? { totalKm: v.totalKm } : {}),
-        ...(v.paidKm != null ? { paidKm: v.paidKm } : {}),
-        ...(v.notes ? { notes: v.notes } : {}),
-      };
-    }
-    return base;
-  }, [trip, initialFromOcr]);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    mode: 'onBlur',
-    defaultValues,
+  const form = useForm<TripFormInput>({
+    resolver: zodResolver(tripFormSchema, {}, { raw: true }), mode: 'onBlur',
+    defaultValues: session.initial.fields !== null ? parseDraftJson(session.initial.fields, tripDraftFieldsSchema) : tripDraftDefaults(trip),
   });
-
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = form;
+  const draft = useRecordDraftForm(session, form, null, shouldPersist);
   useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
-
-  // Auto-default vehicle/app: pick the first item from each list whenever the
-  // currently-selected id is empty. This runs on initial data arrival AND
-  // whenever the form resets (e.g. after OCR prefill clears vehicleId).
-  useEffect(() => {
-    if (!watch('vehicleId') && vehiclesQ.data?.[0]) {
-      setValue('vehicleId', vehiclesQ.data[0].id);
-    }
-    if (!watch('driverAppId') && appsQ.data?.[0]) {
-      setValue('driverAppId', appsQ.data[0].id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehiclesQ.data, appsQ.data, initialFromOcr, trip]);
+    if (draft.locked || session.initial.fields !== null) return;
+    if (!form.getValues('vehicleId') && vehiclesQ.data?.[0]) setValue('vehicleId', vehiclesQ.data[0].id);
+    if (!form.getValues('driverAppId') && appsQ.data?.[0]) setValue('driverAppId', appsQ.data[0].id);
+  }, [vehiclesQ.data, appsQ.data, draft.locked, session, form, setValue]);
 
   // Auto-calc commission from gross − received when auto is enabled
+  const incomeMode = watch('incomeMode');
   const grossEgp = Number(watch('grossEgp') || 0);
   const receivedEgp = watch('receivedEgp');
   const commissionAuto = watch('commissionAuto');
   useEffect(() => {
-    if (!commissionAuto) return;
-    if (receivedEgp === undefined || receivedEgp === ('' as unknown as number) || receivedEgp === null) {
-      // No received entered → fall back to app's commission% × gross
-      const app = appsQ.data?.find((a) => a.id === watch('driverAppId'));
-      const pct = app ? Number(app.commissionPct) : 0;
-      const auto = Math.max(0, Math.round(grossEgp * (pct / 100) * 100) / 100);
-      setValue('commissionEgp', auto);
+    if (draft.locked || !commissionAuto || incomeMode === TripIncomeMode.TakeHome) return;
+    if (receivedEgp === '' || !String(watch('grossEgp')).trim()) {
+      setValue('commissionEgp', '');
       return;
     }
     const diff = Math.max(0, grossEgp - Number(receivedEgp));
     setValue('commissionEgp', Math.round(diff * 100) / 100);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grossEgp, receivedEgp, commissionAuto, appsQ.data]);
+
+  }, [grossEgp, receivedEgp, commissionAuto, incomeMode, setValue, watch, draft.locked]);
 
   // Net profit preview (does NOT subtract per-km vehicle cost — kept simple here)
   const totalKm = Number(watch('totalKm') || 0);
   const paidKm = Number(watch('paidKm') || 0);
   const tip = Number(watch('tipEgp') || 0);
-  const commission = Number(watch('commissionEgp') || 0);
   const toll = Number(watch('tollEgp') || 0);
   const parking = Number(watch('parkingEgp') || 0);
-  const netEgp = grossEgp - commission + tip - toll - parking;
+  const previewMoney = (value: string | number): number | null => String(value).trim() === '' ? null : Math.round(Number(value) * 100);
+  const financialPreview = resolveTripFinancials({
+    grossPiastres: incomeMode === TripIncomeMode.TakeHome ? null : previewMoney(watch('grossEgp')),
+    commissionPiastres: incomeMode === TripIncomeMode.TakeHome ? null : previewMoney(watch('commissionEgp')),
+    receivedPiastres: incomeMode === TripIncomeMode.TakeHome ? null : previewMoney(watch('receivedEgp')),
+    earningsPiastres: incomeMode === TripIncomeMode.TakeHome ? previewMoney(watch('earningsEgp')) : null,
+    tipPiastres: egpToPiastres(tip),
+  });
+  const netEgp = financialPreview === null ? null : financialPreview.earningsPiastres / 100 - toll - parking;
   const emptyKm = Math.max(0, totalKm - paidKm);
 
-  const createMut = useMutation({
-    mutationFn: (body: CreateTripInput) => TripsApi.create(body),
-    onSuccess: (created) => {
-      qc.invalidateQueries({ queryKey: ['trips'] });
-      qc.invalidateQueries({ queryKey: ['analytics'] });
-      qc.invalidateQueries({ queryKey: ['decisions'] });
-      qc.invalidateQueries({ queryKey: ['score'] });
-      onDone(created.id);
+  const mutation = useMutation({
+    mutationFn: (input: CreateTripInput) => session.submit(JSON.stringify(input), async (pending) => {
+      const body = parseDraftJson(pending.body, tripDraftBodySchema);
+      const saved = trip ? await TripsApi.update(trip.id, { ...body, expectedVersion: trip.version }, pending.key)
+        : await TripsApi.create({ ...body, clientMutationId: pending.key });
+      receiptId.current = saved.id;
+    }, tripSaveUnconfirmed),
+    onSuccess: (saved) => {
+      if (!saved || !receiptId.current) return;
+      for (const key of TRIP_QUERY_KEYS) void qc.invalidateQueries({ queryKey: [key] });
+      onDone(receiptId.current);
     },
   });
+  const disabled = mutation.isPending || draft.locked;
 
-  const updateMut = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<CreateTripInput> }) =>
-      TripsApi.update(id, body),
-    onSuccess: (updated) => {
-      qc.invalidateQueries({ queryKey: ['trips'] });
-      qc.invalidateQueries({ queryKey: ['analytics'] });
-      qc.invalidateQueries({ queryKey: ['decisions'] });
-      qc.invalidateQueries({ queryKey: ['score'] });
-      qc.invalidateQueries({ queryKey: ['trip', updated.id] });
-      onDone(updated.id);
-    },
-  });
-
-  const submit = handleSubmit(async (v) => {
+  const submit = handleSubmit(async (values) => {
+    const v = tripFormSchema.parse(values);
     setSubmitError(null);
-    const ocrTagged =
-      initialFromOcr && initialFromOcr.imageHashes.length > 0
-        ? `ocrImageHashes=${initialFromOcr.imageHashes.join(',')}`
-        : null;
-    const userNotes = v.notes?.trim() || '';
-    const mergedNotes = [userNotes, ocrTagged].filter(Boolean).join('\n').slice(0, 500) || null;
-
+    const startedAt = resolveLocalDateTime(v.startedAt, v.startedOccurrence, v.recordedStartedAt);
+    const endedAt = resolveLocalDateTime(v.endedAt, v.endedOccurrence, v.recordedEndedAt);
+    if (!startedAt || !endedAt) { setSubmitError(t('time.invalid')); return; }
+    const takeHome = v.incomeMode === TripIncomeMode.TakeHome;
     const body: CreateTripInput = {
       vehicleId: v.vehicleId,
       driverAppId: v.driverAppId,
-      areaId: v.areaId || undefined,
-      startedAt: new Date(v.startedAt).toISOString(),
-      endedAt: new Date(v.endedAt).toISOString(),
-      grossPiastres: egpToPiastres(Number(v.grossEgp || 0)),
-      receivedPiastres:
-        v.receivedEgp != null && (v.receivedEgp as unknown as string) !== ''
-          ? egpToPiastres(Number(v.receivedEgp))
-          : undefined,
+      areaId: v.areaId || null,
+      startedAt, endedAt,
+      grossPiastres: takeHome || v.grossEgp === null ? null : egpToPiastres(v.grossEgp),
+      earningsPiastres: takeHome && v.earningsEgp !== null ? egpToPiastres(v.earningsEgp) : null,
+      receivedPiastres: takeHome || v.receivedEgp === null ? null : egpToPiastres(v.receivedEgp),
       tipPiastres: egpToPiastres(Number(v.tipEgp || 0)),
-      commissionPiastres: egpToPiastres(Number(v.commissionEgp || 0)),
+      commissionPiastres: takeHome || v.commissionEgp === null ? null : egpToPiastres(v.commissionEgp),
       tollPiastres: egpToPiastres(Number(v.tollEgp || 0)),
       parkingPiastres: egpToPiastres(Number(v.parkingEgp || 0)),
       totalKmMeters: Math.round(Number(v.totalKm || 0) * 1000),
       paidKmMeters: Math.round(Number(v.paidKm || 0) * 1000),
-      notes: mergedNotes,
+      notes: v.notes?.trim() || null,
     };
-    if (initialFromOcr && initialFromOcr.imageHashes.length > 0 && !trip) {
-      body.clientMutationId = await deriveClientMutationId(initialFromOcr.imageHashes);
-    }
-    try {
-      if (trip) {
-        await updateMut.mutateAsync({ id: trip.id, body });
-      } else {
-        await createMut.mutateAsync(body);
-      }
-    } catch (err) {
-      // Surface the failure to the driver instead of swallowing it — a
-      // silent console.warn made server-side rejections (validation, network)
-      // look like "nothing happened" after pressing Save.
-      const e = readApiError(err);
-      setSubmitError(t('trips.errors.saveFailed', { reason: e.message || e.code }));
+    session.change(JSON.stringify(form.getValues()), null);
+    const validatedBody = tripDraftBodySchema.safeParse(body);
+    if (!validatedBody.success) { setSubmitError(t('trips.invalidValues')); return; }
+    try { await mutation.mutateAsync(validatedBody.data); }
+    catch (error) {
+      if (!(error instanceof Error) || error instanceof RecordDraftError) return;
+      setSubmitError(t(tripErrorKey(error)));
+      if (readApiError(error).code === 'TRIP_VERSION_CONFLICT') void qc.invalidateQueries({ queryKey: ['trip', trip?.id] });
     }
   });
 
-  const noVehicles = !vehiclesQ.isLoading && (vehiclesQ.data?.length ?? 0) === 0;
-  const noApps = !appsQ.isLoading && (appsQ.data?.length ?? 0) === 0;
+  const noVehicles = vehiclesQ.isSuccess && (vehiclesQ.data?.length ?? 0) === 0;
+  let endTimeError: string | null = null;
+  if (errors.endedAt) {
+    let key = 'time.invalid';
+    if (errors.endedAt.message === 'end-before-start') key = 'trips.errors.endBeforeStart';
+    if (errors.endedAt.message === 'interval-too-long') key = 'time.intervalTooLong';
+    endTimeError = t(key);
+  }
+  const noApps = appsQ.isSuccess && (appsQ.data?.length ?? 0) === 0;
 
+  function retryLookups() { void vehiclesQ.refetch(); void appsQ.refetch(); void areasQ.refetch(); }
+  const lookupFailed = vehiclesQ.isError || appsQ.isError || areasQ.isError;
   return (
-    <form onSubmit={submit} className="space-y-6" noValidate>
-      {initialFromOcr && initialFromOcr.warnings.length > 0 ? (
-        <OcrWarningList warnings={initialFromOcr.warnings} />
-      ) : null}
+    <form onSubmit={submit} onChangeCapture={() => { hasUserInput.current = true; }} className="space-y-6" noValidate>
+      {lookupFailed ? <div role="alert" className="space-y-2 text-sm"><p>{t('trips.lookupsFailed')}</p><Button type="button" variant="outline" onClick={retryLookups}>{t('common.retry')}</Button></div> : null}
+      <fieldset disabled={disabled} className="space-y-6">
+      <p className="text-sm text-muted-foreground">{t('time.cairo')}</p>
       {noVehicles ? (
         <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
           {t('trips.selectVehicleFirst')}
@@ -358,30 +211,45 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
         <Field
           label={t('trips.field.startedAt')}
           htmlFor="startedAt"
+          error={errors.startedAt ? t('time.invalid') : null}
           required
-          confidence={fieldConfidence(initialFromOcr, 'startedAt')}
         >
-          <Input id="startedAt" type="datetime-local" {...register('startedAt')} invalid={!!errors.startedAt} />
+          <Input id="startedAt" type="datetime-local" step="1" {...register('startedAt')} invalid={!!errors.startedAt} />
+          <LocalTimeChoice value={watch('startedAt')} choice={watch('startedOccurrence') ?? LocalTimeOccurrence.Unspecified}
+            original={trip?.startedAt ?? null} label={t('trips.field.startedAt')} onChange={(choice) => setValue('startedOccurrence', choice, { shouldValidate: true })} />
         </Field>
 
         <Field
           label={t('trips.field.endedAt')}
           htmlFor="endedAt"
           required
-          confidence={fieldConfidence(initialFromOcr, 'endedAt')}
-          error={errors.endedAt?.message === 'end-before-start' ? t('trips.errors.endBeforeStart') : null}
+          error={endTimeError}
         >
-          <Input id="endedAt" type="datetime-local" {...register('endedAt')} invalid={!!errors.endedAt} />
+          <Input id="endedAt" type="datetime-local" step="1" {...register('endedAt')} invalid={!!errors.endedAt} />
+          <LocalTimeChoice value={watch('endedAt')} choice={watch('endedOccurrence') ?? LocalTimeOccurrence.Unspecified}
+            original={trip?.endedAt ?? null} label={t('trips.field.endedAt')} onChange={(choice) => setValue('endedOccurrence', choice, { shouldValidate: true })} />
         </Field>
       </Section>
 
       {/* Money */}
       <Section title={t('trips.sections.money')}>
+        <Field label={t('trips.finance.mode')} htmlFor="incomeMode">
+          <Select id="incomeMode" {...register('incomeMode')}>
+            {TRIP_INCOME_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}
+          </Select>
+        </Field>
+        {incomeMode === TripIncomeMode.TakeHome ? <>
+          <Field label={t('trips.finance.earnings')} htmlFor="earningsEgp" required hint={t('trips.finance.takeHomeHint')}
+            error={errors.earningsEgp ? t('trips.finance.invalid') : null}>
+            <Input id="earningsEgp" type="number" inputMode="decimal" step="0.01" min={0} dir="ltr" {...register('earningsEgp')} invalid={!!errors.earningsEgp} />
+          </Field>
+        </> : <>
+
         <Field
           label={t('trips.field.gross')}
           htmlFor="grossEgp"
+          error={errors.grossEgp ? t('trips.finance.invalid') : null}
           required
-          confidence={fieldConfidence(initialFromOcr, 'grossEgp')}
         >
           <Input
             id="grossEgp"
@@ -400,7 +268,6 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           htmlFor="receivedEgp"
           optional
           hint={t('trips.hint.received')}
-          confidence={fieldConfidence(initialFromOcr, 'receivedEgp')}
           error={errors.receivedEgp?.message === 'received-exceeds-gross' ? t('trips.errors.receivedExceedsGross') : null}
         >
           <Input
@@ -419,7 +286,6 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           htmlFor="commissionEgp"
           auto={commissionAuto}
           hint={commissionAuto ? t('trips.hint.commissionAuto') : undefined}
-          confidence={fieldConfidence(initialFromOcr, 'commissionEgp')}
           right={
             commissionAuto ? null : (
               <button
@@ -427,7 +293,7 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
                 onClick={() => setValue('commissionAuto', true)}
                 className="text-[11px] font-medium text-primary hover:underline"
               >
-                <Sparkles className="inline h-3 w-3 align-[-2px]" /> Auto
+                <Sparkles className="inline h-3 w-3 align-[-2px]" /> {t('trips.finance.calculate')}
               </button>
             )
           }
@@ -446,7 +312,8 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           />
         </Field>
 
-        <Field label={t('trips.field.tip')} htmlFor="tipEgp" optional>
+        </>}
+        <Field label={t(incomeMode === TripIncomeMode.TakeHome ? 'trips.finance.includedTip' : 'trips.field.tip')} htmlFor="tipEgp" optional>
           <Input
             id="tipEgp"
             type="number"
@@ -466,7 +333,6 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           htmlFor="totalKm"
           required
           hint={t('trips.hint.totalKm')}
-          confidence={fieldConfidence(initialFromOcr, 'totalKm')}
         >
           <Input
             id="totalKm"
@@ -485,7 +351,6 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           htmlFor="paidKm"
           required
           hint={t('trips.hint.paidKm')}
-          confidence={fieldConfidence(initialFromOcr, 'paidKm')}
           error={errors.paidKm?.message === 'paid-exceeds-total' ? t('trips.errors.paidExceedsTotal') : null}
         >
           <Input
@@ -533,7 +398,7 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
           <Label htmlFor="notes">
             {t('trips.field.notes')} <OptionalBadge t={t} />
           </Label>
-          <Textarea id="notes" rows={2} {...register('notes')} />
+          <Textarea id="notes" rows={2} maxLength={500} {...register('notes')} />
         </div>
       </Section>
 
@@ -545,13 +410,15 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
         <p
           className={cn(
             'num-tabular mt-1 text-3xl font-bold tracking-tight',
-            netEgp >= 0 ? 'text-success' : 'text-destructive',
+            (netEgp ?? 0) >= 0 ? 'text-success' : 'text-destructive',
           )}
         >
-          {formatMoney(Math.round(netEgp * 100), locale)}
+          {formatMoney(netEgp === null ? null : Math.round(netEgp * 100), locale)}
         </p>
       </div>
 
+      </fieldset>
+      <RecordDraftNotice session={session} busy={mutation.isPending} onDiscard={onClose} />
       {submitError ? (
         <p
           className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
@@ -562,8 +429,8 @@ export function TripForm({ trip, onDone, initialFromOcr }: Props) {
       ) : null}
 
       <div className="flex items-center justify-end gap-2 pt-2">
-        <Button type="submit" loading={isSubmitting || createMut.isPending || updateMut.isPending}>
-          {isSubmitting ? t('common.saving') : t('common.save')}
+        <Button type="submit" loading={isSubmitting || mutation.isPending}>
+          {t(draft.pending ? 'trips.retrySave' : 'common.save')}
         </Button>
       </div>
     </form>
@@ -588,7 +455,6 @@ function Field({
   hint,
   error,
   right,
-  confidence,
   children,
 }: {
   label: string;
@@ -599,7 +465,6 @@ function Field({
   hint?: string | null;
   error?: string | null;
   right?: React.ReactNode;
-  confidence?: number | null;
   children: React.ReactNode;
 }) {
   const { t } = useI18n();
@@ -611,7 +476,6 @@ function Field({
           {required ? <RequiredBadge t={t} /> : null}
           {optional ? <OptionalBadge t={t} /> : null}
           {auto ? <AutoBadge t={t} /> : null}
-          {confidence != null ? <OcrConfidenceBadge confidence={confidence} /> : null}
         </Label>
         {right}
       </div>

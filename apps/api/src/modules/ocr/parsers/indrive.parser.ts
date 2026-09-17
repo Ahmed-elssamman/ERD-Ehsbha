@@ -3,6 +3,8 @@ import { BaseParser, RawParsed } from './base.parser';
 import { OcrPlatform } from '../dto/ocr.dto';
 import { OcrWord, ParseContext } from '../types';
 import { SemanticNormalizer } from '../semantic/normalizer';
+import { formatLocalDateTime, localDateTimeToUtc } from '@ehsbha/shared-types';
+import { normalizeNumeric } from '../semantic/digit-normalizer';
 
 const TIME_RX = /^\s*(\d{1,2}):(\d{2})\s*(PM|AM|pm|am|م|ص)\s*$/;
 const DATE_HEADER_RX = /^(?:الجمعه|السبت|الاحد|الاثنين|الثلاثاء|الاربعاء|الخميس)/;
@@ -36,8 +38,6 @@ export class IndriveParser extends BaseParser {
     this.extractPickupDestinationInDrive(text, res);
 
     if (res.fields.commissionEgp == null) {
-      res.fields.commissionEgp = 0;
-      res.perField.commissionEgp = 0.4;
       res.warnings.push('OCR_INDRIVE_NO_COMMISSION_LINE');
     }
     return res;
@@ -46,10 +46,11 @@ export class IndriveParser extends BaseParser {
   private collectTimes(lines: string[]): Array<{ idx: number; mins: number; hh: number; mm: number }> {
     const out: Array<{ idx: number; mins: number; hh: number; mm: number }> = [];
     for (let i = 0; i < lines.length; i++) {
-      const m = lines[i].match(TIME_RX);
+      const m = normalizeNumeric(lines[i]).match(TIME_RX);
       if (!m) continue;
       const h = Number(m[1]);
       const mn = Number(m[2]);
+      if (h < 1 || h > 12 || mn > 59) continue;
       const suffix = (m[3] ?? '').toLowerCase();
       let hour = h;
       const isPm = suffix === 'pm' || suffix === 'م';
@@ -71,12 +72,19 @@ export class IndriveParser extends BaseParser {
     const start = uniq[0];
     const end = uniq[uniq.length - 1];
 
-    const datePart = res.fields.startedAt
-      ? res.fields.startedAt.substring(0, 10)
-      : new Date().toISOString().substring(0, 10);
-
-    const startIso = `${datePart}T${String(start.hh).padStart(2, '0')}:${String(start.mm).padStart(2, '0')}:00.000Z`;
-    const endIso = `${datePart}T${String(end.hh).padStart(2, '0')}:${String(end.mm).padStart(2, '0')}:00.000Z`;
+    const localDate = res.fields.startedAt ? formatLocalDateTime(res.fields.startedAt) : null;
+    if (!localDate) return;
+    const datePart = localDate.substring(0, 10);
+    const startIso = localDateTimeToUtc(`${datePart}T${String(start.hh).padStart(2, '0')}:${String(start.mm).padStart(2, '0')}:00`);
+    const endIso = localDateTimeToUtc(`${datePart}T${String(end.hh).padStart(2, '0')}:${String(end.mm).padStart(2, '0')}:00`);
+    if (!startIso || !endIso || end.mins - start.mins > 12 * 60) {
+      res.fields.startedAt = null;
+      res.fields.endedAt = null;
+      res.perField.startedAt = 0;
+      res.perField.endedAt = 0;
+      res.warnings.push('OCR_TIME_AMBIGUOUS');
+      return;
+    }
     res.fields.startedAt = startIso;
     res.fields.endedAt = endIso;
     res.perField.startedAt = 0.92;

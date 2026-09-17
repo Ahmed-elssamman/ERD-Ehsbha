@@ -1,3 +1,6 @@
+import { formatBusinessTimestamp, formatBusinessDate } from '@/lib/utils';
+import { WORK_SCORE_DIMENSIONS } from './driver-detail.control';
+import { FinancialCoverageNotice } from '@/components/financial-coverage-notice';
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/i18n/provider';
 import { cn, formatNumber, formatPiastres } from '@/lib/utils';
+import { TRIP_LIST_AMOUNTS } from './trips.control';
 
 interface DriverData {
   id: string;
@@ -30,23 +34,24 @@ interface DriverData {
   baseCity: string | null;
   createdAt: string;
   user: { phone: string; email: string | null; status: string };
-  vehicles: Array<{ id: string; type: string; make: string | null; model: string | null; year: number | null; isActive: boolean; fuelType: string; odometerMeters: bigint | number | string }>;
+  vehicles: Array<{ id: string; type: string; make: string | null; model: string | null; year: number | null; isActive: boolean; fuelType: string; odometerMeters: number | null; odometerSource: string }>;
   driverApps: Array<{ id: string; enabled: boolean; commissionPct: string; customName: string | null; appSource: { code: string; name: string } }>;
   areas: Array<{ id: string; name: string }>;
   _count: { trips: number; fuelLogs: number; expenses: number; maintenanceRecords: number };
-  latestScore: { overall: number; efficiency: number; profit: number; safety: number; consistency: number; date: string } | null;
-  scoreHistory: Array<{ date: string; overall: number; efficiency: number; profit: number; safety: number; consistency: number }>;
-  last30DaysAggregates: Array<{ date: string; tripCount: number; grossPiastres: number; netProfitPiastres: number; totalKmMeters: number }>;
-  areaBreakdown: Array<{ areaId: string; areaName: string; tripCount: number; grossPiastres: number; netProfitPiastres: number }>;
-  appBreakdown: Array<{ driverAppId: string; appName: string; tripCount: number; grossPiastres: number; netProfitPiastres: number }>;
-  totals: { netProfitPiastres: number; grossPiastres: number; totalKmMeters: number; fuelPiastres: number; expensePiastres: number };
+  latestScore: { algorithmVersion: number; overall: number | null; efficiency: number | null; profit: number | null; consistency: number | null; date: string } | null;
+  scoreHistory: Array<{ date: string; algorithmVersion: number; overall: number | null; efficiency: number | null; profit: number | null; consistency: number | null }>;
+  last30DaysAggregates: Array<{ date: string; tripCount: number; grossPiastres: number | null; netProfitPiastres: number; totalKmMeters: number }>;
+  areaBreakdown: Array<{ areaId: string; areaName: string; tripCount: number; grossPiastres: number | null; netProfitPiastres: number }>;
+  appBreakdown: Array<{ driverAppId: string; appName: string; tripCount: number; grossPiastres: number | null; netProfitPiastres: number }>;
+  totals: { netProfitPiastres: number; grossPiastres: number | null; totalKmMeters: number; fuelPiastres: number; expensePiastres: number };
 }
 
 interface RecentTrip {
   id: string;
   startedAt: string;
   endedAt: string;
-  grossPiastres: number;
+  grossPiastres: number | null;
+  earningsPiastres?: number | null;
   totalKmMeters: number;
   emptyKmMeters: number;
   appName: string;
@@ -150,6 +155,7 @@ function OverviewTab({ data }: { data: DriverData }) {
   const { t } = useI18n();
   return (
     <div className="grid gap-4">
+      <FinancialCoverageNotice {...data.totals} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatTile label={t('drivers.netProfit')} value={formatPiastres(data.totals.netProfitPiastres)} />
         <StatTile label={t('drivers.gross')} value={formatPiastres(data.totals.grossPiastres)} />
@@ -183,29 +189,29 @@ function OverviewTab({ data }: { data: DriverData }) {
 }
 
 function TripsTab({ driverId, trips, loading }: { driverId: string; trips: RecentTrip[] | undefined; loading: boolean }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   if (loading) return <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>;
   if (!trips || trips.length === 0) return <div className="text-sm text-muted-foreground">{t('analytics.noData')}</div>;
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full text-sm">
         <thead className="border-b bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
           <tr>
             <th className="px-4 py-2 text-start font-medium">{t('trips.started')}</th>
             <th className="px-4 py-2 text-start font-medium">{t('trips.app')}</th>
             <th className="px-4 py-2 text-start font-medium">{t('trips.area')}</th>
-            <th className="px-4 py-2 text-end font-medium">{t('trips.grossLabel')}</th>
+            {TRIP_LIST_AMOUNTS.map((amount) => <th key={amount.field} className="px-4 py-2 text-end font-medium">{t(amount.label)}</th>)}
             <th className="px-4 py-2 text-end font-medium">{t('trips.distance')}</th>
           </tr>
         </thead>
         <tbody>
           {trips.map((tr) => (
             <tr key={tr.id} className="cursor-pointer border-b last:border-0 hover:bg-muted/30" onClick={() => navigate(`/trips/${tr.id}`)}>
-              <td className="px-4 py-2 text-muted-foreground">{new Date(tr.startedAt).toLocaleString()}</td>
+              <td className="px-4 py-2 text-muted-foreground">{formatBusinessTimestamp(tr.startedAt, locale)}</td>
               <td className="px-4 py-2"><Badge variant="outline">{tr.appName}</Badge></td>
               <td className="px-4 py-2">{tr.areaName ?? '—'}</td>
-              <td className="px-4 py-2 text-end font-medium">{formatPiastres(tr.grossPiastres)}</td>
+              {TRIP_LIST_AMOUNTS.map((amount) => <td key={amount.field} className="px-4 py-2 text-end font-medium">{formatPiastres(tr[amount.field] ?? null)}</td>)}
               <td className="px-4 py-2 text-end">{formatNumber(Math.round(tr.totalKmMeters / 1000))} km</td>
             </tr>
           ))}
@@ -235,7 +241,7 @@ function VehiclesTab({ vehicles }: { vehicles: DriverData['vehicles'] }) {
             <div className="break-words font-medium">{[v.make, v.model, v.year].filter(Boolean).join(' ') || t('vehicles.unspecified')}</div>
             <div className="text-xs text-muted-foreground">
               <Badge variant="outline">{v.fuelType}</Badge>
-              <span className="ms-2">{formatNumber(Math.round(Number(v.odometerMeters) / 1000))} km</span>
+              <span className="ms-2">{v.odometerMeters === null ? t('vehicles.mileageUnknown') : `${formatNumber(v.odometerMeters / 1000)} km`} · {t(`vehicles.mileageSource.${v.odometerSource}`)}</span>
             </div>
           </CardContent>
         </Card>
@@ -268,22 +274,23 @@ function AppsTab({ apps }: { apps: DriverData['driverApps'] }) {
 }
 
 function ScoreTab({ latest, history }: { latest: DriverData['latestScore']; history: DriverData['scoreHistory'] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (!latest) return <div className="text-sm text-muted-foreground">{t('drivers.noSnapshot')}</div>;
   return (
     <div className="grid gap-4">
       <Card>
         <CardHeader><CardTitle className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 text-warning" /> {t('drivers.latestScore')}</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3 text-center text-sm sm:grid-cols-5">
-            {(['overall', 'efficiency', 'profit', 'safety', 'consistency'] as const).map((k) => (
+          <div className="grid grid-cols-2 gap-3 text-center text-sm sm:grid-cols-4">
+            {WORK_SCORE_DIMENSIONS.map((k) => (
               <div key={k} className="rounded-lg border bg-card p-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t(`drivers.${k}`)}</div>
-                <div className="mt-0.5 text-2xl font-semibold">{latest[k]}</div>
+                <div className="mt-0.5 text-2xl font-semibold">{latest[k] ?? t('drivers.workScoreMissing')}</div>
               </div>
             ))}
           </div>
-          <div className="mt-3 text-end text-[10px] text-muted-foreground">{t('drivers.asOf')} {new Date(latest.date).toLocaleDateString()}</div>
+          <p className="mt-3 text-sm text-muted-foreground">{t('drivers.workScoreMeaning')}</p>
+          <div className="mt-3 text-end text-[10px] text-muted-foreground">{t('drivers.asOf')} {formatBusinessDate(latest.date, locale)}</div>
         </CardContent>
       </Card>
 

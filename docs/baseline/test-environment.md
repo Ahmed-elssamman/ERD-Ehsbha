@@ -3,13 +3,13 @@
 ## Setup
 
 1. Copy `apps/api/.env.test.example` to `apps/api/.env.test`
-2. Set a disposable PostgreSQL connection string
-3. Ensure the database name starts with `ehsbha_test_`
+2. Set Neon pooled `DATABASE_URL` and direct `DIRECT_URL`
+3. Ensure the test database name starts with `ehsbha_test_`
 4. Never use production values
 
 ## Disposable Database Naming
 
-All test databases MUST use the prefix `ehsbha_test_`. The verification safety guard
+All Neon-backed test databases MUST use the prefix `ehsbha_test_`. The verification safety guard
 refuses destructive operations against other database names.
 
 ## Forbidden Values

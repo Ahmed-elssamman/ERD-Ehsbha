@@ -7,18 +7,11 @@ import { createRequire } from 'module';
 const _require = createRequire(import.meta.url);
 
 function collectSchemas() {
-  const domains = [
-    'auth-profile', 'vehicle-app-area', 'trip-ocr', 'operations',
-    'analytics-intelligence', 'communications', 'admin-core', 'admin-operations',
-    'platform-operations',
-  ];
   const map = {};
-  for (const name of domains) {
-    const mod = _require(`../../../packages/api-contracts/dist/cjs/domains/${name}.js`);
-    for (const [key, value] of Object.entries(mod)) {
-      if (value && typeof value === 'object' && '_def' in value) {
-        map[key] = value;
-      }
+  const exported = _require('../../../packages/api-contracts/dist/cjs/index.js');
+  for (const [key, value] of Object.entries(exported)) {
+    if (value && typeof value === 'object' && '_def' in value) {
+      map[key] = value;
     }
   }
   return map;

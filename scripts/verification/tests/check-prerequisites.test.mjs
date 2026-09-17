@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { checkNodeVersion } from '../check-prerequisites.mjs';
 
 const PREREQ_CODES = {
   WINDOWS_AUTHORITY: 'PREREQ_WINDOWS',
@@ -16,14 +17,6 @@ function checkWindows(platform) {
     return { code: PREREQ_CODES.WINDOWS_AUTHORITY, passed: false, message: 'Windows required for authoritative verification', informational: true };
   }
   return { code: PREREQ_CODES.WINDOWS_AUTHORITY, passed: true, message: 'Supported Windows environment' };
-}
-
-function checkNodeVersion(version) {
-  const major = parseInt(version.slice(1).split('.')[0], 10);
-  if (major < 22) {
-    return { code: PREREQ_CODES.NODE_VERSION, passed: false, message: `Node.js 22+ required, got ${version}` };
-  }
-  return { code: PREREQ_CODES.NODE_VERSION, passed: true, message: `Node.js ${version}` };
 }
 
 function checkEnvironmentSafety(env) {
@@ -46,10 +39,15 @@ describe('Check Prerequisites', () => {
   });
 
   it('checks Node version', () => {
-    const pass = checkNodeVersion('v22.0.0');
+    const pass = checkNodeVersion('v22.12.0');
     assert.strictEqual(pass.passed, true);
     const fail = checkNodeVersion('v20.0.0');
     assert.strictEqual(fail.passed, false);
+    assert.strictEqual(checkNodeVersion('v22.11.0').passed, false);
+    assert.strictEqual(checkNodeVersion('v23.0.0').passed, false);
+    assert.strictEqual(checkNodeVersion('v24.18.0').passed, true);
+    assert.strictEqual(checkNodeVersion('v25.0.0').passed, false);
+    assert.strictEqual(checkNodeVersion('v26.0.0').passed, true);
   });
 
   it('checks non-production environment', () => {

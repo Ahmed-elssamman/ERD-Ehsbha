@@ -35,7 +35,8 @@ import { MultiScreenshotMerger } from '../src/modules/ocr/merge/multi-screenshot
 import { MultiTripSplitter } from '../src/modules/ocr/merge/multi-trip.splitter';
 import { ConfidenceScorer } from '../src/modules/ocr/confidence/scorer';
 import { TripValidator } from '../src/modules/ocr/validation/trip-validator';
-import { OcrService, azureToOcrResult } from '../src/modules/ocr/ocr.service';
+import { OcrService } from '../src/modules/ocr/ocr.service';
+import { OcrWorkLimiter } from '../src/modules/ocr/ocr-work-limiter';
 import { OcrExtractResponseDto, OcrPlatform } from '../src/modules/ocr/dto/ocr.dto';
 
 interface Case {
@@ -236,7 +237,7 @@ class BenchmarkRunner {
     const splitter = new MultiTripSplitter();
     const scorer = new ConfidenceScorer();
     const validator = new TripValidator();
-    this.ocr = new OcrService(azureProvider, this.sharp, detector, merger, splitter, scorer, validator, uber, indrive, didi, careem);
+    this.ocr = new OcrService(azureProvider, this.sharp, detector, merger, splitter, scorer, validator, uber, indrive, didi, careem, new OcrWorkLimiter());
   }
 
   /**
@@ -543,5 +544,3 @@ main().catch((err) => {
   console.error('[benchmark] FAILED:', err);
   process.exit(1);
 });
-
-void azureToOcrResult;

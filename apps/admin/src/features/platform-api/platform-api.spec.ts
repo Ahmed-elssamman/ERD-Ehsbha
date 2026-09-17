@@ -8,7 +8,7 @@ const meta = {
   requestId: 'request-id-00000002',
   serverTime: '2026-06-12T00:00:00.000Z',
   apiVersion: 'v1' as const,
-  contractVersion: '1.0.0',
+  contractVersion: '2.0.0',
 }
 
 describe('admin platform API', () => {
@@ -43,8 +43,8 @@ describe('admin platform API', () => {
   it('keeps contract mismatch distinct from session outcomes', () => {
     expect(() => parseData(adminUserSchema, {
       data: {},
-      meta: { ...meta, contractVersion: '2.0.0' },
-    }, 'admin.users.get')).toThrowError('Unsupported contract version 2.0.0')
+      meta: { ...meta, contractVersion: '1.0.0' },
+    }, 'admin.users.get')).toThrowError('Unsupported contract version 1.0.0')
   })
 
   it('does not retry deterministic admin outcomes', () => {
@@ -62,9 +62,9 @@ describe('admin platform API', () => {
         data: {
           error: {
             code: 'CONTRACT_VERSION_MISMATCH',
-            message: 'Unsupported contract version 2.0.0',
+            message: 'Unsupported contract version 1.0.0',
           },
-          meta: { ...meta, contractVersion: '2.0.0' },
+          meta: { ...meta, contractVersion: '1.0.0' },
         },
       },
       toJSON: () => ({}),
@@ -73,6 +73,54 @@ describe('admin platform API', () => {
       config: {},
     }
 
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry VALIDATION_ERROR even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 400, headers: {}, data: { error: { code: 'VALIDATION_ERROR', message: 'bad input' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'bad request',
+      config: {},
+    }
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry UNAUTHENTICATED even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 401, headers: {}, data: { error: { code: 'UNAUTHENTICATED', message: 'unauthorized' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'unauthorized',
+      config: {},
+    }
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry NOT_FOUND even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 404, headers: {}, data: { error: { code: 'NOT_FOUND', message: 'missing' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'not found',
+      config: {},
+    }
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry CONFLICT even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 409, headers: {}, data: { error: { code: 'CONFLICT', message: 'duplicate' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'conflict',
+      config: {},
+    }
     expect(shouldRetry(error, 0)).toBe(false)
   })
 })

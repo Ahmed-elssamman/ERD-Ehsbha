@@ -1,3 +1,4 @@
+import { tripEarningsPiastres } from '@ehsbha/shared-types';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -57,7 +58,7 @@ export class AdminTripsService {
 
     return {
       items: page.map((t) => ({
-        id: t.id,
+        id: t.id, version: t.version, source: t.source,
         driverId: t.driverId,
         driverPhone: t.driver.user.phone,
         driverDisplayName: t.driver.displayName,
@@ -67,7 +68,7 @@ export class AdminTripsService {
         areaName: t.area?.name ?? null,
         startedAt: t.startedAt.toISOString(),
         endedAt: t.endedAt.toISOString(),
-        grossPiastres: t.grossPiastres,
+        grossPiastres: t.grossPiastres, earningsPiastres: tripEarningsPiastres(t),
         receivedPiastres: t.receivedPiastres,
         tipPiastres: t.tipPiastres,
         commissionPiastres: t.commissionPiastres,
@@ -92,7 +93,7 @@ export class AdminTripsService {
         vehicle: { select: { id: true, type: true, make: true, model: true, year: true } },
       },
     });
-    if (!t) throw new NotFoundException({ code: 'TRIP_NOT_FOUND' });
+    if (!t) throw new NotFoundException({ code: 'NOT_FOUND' });
     return t;
   }
 }

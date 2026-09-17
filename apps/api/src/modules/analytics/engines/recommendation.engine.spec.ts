@@ -4,7 +4,6 @@ const baseCtx = {
   locale: 'ar' as const,
   recent7d: {
     netProfitPiastres: 10_000,
-    grossPiastres: 50_000,
     onlineMinutes: 600,
     totalKmMeters: 500_000,
     paidKmMeters: 350_000,
@@ -18,7 +17,6 @@ const baseCtx = {
   },
   appPerformance: [],
   maintenance: [],
-  fatigue: { score: 0.2, level: 'SAFE' as const },
 };
 
 describe('recommendation.engine', () => {
@@ -27,10 +25,7 @@ describe('recommendation.engine', () => {
     expect(r.find((x) => x.type === 'empty_km_high')).toBeTruthy();
   });
 
-  it('flags fuel efficiency drop', () => {
-    const r = generateRecommendations(baseCtx);
-    expect(r.find((x) => x.type === 'fuel_efficiency_drop')).toBeTruthy();
-  });
+
 
   it('flags maintenance imminent for RED items', () => {
     const r = generateRecommendations({
@@ -51,13 +46,7 @@ describe('recommendation.engine', () => {
     expect(r.find((x) => x.type === 'best_app_window')).toBeTruthy();
   });
 
-  it('flags high fatigue', () => {
-    const r = generateRecommendations({
-      ...baseCtx,
-      fatigue: { score: 0.8, level: 'HIGH' },
-    });
-    expect(r.find((x) => x.type === 'fatigue_high')).toBeTruthy();
-  });
+
 
   it('flags goal lag when forecast < 90% of target', () => {
     const r = generateRecommendations({
@@ -77,14 +66,14 @@ describe('pickDailyDecisions', () => {
     const picks = pickDailyDecisions([
       { type: 'best_app_window', title: 'a', body: '', score: 0.9, ttlMinutes: 60 },
       { type: 'empty_km_high', title: 'b', body: '', score: 0.8, ttlMinutes: 60 },
-      { type: 'fatigue_high', title: 'c', body: '', score: 0.95, ttlMinutes: 60 },
+      { type: 'maintenance_imminent', title: 'c', body: '', score: 0.95, ttlMinutes: 60 },
       { type: 'goal_lag', title: 'd', body: '', score: 0.7, ttlMinutes: 60 },
       { type: 'maintenance_imminent', title: 'e', body: '', score: 0.85, ttlMinutes: 60 },
     ]);
     expect(picks).toHaveLength(3);
     const types = picks.map((p) => p.type);
     expect(types.some((t) => ['best_app_window', 'empty_km_high'].includes(t))).toBe(true);
-    expect(types.some((t) => ['fatigue_high', 'maintenance_imminent', 'fuel_efficiency_drop'].includes(t))).toBe(true);
+    expect(types.some((t) => ['maintenance_imminent', 'maintenance_imminent', 'fuel_efficiency_drop'].includes(t))).toBe(true);
     expect(types).toContain('goal_lag');
   });
 });

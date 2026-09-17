@@ -17,15 +17,20 @@ const TripNewPage = lazyWithRetry(() => import('@/pages/trips/trip-new').then((m
 const TripDetailPage = lazyWithRetry(() => import('@/pages/trips/trip-detail').then((m) => ({ default: m.TripDetailPage })));
 
 const ExpensesPage = lazyWithRetry(() => import('@/pages/expenses/expenses').then((m) => ({ default: m.ExpensesPage })));
+const FuelPage = lazyWithRetry(() => import('@/pages/fuel/fuel').then((m) => ({ default: m.FuelPage })));
 const MaintenancePage = lazyWithRetry(() => import('@/pages/maintenance/maintenance').then((m) => ({ default: m.MaintenancePage })));
 const VehicleHealthPage = lazyWithRetry(() => import('@/pages/vehicle-health/vehicle-health').then((m) => ({ default: m.VehicleHealthPage })));
 const AnalyticsPage = lazyWithRetry(() => import('@/pages/analytics/analytics').then((m) => ({ default: m.AnalyticsPage })));
+const WellnessPage = lazyWithRetry(() => import('@/pages/wellness/wellness').then((m) => ({ default: m.WellnessPage })));
 const DriverScorePage = lazyWithRetry(() => import('@/pages/driver-score/driver-score').then((m) => ({ default: m.DriverScorePage })));
 const DecisionsPage = lazyWithRetry(() => import('@/pages/decisions/decisions').then((m) => ({ default: m.DecisionsPage })));
 const WorkPlannerPage = lazyWithRetry(() => import('@/pages/planner/planner').then((m) => ({ default: m.WorkPlannerPage })));
+const WorkSessionsPage = lazyWithRetry(() => import('@/pages/work-sessions/work-sessions').then((m) => ({ default: m.WorkSessionsPage })));
 const BestHoursPage = lazyWithRetry(() => import('@/pages/best-hours/best-hours').then((m) => ({ default: m.BestHoursPage })));
 const ProfitSimulatorPage = lazyWithRetry(() => import('@/pages/simulator/simulator').then((m) => ({ default: m.ProfitSimulatorPage })));
 const NotificationsPage = lazyWithRetry(() => import('@/pages/notifications/notifications').then((m) => ({ default: m.NotificationsPage })));
+const ReportsPage = lazyWithRetry(() => import('@/pages/reports/reports').then((m) => ({ default: m.ReportsPage })));
+const ReportDetailPage = lazyWithRetry(() => import('@/pages/reports/report-detail').then((m) => ({ default: m.ReportDetailPage })));
 const SettingsPage = lazyWithRetry(() => import('@/pages/settings/settings').then((m) => ({ default: m.SettingsPage })));
 const GuidePage = lazyWithRetry(() => import('@/pages/guide/guide').then((m) => ({ default: m.GuidePage })));
 const CommunityPage = lazyWithRetry(() => import('@/pages/community/community').then((m) => ({ default: m.CommunityPage })));
@@ -108,15 +113,21 @@ export const router = createBrowserRouter([
       { path: 'trips/new', element: lazyRoute(<TripNewPage />) },
       { path: 'trips/:id', element: lazyRoute(<TripDetailPage />) },
       { path: 'expenses', element: lazyRoute(<ExpensesPage />) },
+      { path: 'fuel', element: lazyRoute(<FuelPage />) },
       { path: 'maintenance', element: lazyRoute(<MaintenancePage />) },
       { path: 'vehicle-health', element: lazyRoute(<VehicleHealthPage />) },
       { path: 'analytics', element: lazyRoute(<AnalyticsPage />) },
+      { path: 'wellness', element: lazyRoute(<WellnessPage />) },
       { path: 'driver-score', element: lazyRoute(<DriverScorePage />) },
       { path: 'smart-decisions', element: lazyRoute(<DecisionsPage />) },
       { path: 'work-planner', element: lazyRoute(<WorkPlannerPage />) },
+      { path: 'work-sessions', element: lazyRoute(<WorkSessionsPage />) },
       { path: 'best-hours', element: lazyRoute(<BestHoursPage />) },
       { path: 'profit-simulator', element: lazyRoute(<ProfitSimulatorPage />) },
       { path: 'notifications', element: lazyRoute(<NotificationsPage />) },
+      { path: 'reports', element: lazyRoute(<ReportsPage />) },
+      { path: 'reports/:id', element: lazyRoute(<ReportDetailPage />) },
+      { path: 'reports/:id/revisions/:version', element: lazyRoute(<ReportDetailPage />) },
       { path: 'guide', element: lazyRoute(<GuidePage />) },
       { path: 'community', element: lazyRoute(<CommunityPage />) },
       { path: 'reviews', element: lazyRoute(<ReviewsPage />) },

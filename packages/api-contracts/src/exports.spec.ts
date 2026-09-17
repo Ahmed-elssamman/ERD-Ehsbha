@@ -25,9 +25,9 @@ describe('package exports', () => {
 
   it('exports version constants', () => {
     expect(API_VERSION).toBe('v1')
-    expect(CONTRACT_VERSION).toBe('1.0.0')
-    expect(isSupportedMajorVersion('1.0.0')).toBe(true)
-    expect(isSupportedMajorVersion('2.0.0')).toBe(false)
+    expect(CONTRACT_VERSION).toBe('2.0.0')
+    expect(isSupportedMajorVersion('2.0.0')).toBe(true)
+    expect(isSupportedMajorVersion('1.0.0')).toBe(false)
   })
 
   it('exports parse functions', () => {

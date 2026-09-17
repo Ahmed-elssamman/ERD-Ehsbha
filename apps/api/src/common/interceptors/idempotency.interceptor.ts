@@ -56,6 +56,18 @@ export class IdempotencyInterceptor implements NestInterceptor {
     }
     request.body = parsed.data;
 
+    const query = options.querySchema?.safeParse(request.query);
+    if (query && !query.success) throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Invalid request query' });
+    const pathParameters: Record<string, string> = {};
+    for (const name of options.pathParameters ?? []) {
+      const value = request.params[name];
+      if (typeof value !== 'string') throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Invalid resource identifier' });
+      pathParameters[name] = value;
+    }
+    const requestFingerprint = options.querySchema || options.pathParameters
+      ? { body: parsed.data as object, query: query?.data as object ?? {}, params: pathParameters }
+      : parsed.data;
+
     const actorId = actorIdFrom(request.user);
     if (!actorId) {
       throw new BadRequestException({
@@ -69,7 +81,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
       actorId,
       operationId: options.operationId,
       key,
-    }, parsed.data, options.retentionHours)).pipe(
+    }, requestFingerprint, options.retentionHours)).pipe(
       mergeMap((result) => {
         if (result.kind === 'replay') {
           response.status(result.response.status);
@@ -78,7 +90,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
         }
         return next.handle().pipe(
           mergeMap((body) => from(
-            this.service.complete(result.recordId, response.statusCode, body),
+            this.service.complete(result.recordId, response.statusCode, body ?? { ok: true }),
           ).pipe(mergeMap(() => of(body)))),
           catchError((error: unknown) => from(
             this.service.markRetryableFailure(result.recordId),

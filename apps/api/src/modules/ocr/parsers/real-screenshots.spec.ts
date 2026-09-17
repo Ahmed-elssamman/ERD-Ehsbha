@@ -20,7 +20,7 @@ describe('Real screenshots — Uber Arabic (summary + breakdown)', () => {
     expect(r.fields.receivedEgp).toBeCloseTo(28.0, 2);
     expect(r.fields.totalKm).toBeCloseTo(5.7, 2);
     expect(r.fields.durationSec).toBe(701);
-    expect(r.fields.startedAt).toMatch(/2026-05-18T22:46/);
+    expect(r.fields.startedAt).toMatch(/2026-05-18T19:46/);
   });
 
   it('breakdown alone yields الأجرة → gross, الدخل → received, رسوم الخدمة → commission', () => {
@@ -79,9 +79,9 @@ describe('Real screenshots — Careem (دخلي / إجمالي المدفوع / 
     expect(d.getUTCDate()).toBe(15);
   });
 
-  it('parses English AM/PM marker (08:45 PM → 20:45)', () => {
+  it('converts 08:45 PM Cairo summer time to 17:45 UTC', () => {
     const d = new Date(r.fields.startedAt!);
-    expect(d.getUTCHours()).toBe(20);
+    expect(d.getUTCHours()).toBe(17);
     expect(d.getUTCMinutes()).toBe(45);
   });
 
@@ -125,7 +125,7 @@ describe('Real screenshots — DiDi (أرباحك / تم استلام النقد
     expect(d.getUTCFullYear()).toBe(2026);
     expect(d.getUTCMonth()).toBe(4);
     expect(d.getUTCDate()).toBe(16);
-    expect(d.getUTCHours()).toBe(20);
+    expect(d.getUTCHours()).toBe(17);
     expect(d.getUTCMinutes()).toBe(43);
   });
 

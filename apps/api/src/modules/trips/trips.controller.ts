@@ -1,3 +1,5 @@
+import { TripHistoryQuerySchema, TripVersionSchema } from '@ehsbha/api-contracts';
+import { z } from 'zod';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
@@ -57,7 +59,7 @@ export class TripsController {
    */
   @Post('batch')
   @IdempotentOperation({
-    operationId: 'driver.trips.batch',
+    operationId: 'driver.trips.batch-create',
     realm: 'driver',
     requestSchema: BatchCreateTripsSchema,
   })
@@ -69,13 +71,13 @@ export class TripsController {
   }
 
   /**
-   * Bulk-delete. Body is `{ ids: string[] }` — the trips list UI uses this
+   * Bulk-delete. Each selected trip includes its reviewed version. The list uses this
    * to remove a multi-selection (or "select all visible") in one request.
    * Status is 200 (not 204) because the body contains per-id errors.
    */
   @Post('batch-delete')
   @IdempotentOperation({
-    operationId: 'driver.trips.post-batch-delete',
+    operationId: 'driver.trips.batch-delete',
     realm: 'driver',
     requestSchema: BatchDeleteTripsSchema,
   })
@@ -83,7 +85,7 @@ export class TripsController {
     @CurrentDriverId() driverId: string,
     @Body(new ZodValidationPipe(BatchDeleteTripsSchema)) dto: BatchDeleteTripsDto,
   ) {
-    return this.svc.removeBatch(driverId, dto.ids);
+    return this.svc.removeBatch(driverId, dto.items);
   }
 
   @Get(':id')
@@ -91,7 +93,17 @@ export class TripsController {
     return this.svc.get(driverId, id);
   }
 
+  @Get(':id/history')
+  history(@CurrentDriverId() driverId: string, @Param('id') id: string,
+    @Query(new ZodValidationPipe(TripHistoryQuerySchema)) q: z.infer<typeof TripHistoryQuerySchema>) { return this.svc.history(driverId, id, q); }
+
+  @Post(':id/restore')
+  @IdempotentOperation({ operationId: 'driver.trips.restore', realm: 'driver', requestSchema: TripVersionSchema, pathParameters: ['id'] })
+  restore(@CurrentDriverId() driverId: string, @Param('id') id: string,
+    @Body(new ZodValidationPipe(TripVersionSchema)) body: z.infer<typeof TripVersionSchema>) { return this.svc.restore(driverId, id, body.expectedVersion); }
+
   @Patch(':id')
+  @IdempotentOperation({ operationId: 'driver.trips.update', realm: 'driver', requestSchema: UpdateTripSchema, pathParameters: ['id'] })
   update(
     @CurrentDriverId() driverId: string,
     @Param('id') id: string,
@@ -101,8 +113,10 @@ export class TripsController {
   }
 
   @Delete(':id')
+  @IdempotentOperation({ operationId: 'driver.trips.delete', realm: 'driver', requestSchema: z.object({}).strict(), querySchema: TripVersionSchema, pathParameters: ['id'] })
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@CurrentDriverId() driverId: string, @Param('id') id: string) {
-    await this.svc.remove(driverId, id);
+  async remove(@CurrentDriverId() driverId: string, @Param('id') id: string,
+    @Query(new ZodValidationPipe(TripVersionSchema)) q: z.infer<typeof TripVersionSchema>) {
+    await this.svc.remove(driverId, id, q.expectedVersion);
   }
 }

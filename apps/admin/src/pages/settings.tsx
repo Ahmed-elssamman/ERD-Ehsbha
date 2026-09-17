@@ -58,7 +58,7 @@ function SettingRow({ setting }: { setting: Setting }) {
   useEffect(() => {
     setValue(initial);
     setDirty(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [setting.key, initial]);
 
   const save = useMutation({

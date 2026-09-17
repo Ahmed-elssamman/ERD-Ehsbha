@@ -148,10 +148,13 @@ export const adminMfaChallengeSchema = z.object({
   challengeId: z.string().min(1),
 }).passthrough()
 
-export const adminLoginResponseSchema = z.discriminatedUnion('mfaRequired', [
-  adminAuthSessionSchema,
-  adminMfaChallengeSchema,
-])
+export const adminLoginResponseSchema = z.object({
+  mfaRequired: z.boolean(),
+  accessToken: z.string().optional(),
+  refreshToken: z.string().optional(),
+  admin: adminPrincipalSchema.optional(),
+  challengeId: z.string().optional(),
+}).passthrough()
 
 const producer = [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }] as const
 
@@ -164,7 +167,7 @@ registerOperation({
   lifecycle: 'active',
   request: { body: 'RegisterSchema' },
   successData: 'driverAuthResultSchema',
-  failureCodes: ['VALIDATION_ERROR', 'CONFLICT', 'RATE_LIMITED'],
+  failureCodes: ['VALIDATION_ERROR', 'CONFLICT', 'PHONE_TAKEN', 'EMAIL_TAKEN', 'RATE_LIMITED'],
   consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
@@ -182,7 +185,7 @@ registerOperation({
   lifecycle: 'active',
   request: { body: 'LoginSchema' },
   successData: 'driverAuthResultSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'RATE_LIMITED'],
+  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'INVALID_CREDENTIALS', 'RATE_LIMITED'],
   consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
@@ -236,7 +239,7 @@ registerOperation({
   lifecycle: 'active',
   request: { body: 'LookupEmailSchema' },
   successData: 'lookupEmailResultSchema',
-  failureCodes: ['VALIDATION_ERROR', 'NOT_FOUND', 'RATE_LIMITED'],
+  failureCodes: ['VALIDATION_ERROR', 'NOT_FOUND', 'USER_NOT_FOUND', 'NO_EMAIL_ON_FILE', 'RATE_LIMITED'],
   consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
@@ -254,7 +257,7 @@ registerOperation({
   lifecycle: 'active',
   request: { body: 'ForgotPasswordSchema' },
   successData: 'forgotPasswordResultSchema',
-  failureCodes: ['VALIDATION_ERROR', 'NOT_FOUND', 'RATE_LIMITED'],
+  failureCodes: ['VALIDATION_ERROR', 'NOT_FOUND', 'USER_NOT_FOUND', 'NO_EMAIL_ON_FILE', 'RATE_LIMITED'],
   consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',
@@ -272,7 +275,7 @@ registerOperation({
   lifecycle: 'active',
   request: { body: 'passwordResetSchema' },
   successData: 'authAcknowledgedResultSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'RATE_LIMITED'],
+  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'RESET_INVALID', 'RESET_EXPIRED', 'RESET_CODE_WRONG', 'RESET_LOCKED', 'RATE_LIMITED'],
   consumers: [...producer],
   compatibility: 'additive-compatible',
   owner: 'platform',

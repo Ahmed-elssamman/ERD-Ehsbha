@@ -1,333 +1,174 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Prisma, ReportingCalendar } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { isoYearWeek, startOfUtcDay, diffMinutes } from '../../common/utils/date';
-import { safeDiv, toBp } from '../../common/utils/money';
-
-export interface TripDelta {
-  driverId: string;
-  driverAppId: string;
-  areaId?: string | null;
-  startedAt: Date;
-  endedAt: Date;
-  grossPiastres: number;
-  tipPiastres: number;
-  commissionPiastres: number;
-  totalKmMeters: number;
-  paidKmMeters: number;
-  emptyKmMeters: number;
-  sign: 1 | -1;
-}
-
-export interface FuelDelta {
-  driverId: string;
-  dateTime: Date;
-  totalPiastres: number;
-  sign: 1 | -1;
-}
-
-export interface ExpenseDelta {
-  driverId: string;
-  dateTime: Date;
-  amountPiastres: number;
-  sign: 1 | -1;
-}
-
-export interface SessionDelta {
-  driverId: string;
-  driverAppId: string;
-  startedAt: Date;
-  endedAt: Date;
-  activeMinutes: number;
-  sign: 1 | -1;
-}
-
-type Tx = Prisma.TransactionClient | PrismaService;
+import { lockDriverWrites } from '../../common/authorization/driver-write-lock';
+import { isoYearWeek, startOfUtcDay } from '../../common/utils/date';
+import { businessDate, businessDatesBetween, businessDayForDate } from '@ehsbha/shared-types';
+import { aggregateRatios, dailyTotals, groupTotals } from './aggregate-calculation';
+import { FINANCIAL_PROJECTION_VERSION, AGGREGATE_DAY_MS, AGGREGATE_SUM_FIELDS, AGGREGATE_TRANSACTION_TIMEOUT_MS, AGGREGATE_TRIP_SELECT, AGGREGATE_SESSION_SELECT } from './aggregate.control';
+import { AggregatePeriod, type AggregateRatios, type AggregateRepairPeriod, type WorkInterval } from './aggregate.model';
+import { aggregateRepairDates, aggregateRepairPeriods } from './aggregate-repair-query';
 
 @Injectable()
 export class AggregatesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async applyTrip(d: TripDelta, tx: Tx = this.prisma): Promise<void> {
-    const date = startOfUtcDay(d.startedAt);
-    const { isoYear, isoWeek } = isoYearWeek(d.startedAt);
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth() + 1;
-    const sign = d.sign;
-
-    const tripMinutes = diffMinutes(d.startedAt, d.endedAt);
-
-    const inc = (n: number) => sign * n;
-    const incB = (n: number) => BigInt(sign * n);
-
-    await tx.dailyAggregate.upsert({
-      where: { driverId_date: { driverId: d.driverId, date } },
-      create: {
-        driverId: d.driverId,
-        date,
-        tripCount: inc(1),
-        totalKmMeters: incB(d.totalKmMeters),
-        paidKmMeters: incB(d.paidKmMeters),
-        emptyKmMeters: incB(d.emptyKmMeters),
-        onlineMinutes: inc(tripMinutes),
-        grossPiastres: incB(d.grossPiastres),
-        tipPiastres: incB(d.tipPiastres),
-        commissionPiastres: incB(d.commissionPiastres),
-      },
-      update: {
-        tripCount: { increment: inc(1) },
-        totalKmMeters: { increment: incB(d.totalKmMeters) },
-        paidKmMeters: { increment: incB(d.paidKmMeters) },
-        emptyKmMeters: { increment: incB(d.emptyKmMeters) },
-        onlineMinutes: { increment: inc(tripMinutes) },
-        grossPiastres: { increment: incB(d.grossPiastres) },
-        tipPiastres: { increment: incB(d.tipPiastres) },
-        commissionPiastres: { increment: incB(d.commissionPiastres) },
-      },
-    });
-
-    await tx.weeklyAggregate.upsert({
-      where: { driverId_isoYear_isoWeek: { driverId: d.driverId, isoYear, isoWeek } },
-      create: {
-        driverId: d.driverId,
-        isoYear,
-        isoWeek,
-        tripCount: inc(1),
-        totalKmMeters: incB(d.totalKmMeters),
-        paidKmMeters: incB(d.paidKmMeters),
-        emptyKmMeters: incB(d.emptyKmMeters),
-        onlineMinutes: inc(tripMinutes),
-        grossPiastres: incB(d.grossPiastres),
-      },
-      update: {
-        tripCount: { increment: inc(1) },
-        totalKmMeters: { increment: incB(d.totalKmMeters) },
-        paidKmMeters: { increment: incB(d.paidKmMeters) },
-        emptyKmMeters: { increment: incB(d.emptyKmMeters) },
-        onlineMinutes: { increment: inc(tripMinutes) },
-        grossPiastres: { increment: incB(d.grossPiastres) },
-      },
-    });
-
-    await tx.monthlyAggregate.upsert({
-      where: { driverId_year_month: { driverId: d.driverId, year, month } },
-      create: {
-        driverId: d.driverId,
-        year,
-        month,
-        tripCount: inc(1),
-        totalKmMeters: incB(d.totalKmMeters),
-        paidKmMeters: incB(d.paidKmMeters),
-        emptyKmMeters: incB(d.emptyKmMeters),
-        onlineMinutes: inc(tripMinutes),
-        grossPiastres: incB(d.grossPiastres),
-      },
-      update: {
-        tripCount: { increment: inc(1) },
-        totalKmMeters: { increment: incB(d.totalKmMeters) },
-        paidKmMeters: { increment: incB(d.paidKmMeters) },
-        emptyKmMeters: { increment: incB(d.emptyKmMeters) },
-        onlineMinutes: { increment: inc(tripMinutes) },
-        grossPiastres: { increment: incB(d.grossPiastres) },
-      },
-    });
-
-    const grossNetForTrip = d.grossPiastres + d.tipPiastres - d.commissionPiastres;
-    await tx.appDailyAggregate.upsert({
-      where: { driverId_driverAppId_date: { driverId: d.driverId, driverAppId: d.driverAppId, date } },
-      create: {
-        driverId: d.driverId,
-        driverAppId: d.driverAppId,
-        date,
-        tripCount: inc(1),
-        totalKmMeters: incB(d.totalKmMeters),
-        onlineMinutes: inc(tripMinutes),
-        grossPiastres: incB(d.grossPiastres),
-        netProfitPiastres: incB(grossNetForTrip),
-      },
-      update: {
-        tripCount: { increment: inc(1) },
-        totalKmMeters: { increment: incB(d.totalKmMeters) },
-        onlineMinutes: { increment: inc(tripMinutes) },
-        grossPiastres: { increment: incB(d.grossPiastres) },
-        netProfitPiastres: { increment: incB(grossNetForTrip) },
-      },
-    });
-
-    if (d.areaId) {
-      await tx.areaDailyAggregate.upsert({
-        where: { driverId_areaId_date: { driverId: d.driverId, areaId: d.areaId, date } },
-        create: {
-          driverId: d.driverId,
-          areaId: d.areaId,
-          date,
-          tripCount: inc(1),
-          totalKmMeters: incB(d.totalKmMeters),
-          grossPiastres: incB(d.grossPiastres),
-          netProfitPiastres: incB(grossNetForTrip),
-        },
-        update: {
-          tripCount: { increment: inc(1) },
-          totalKmMeters: { increment: incB(d.totalKmMeters) },
-          grossPiastres: { increment: incB(d.grossPiastres) },
-          netProfitPiastres: { increment: incB(grossNetForTrip) },
-        },
-      });
-    }
-
-    await this.recomputeRatios(d.driverId, date, isoYear, isoWeek, year, month, tx);
+  async ensureCalendar(driverId: string, timeout = AGGREGATE_TRANSACTION_TIMEOUT_MS): Promise<void> {
+    const driver = await this.prisma.driver.findUniqueOrThrow({ where: { id: driverId }, select: { reportingCalendar: true, financialProjectionVersion: true } });
+    if (driver.reportingCalendar === ReportingCalendar.CAIRO && driver.financialProjectionVersion === FINANCIAL_PROJECTION_VERSION) return;
+    await this.prisma.$transaction(async (tx) => {
+      await lockDriverWrites(tx, driverId);
+      await this.ensureCalendarInTransaction(driverId, tx);
+    }, { timeout });
   }
 
-  async applyFuel(d: FuelDelta, tx: Tx = this.prisma): Promise<void> {
-    const date = startOfUtcDay(d.dateTime);
-    const { isoYear, isoWeek } = isoYearWeek(d.dateTime);
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth() + 1;
-    const incB = (n: number) => BigInt(d.sign * n);
-
-    await tx.dailyAggregate.upsert({
-      where: { driverId_date: { driverId: d.driverId, date } },
-      create: { driverId: d.driverId, date, fuelPiastres: incB(d.totalPiastres) },
-      update: { fuelPiastres: { increment: incB(d.totalPiastres) } },
-    });
-    await tx.weeklyAggregate.upsert({
-      where: { driverId_isoYear_isoWeek: { driverId: d.driverId, isoYear, isoWeek } },
-      create: { driverId: d.driverId, isoYear, isoWeek, fuelPiastres: incB(d.totalPiastres) },
-      update: { fuelPiastres: { increment: incB(d.totalPiastres) } },
-    });
-    await tx.monthlyAggregate.upsert({
-      where: { driverId_year_month: { driverId: d.driverId, year, month } },
-      create: { driverId: d.driverId, year, month, fuelPiastres: incB(d.totalPiastres) },
-      update: { fuelPiastres: { increment: incB(d.totalPiastres) } },
-    });
-    await this.recomputeRatios(d.driverId, date, isoYear, isoWeek, year, month, tx);
+  /** Cross-driver reports must not combine calendars during the cutover. */
+  async assertCalendarsReady(): Promise<void> {
+    const pending = await this.prisma.driver.findFirst({ where: { OR: [{ reportingCalendar: ReportingCalendar.UTC }, { financialProjectionVersion: { not: FINANCIAL_PROJECTION_VERSION } }] }, select: { id: true } });
+    if (pending) throw new ServiceUnavailableException({ code: 'REPORTING_PROJECTION_PENDING' });
   }
 
-  async applyExpense(d: ExpenseDelta, tx: Tx = this.prisma): Promise<void> {
-    const date = startOfUtcDay(d.dateTime);
-    const { isoYear, isoWeek } = isoYearWeek(d.dateTime);
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth() + 1;
-    const incB = (n: number) => BigInt(d.sign * n);
-
-    await tx.dailyAggregate.upsert({
-      where: { driverId_date: { driverId: d.driverId, date } },
-      create: { driverId: d.driverId, date, expensePiastres: incB(d.amountPiastres) },
-      update: { expensePiastres: { increment: incB(d.amountPiastres) } },
-    });
-    await tx.weeklyAggregate.upsert({
-      where: { driverId_isoYear_isoWeek: { driverId: d.driverId, isoYear, isoWeek } },
-      create: { driverId: d.driverId, isoYear, isoWeek, expensePiastres: incB(d.amountPiastres) },
-      update: { expensePiastres: { increment: incB(d.amountPiastres) } },
-    });
-    await tx.monthlyAggregate.upsert({
-      where: { driverId_year_month: { driverId: d.driverId, year, month } },
-      create: { driverId: d.driverId, year, month, expensePiastres: incB(d.amountPiastres) },
-      update: { expensePiastres: { increment: incB(d.amountPiastres) } },
-    });
-    await this.recomputeRatios(d.driverId, date, isoYear, isoWeek, year, month, tx);
+  private async ensureCalendarInTransaction(driverId: string, tx: Prisma.TransactionClient): Promise<void> {
+    const driver = await tx.driver.findUniqueOrThrow({ where: { id: driverId }, select: { reportingCalendar: true, financialProjectionVersion: true } });
+    if (driver.reportingCalendar === ReportingCalendar.CAIRO && driver.financialProjectionVersion === FINANCIAL_PROJECTION_VERSION) return;
+    const dates = await aggregateRepairDates(tx, driverId);
+    for (const date of dates) await this.replaceDay(driverId, date, tx);
+    const weeks = new Map<string, Date>();
+    const months = new Map<string, Date>();
+    for (const date of dates) {
+      const week = isoYearWeek(date);
+      weeks.set(`${week.isoYear}-${week.isoWeek}`, date);
+      months.set(`${date.getUTCFullYear()}-${date.getUTCMonth()}`, date);
+    }
+    for (const date of weeks.values()) await this.replaceWeek(driverId, date, tx);
+    for (const date of months.values()) await this.replaceMonth(driverId, date, tx);
+    for (const period of await aggregateRepairPeriods(tx, driverId)) {
+      if (period.period === AggregatePeriod.Week) await this.replaceWeek(driverId, period.date, tx);
+      else await this.replaceMonth(driverId, period.date, tx);
+    }
+    const now = new Date();
+    await tx.recommendation.updateMany({ where: { driverId, expiresAt: { gt: now } }, data: { expiresAt: now } });
+    await tx.driver.update({ where: { id: driverId }, data: { reportingCalendar: ReportingCalendar.CAIRO, financialProjectionVersion: FINANCIAL_PROJECTION_VERSION } });
   }
 
-  async applySession(d: SessionDelta, tx: Tx = this.prisma): Promise<void> {
-    const date = startOfUtcDay(d.startedAt);
-    const { isoYear, isoWeek } = isoYearWeek(d.startedAt);
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth() + 1;
-    const inc = (n: number) => d.sign * n;
-
-    await tx.dailyAggregate.upsert({
-      where: { driverId_date: { driverId: d.driverId, date } },
-      create: { driverId: d.driverId, date, onlineMinutes: inc(d.activeMinutes) },
-      update: { onlineMinutes: { increment: inc(d.activeMinutes) } },
-    });
-    await tx.weeklyAggregate.upsert({
-      where: { driverId_isoYear_isoWeek: { driverId: d.driverId, isoYear, isoWeek } },
-      create: { driverId: d.driverId, isoYear, isoWeek, onlineMinutes: inc(d.activeMinutes) },
-      update: { onlineMinutes: { increment: inc(d.activeMinutes) } },
-    });
-    await tx.monthlyAggregate.upsert({
-      where: { driverId_year_month: { driverId: d.driverId, year, month } },
-      create: { driverId: d.driverId, year, month, onlineMinutes: inc(d.activeMinutes) },
-      update: { onlineMinutes: { increment: inc(d.activeMinutes) } },
-    });
-
-    await tx.appDailyAggregate.upsert({
-      where: { driverId_driverAppId_date: { driverId: d.driverId, driverAppId: d.driverAppId, date } },
-      create: {
-        driverId: d.driverId,
-        driverAppId: d.driverAppId,
-        date,
-        onlineMinutes: inc(d.activeMinutes),
-      },
-      update: { onlineMinutes: { increment: inc(d.activeMinutes) } },
-    });
-
-    await this.recomputeRatios(d.driverId, date, isoYear, isoWeek, year, month, tx);
+  async rebuildDay(driverId: string, date: Date): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await lockDriverWrites(tx, driverId);
+      await this.refreshDays(driverId, [date], tx);
+    }, { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS });
   }
 
-  private async recomputeRatios(
-    driverId: string,
-    date: Date,
-    isoYear: number,
-    isoWeek: number,
-    year: number,
-    month: number,
-    tx: Tx,
-  ): Promise<void> {
-    const daily = await tx.dailyAggregate.findUnique({ where: { driverId_date: { driverId, date } } });
-    if (daily) {
-      const gross = Number(daily.grossPiastres) + Number(daily.tipPiastres) - Number(daily.commissionPiastres);
-      const net = gross - Number(daily.fuelPiastres) - Number(daily.expensePiastres) - Number(daily.maintAmortPiastres);
-      const totalKm = Number(daily.totalKmMeters);
-      const totalEmpty = Number(daily.emptyKmMeters);
-      const profitPerKm = totalKm > 0 ? Math.round((net * 1000) / totalKm) : 0;
-      const profitPerHour = daily.onlineMinutes > 0 ? Math.round((net * 60) / daily.onlineMinutes) : 0;
-      const emptyRatio = toBp(safeDiv(totalEmpty, totalKm, 0));
-      await tx.dailyAggregate.update({
-        where: { driverId_date: { driverId, date } },
-        data: {
-          netProfitPiastres: BigInt(net),
-          profitPerKmPiastres: profitPerKm,
-          profitPerHourPiastres: profitPerHour,
-          emptyRatioBp: emptyRatio,
-        },
-      });
-    }
+  async rebuildPeriod(driverId: string, period: AggregateRepairPeriod): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await lockDriverWrites(tx, driverId);
+      await this.ensureCalendarInTransaction(driverId, tx);
+      if (period.period === AggregatePeriod.Week) await this.replaceWeek(driverId, period.date, tx);
+      else await this.replaceMonth(driverId, period.date, tx);
+    }, { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS });
+  }
 
-    const weekly = await tx.weeklyAggregate.findUnique({
-      where: { driverId_isoYear_isoWeek: { driverId, isoYear, isoWeek } },
-    });
-    if (weekly) {
-      const gross = Number(weekly.grossPiastres);
-      const net = gross - Number(weekly.fuelPiastres) - Number(weekly.expensePiastres) - Number(weekly.maintAmortPiastres);
-      const totalKm = Number(weekly.totalKmMeters);
-      const totalEmpty = Number(weekly.emptyKmMeters);
-      await tx.weeklyAggregate.update({
-        where: { driverId_isoYear_isoWeek: { driverId, isoYear, isoWeek } },
-        data: {
-          netProfitPiastres: BigInt(net),
-          profitPerKmPiastres: totalKm > 0 ? Math.round((net * 1000) / totalKm) : 0,
-          profitPerHourPiastres: weekly.onlineMinutes > 0 ? Math.round((net * 60) / weekly.onlineMinutes) : 0,
-          emptyRatioBp: toBp(safeDiv(totalEmpty, totalKm, 0)),
-        },
-      });
-    }
+  /** Caller writes the source first, under the same driver lock and transaction. */
+  async refreshIntervals(driverId: string, intervals: WorkInterval[], tx: Prisma.TransactionClient): Promise<void> {
+    const dates: Date[] = [];
+    for (const interval of intervals) dates.push(...businessDatesBetween(interval.startedAt, interval.endedAt));
+    await this.refreshDays(driverId, dates, tx);
+  }
 
-    const monthly = await tx.monthlyAggregate.findUnique({ where: { driverId_year_month: { driverId, year, month } } });
-    if (monthly) {
-      const gross = Number(monthly.grossPiastres);
-      const net = gross - Number(monthly.fuelPiastres) - Number(monthly.expensePiastres) - Number(monthly.maintAmortPiastres);
-      const totalKm = Number(monthly.totalKmMeters);
-      const totalEmpty = Number(monthly.emptyKmMeters);
-      await tx.monthlyAggregate.update({
-        where: { driverId_year_month: { driverId, year, month } },
-        data: {
-          netProfitPiastres: BigInt(net),
-          profitPerKmPiastres: totalKm > 0 ? Math.round((net * 1000) / totalKm) : 0,
-          profitPerHourPiastres: monthly.onlineMinutes > 0 ? Math.round((net * 60) / monthly.onlineMinutes) : 0,
-          emptyRatioBp: toBp(safeDiv(totalEmpty, totalKm, 0)),
-        },
-      });
+  /** Timestamped costs are assigned by their Cairo date, before date-label arithmetic. */
+  async refreshInstants(driverId: string, instants: Date[], tx: Prisma.TransactionClient): Promise<void> {
+    await this.refreshDays(driverId, instants.map(businessDate), tx);
+  }
+
+  /** Dates are PostgreSQL DATE labels represented at UTC midnight, not timestamps. */
+  async refreshDays(driverId: string, dates: Date[], tx: Prisma.TransactionClient): Promise<void> {
+    await this.ensureCalendarInTransaction(driverId, tx);
+    const unique = [...new Set(dates.map((date) => startOfUtcDay(date).getTime()))].sort((a, b) => a - b).map((time) => new Date(time));
+    for (const date of unique) await this.replaceDay(driverId, date, tx);
+    const weeks = new Map<string, Date>();
+    const months = new Map<string, Date>();
+    for (const date of unique) {
+      const { isoYear, isoWeek } = isoYearWeek(date);
+      weeks.set(`${isoYear}-${isoWeek}`, date);
+      months.set(`${date.getUTCFullYear()}-${date.getUTCMonth()}`, date);
     }
+    for (const date of weeks.values()) await this.replaceWeek(driverId, date, tx);
+    for (const date of months.values()) await this.replaceMonth(driverId, date, tx);
+    const now = new Date();
+    await tx.recommendation.updateMany({ where: { driverId, expiresAt: { gt: now } }, data: { expiresAt: now } });
+  }
+
+  private async replaceDay(driverId: string, date: Date, tx: Prisma.TransactionClient): Promise<void> {
+    const { start, end: next } = businessDayForDate(date);
+    const [tripRows, sessionRows, fuels, expenses, maintenance, previous, odometer] = await Promise.all([
+      tx.trip.findMany({ where: { driverId, deletedAt: null, startedAt: { lt: next }, endedAt: { gt: start } }, select: AGGREGATE_TRIP_SELECT }),
+      tx.session.findMany({ where: { driverId, deletedAt: null, startedAt: { lt: next }, endedAt: { gt: start } }, select: AGGREGATE_SESSION_SELECT }),
+      tx.fuelLog.aggregate({ where: { driverId, deletedAt: null, OR: [{ linkedExpenseId: null }, { linkedExpense: { deletedAt: { not: null } } }], dateTime: { gte: start, lt: next } }, _sum: { totalPiastres: true } }),
+      tx.expense.aggregate({ where: { driverId, deletedAt: null, dateTime: { gte: start, lt: next } }, _sum: { amountPiastres: true } }),
+      tx.maintenanceRecord.aggregate({ where: { driverId, deletedAt: null, performedAt: { gte: start, lt: next },
+        OR: [{ linkedExpenseId: null }, { linkedExpense: { deletedAt: { not: null } } }] }, _sum: { costPiastres: true } }),
+      tx.dailyAggregate.findUnique({ where: { driverId_date: { driverId, date } } }),
+      tx.dailyOdometer.findUnique({ where: { driverId_date: { driverId, date } }, select: { totalKmMeters: true } }),
+    ]);
+    const trips = tripRows.map((trip) => ({ ...trip,
+      tollLinked: trip.linkedExpenses.some((expense) => expense.category === 'TOLL'),
+      parkingLinked: trip.linkedExpenses.some((expense) => expense.category === 'PARKING'),
+    }));
+    const sessions = sessionRows.flatMap((session) => session.endedAt ? [{ ...session, endedAt: session.endedAt }] : []);
+    const totals = dailyTotals(trips, sessions, start, next, this.moneySum(fuels._sum.totalPiastres), this.moneySum(expenses._sum.amountPiastres), this.moneySum(maintenance._sum.costPiastres));
+    totals.maintAmortPiastres = previous?.maintAmortPiastres ?? 0n;
+    if (odometer) {
+      if (odometer.totalKmMeters < totals.paidKmMeters) throw new BadRequestException({ code: 'DAILY_DISTANCE_CONFLICT' });
+      totals.totalKmMeters = odometer.totalKmMeters;
+      totals.emptyKmMeters = odometer.totalKmMeters - totals.paidKmMeters;
+    }
+    let ratios: AggregateRatios;
+    try { ratios = aggregateRatios(totals); }
+    catch { throw new BadRequestException({ code: 'VALIDATION_ERROR' }); }
+    const data = { ...totals, ...ratios };
+    await tx.dailyAggregate.upsert({ where: { driverId_date: { driverId, date } }, create: { driverId, date, ...data }, update: data });
+    await tx.appDailyAggregate.deleteMany({ where: { driverId, date } });
+    await tx.areaDailyAggregate.deleteMany({ where: { driverId, date } });
+    const appIds = new Set([...trips.map((trip) => trip.driverAppId), ...sessions.flatMap((session) => session.driverAppId ? [session.driverAppId] : [])]);
+    if (appIds.size) await tx.appDailyAggregate.createMany({ data: [...appIds].map((driverAppId) => ({
+      driverId, driverAppId, date,
+      ...groupTotals(trips.filter((trip) => trip.driverAppId === driverAppId), sessions.filter((session) => session.driverAppId === driverAppId), start, next),
+    })) });
+    const areaIds = new Set(trips.flatMap((trip) => trip.areaId && trip.startedAt >= start && trip.startedAt < next ? [trip.areaId] : []));
+    if (areaIds.size) await tx.areaDailyAggregate.createMany({ data: [...areaIds].map((areaId) => {
+      const { onlineMinutes: _minutes, ...group } = groupTotals(trips.filter((trip) => trip.areaId === areaId), [], start, next);
+      return { driverId, areaId, date, ...group };
+    }) });
+  }
+
+  private async periodTotals(driverId: string, from: Date, to: Date, tx: Prisma.TransactionClient) {
+    const { _sum: sum } = await tx.dailyAggregate.aggregate({ where: { driverId, date: { gte: from, lt: to } }, _sum: AGGREGATE_SUM_FIELDS });
+    const totals = { tripCount: sum.tripCount ?? 0, totalKmMeters: sum.totalKmMeters ?? 0n,
+      grossKnownTripCount: sum.grossKnownTripCount ?? 0, commissionKnownTripCount: sum.commissionKnownTripCount ?? 0,
+      paidKmMeters: sum.paidKmMeters ?? 0n, emptyKmMeters: sum.emptyKmMeters ?? 0n,
+      onlineMinutes: sum.onlineMinutes ?? 0, grossPiastres: sum.grossPiastres ?? 0n,
+      netProfitPiastres: sum.netProfitPiastres ?? 0n, fuelPiastres: sum.fuelPiastres ?? 0n,
+      expensePiastres: sum.expensePiastres ?? 0n, maintenancePiastres: sum.maintenancePiastres ?? 0n, maintAmortPiastres: sum.maintAmortPiastres ?? 0n };
+    try { return { ...totals, ...aggregateRatios(totals) }; }
+    catch { throw new BadRequestException({ code: 'VALIDATION_ERROR' }); }
+  }
+
+  private moneySum(value: number | null): bigint {
+    const amount = value ?? 0;
+    if (!Number.isSafeInteger(amount)) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    return BigInt(amount);
+  }
+
+  private async replaceWeek(driverId: string, date: Date, tx: Prisma.TransactionClient): Promise<void> {
+    const { isoYear, isoWeek } = isoYearWeek(date);
+    const monday = new Date(date.getTime() - ((date.getUTCDay() + 6) % 7) * AGGREGATE_DAY_MS);
+    const data = await this.periodTotals(driverId, monday, new Date(monday.getTime() + 7 * AGGREGATE_DAY_MS), tx);
+    await tx.weeklyAggregate.upsert({ where: { driverId_isoYear_isoWeek: { driverId, isoYear, isoWeek } }, create: { driverId, isoYear, isoWeek, ...data }, update: data });
+  }
+
+  private async replaceMonth(driverId: string, date: Date, tx: Prisma.TransactionClient): Promise<void> {
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const data = await this.periodTotals(driverId, new Date(Date.UTC(year, month - 1, 1)), new Date(Date.UTC(year, month, 1)), tx);
+    await tx.monthlyAggregate.upsert({ where: { driverId_year_month: { driverId, year, month } }, create: { driverId, year, month, ...data }, update: data });
   }
 }

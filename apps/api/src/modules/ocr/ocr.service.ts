@@ -1,460 +1,263 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
-
 import {
-  EMPTY_PARSED,
-  OcrExtractMode,
-  OcrExtractRequestHints,
-  OcrExtractResponseDto,
-  OcrPlatform,
-  OcrTripResultDto,
-} from './dto/ocr.dto';
+  OCR_ALLOWED_MIME, OCR_MAX_BATCH_BYTES, OCR_MAX_IMAGE_BYTES, OCR_MAX_IMAGES,
+  OcrCandidateStatus, OcrDocumentStatus, type OcrDocumentResult,
+} from '@ehsbha/api-contracts';
+import { EMPTY_PARSED, OcrExtractRequestHints, OcrExtractResponseDto, OcrPlatform, OcrTripResultDto } from './dto/ocr.dto';
 import { SharpProcessor } from './image-processing/sharp.processor';
-import { filterChromeLines } from './image-processing/chrome-filter';
-import { AzureVisionProvider, AzureAnalyzeResult } from './azure/azure-vision.provider';
+import { OcrRecognitionProvider } from './ocr-recognition.provider';
+import { OcrWorkLimiter } from './ocr-work-limiter';
 import { PlatformDetector } from './detectors/platform.detector';
 import { UberParser } from './parsers/uber.parser';
 import { IndriveParser } from './parsers/indrive.parser';
 import { DidiParser } from './parsers/didi.parser';
 import { CareemParser } from './parsers/careem.parser';
 import { MultiScreenshotMerger } from './merge/multi-screenshot.merger';
-import { MultiTripSplitter } from './merge/multi-trip.splitter';
+import { MultiTripSplitter, TripSlice } from './merge/multi-trip.splitter';
 import { ConfidenceScorer } from './confidence/scorer';
 import { TripValidator } from './validation/trip-validator';
 import { BaseParser, RawParsed } from './parsers/base.parser';
-import { OcrLine, OcrResult, OcrWord, ParseContext } from './types';
-import { AzureLine, AzureReadResult } from './azure/types';
+import { ImageSignals } from './types';
+import { normalizeNumeric } from './semantic/digit-normalizer';
+import {
+  OCR_MAX_CANDIDATES, OCR_MAX_TEXT_LENGTH, OCR_READY_CONFIDENCE,
+  OCR_REQUIRED_FIELDS, OCR_SUMMARY_HEADER,
+} from './ocr.control';
+import { markCandidateDuplicates } from './validation/candidate-duplicates';
 
-const ALLOWED_MIME = /^image\/(png|jpe?g|webp|heic|heif)$/i;
-const MAX_FILES = 5;
-const MAX_BYTES = 5 * 1024 * 1024;
+export interface OcrImageUpload { buffer: Buffer; mimetype: string; size: number; originalname?: string }
+export interface DocumentExtraction { document: OcrDocumentResult; trips: OcrTripResultDto[]; meanConfidence: number }
 
-interface ImageEvidence {
-  read: OcrResult;
-  parsed: RawParsed;
-}
-
-/**
- * The end-to-end OCR pipeline. For each uploaded screenshot:
- *
- *   sharp preprocess
- *      ↓
- *   Azure Image Analysis Read (lines+words+bboxes+confidence) ─┐
- *   Azure Document Intelligence prebuilt-receipt (optional)   ─┘  parallel
- *      ↓
- *   PlatformDetector.detect(lines)         → choose parser
- *      ↓
- *   Parser.parse(text, words, {lines, receipt})
- *      ↓                                                   one ImageEvidence per file
- *   MultiScreenshotMerger.merge(all)
- *      ↓
- *   ConfidenceScorer.score(...)
- *      ↓
- *   TripValidator.validate(...)
- *      ↓
- *   OcrExtractResponseDto
- */
-/**
- * Governed error codes used by this service:
- * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when file validation fails (no images, too many, unsupported MIME, too large, invalid image)
- * - {@link GOVERNED_ERROR_REGISTRY.SERVICE_UNAVAILABLE} - when OCR provider (Azure) is busy, times out, or fails
- * - {@link GOVERNED_ERROR_REGISTRY.PROVIDER_UNAVAILABLE} - when OCR auth is misconfigured or provider cannot be reached
- * - {@link GOVERNED_ERROR_REGISTRY.INTERNAL_ERROR} - when an unexpected OCR failure occurs
- */
+/** Provider-independent orchestration. A bad image cannot discard other documents. */
 @Injectable()
 export class OcrService {
-  private readonly logger = new Logger(OcrService.name);
-  private readonly parserMap: Record<OcrPlatform, BaseParser>;
+  private parserMap: Record<OcrPlatform, BaseParser>;
 
   constructor(
-    private readonly azure: AzureVisionProvider,
-    private readonly sharp: SharpProcessor,
-    private readonly detector: PlatformDetector,
-    private readonly merger: MultiScreenshotMerger,
-    private readonly splitter: MultiTripSplitter,
-    private readonly scorer: ConfidenceScorer,
-    private readonly validator: TripValidator,
+    private provider: OcrRecognitionProvider,
+    private sharp: SharpProcessor,
+    private detector: PlatformDetector,
+    private merger: MultiScreenshotMerger,
+    private splitter: MultiTripSplitter,
+    private scorer: ConfidenceScorer,
+    private validator: TripValidator,
     uber: UberParser,
     indrive: IndriveParser,
     didi: DidiParser,
     careem: CareemParser,
+    private limiter: OcrWorkLimiter,
   ) {
     this.parserMap = { UBER: uber, INDRIVE: indrive, DIDI: didi, CAREEM: careem };
   }
 
-  async extract(
-    files: Array<{ buffer: Buffer; mimetype: string; size: number; originalname?: string }>,
-    hints?: OcrExtractRequestHints,
-  ): Promise<OcrExtractResponseDto> {
-    this.validateFiles(files);
-    const hashes = files.map((f) => createHash('sha256').update(f.buffer).digest('hex'));
-    const mode: OcrExtractMode = hints?.mode ?? 'single';
-    const platformHint = hints?.platform ?? null;
-
-    // Run preprocessing + OCR for each uploaded image, applying the chrome
-    // filter so downstream parsing never sees the status bar / nav row.
-    const perFile = await Promise.all(
-      files.map(async (file) => {
-        const processed = await this.sharp.prepare(file.buffer);
-        const analyzed = await this.callAzure(processed);
-        const cleaned = filterChromeLines(analyzed.read);
-        const ocr = azureToOcrResult(cleaned);
-        return { ocr, receipt: analyzed.receipt };
-      }),
-    );
-
-    if (mode === 'multi') {
-      return this.assembleMulti(perFile, platformHint, hashes);
-    }
-    return this.assembleSingle(perFile, platformHint, hashes);
-  }
-
-  private assembleSingle(
-    perFile: Array<{ ocr: OcrResult; receipt: AzureAnalyzeResult['receipt'] }>,
-    platformHint: OcrPlatform | null,
-    hashes: string[],
-  ): OcrExtractResponseDto {
-    const evidence: ImageEvidence[] = perFile.map(({ ocr, receipt }) => {
-      const platform = platformHint ?? this.detectPlatformForImage(ocr);
-      const parser = this.parserMap[platform];
-      const parsed = parser.parse(ocr.text, ocr.words, { lines: ocr.lines, receipt });
-      return { read: ocr, parsed };
+  async extract(files: OcrImageUpload[], hints?: OcrExtractRequestHints): Promise<OcrExtractResponseDto> {
+    this.validateBatch(files);
+    const mode = hints?.mode ?? 'auto';
+    const hashes = files.map((file) => hash(file.buffer));
+    const unique = new Map<string, Promise<DocumentExtraction>>();
+    const pending = files.map((file, index) => {
+      const imageHash = hashes[index];
+      const previous = unique.get(imageHash);
+      if (previous) {
+        return previous.then((result): DocumentExtraction => ({
+          ...result, trips: [],
+          document: {
+            ...result.document, id: `${imageHash}:${index}`, index,
+            status: result.document.status === OcrDocumentStatus.Failed ? OcrDocumentStatus.Failed : OcrDocumentStatus.Duplicate,
+            duplicateOf: result.document.id,
+          },
+        }));
+      }
+      const task = this.extractDocument(file, imageHash, index, hints?.platform ?? null, mode === 'multi');
+      unique.set(imageHash, task);
+      return task;
     });
-    return this.assemble(evidence, hashes, 'single', platformHint);
+    const extracted = await Promise.all(pending);
+    return this.assembleDocuments(extracted, hints);
   }
 
-  /**
-   * Splits each uploaded image into per-trip cards (Uber's "ملخص الدخل"
-   * summary screen layout) and parses each card independently. Cards from
-   * across all uploaded images are concatenated in OCR order — typically
-   * the UI only sends one image but the contract allows several.
-   */
-  private assembleMulti(
-    perFile: Array<{ ocr: OcrResult; receipt: AzureAnalyzeResult['receipt'] }>,
-    platformHint: OcrPlatform | null,
-    hashes: string[],
-  ): OcrExtractResponseDto {
-    const tripResults: OcrTripResultDto[] = [];
+  assembleDocuments(results: DocumentExtraction[], hints?: OcrExtractRequestHints): OcrExtractResponseDto {
+    // Assembly annotates candidates; never mutate the persisted extraction evidence.
+    const extracted = structuredClone(results);
+    const mode = hints?.mode ?? 'auto';
+    const hashes = extracted.map((result) => result.document.imageHash);
+    let candidateCount = 0;
+    for (const result of extracted) {
+      if (candidateCount + result.trips.length > OCR_MAX_CANDIDATES) {
+        result.document.status = OcrDocumentStatus.Failed;
+        result.document.errorCode = 'OCR_TOO_MANY_TRIPS';
+        result.document.candidateIds = [];
+        result.trips = [];
+      } else candidateCount += result.trips.length;
+    }
+    const documents = extracted.map((result) => result.document);
+    let trips = extracted.flatMap((result) => result.trips);
     const warnings: string[] = [];
-    let ocrMean = 0;
-    let ocrCount = 0;
-
-    for (const { ocr, receipt } of perFile) {
-      const platform = platformHint ?? this.detectPlatformForImage(ocr);
-      const parser = this.parserMap[platform];
-      const slices = this.splitter.split(ocr);
-
-      // The date header ("الجمعة، 15 مايو") lives ABOVE all cards in the
-      // summary screen; the slicer drops it. Pre-extract it once from the
-      // unsliced OCR so each card can attach a real timestamp (date +
-      // per-card time) instead of falling back to Date.now() at the
-      // create-trip layer.
-      const baseDate = extractSummaryHeaderDate(ocr.text);
-
-      for (const slice of slices) {
-        const words = slice.lines.flatMap((l) => l.words);
-        const meanConf = words.length
-          ? words.reduce((a, w) => a + w.confidence, 0) / words.length
-          : 0;
-        ocrMean += meanConf;
-        ocrCount += 1;
-
-        const parsed = parser.parse(slice.text, words, { lines: slice.lines, receipt });
-
-        // In Uber's multi-trip summary the only fare value visible per card
-        // is the driver's income ("الدخل"). The base parser's "first amount
-        // = grossEgp" fallback misattributes the cash-collected line to
-        // grossEgp; correct that by re-extracting the prominent amount from
-        // the top of the card slice and storing it as receivedEgp.
-        if (platform === 'UBER') {
-          applyMultiTripAmountFix(slice, parsed);
-          applyMultiTripDatetimeFix(slice, parsed, baseDate);
+    if (mode === 'single' && trips.length > 1) {
+      if (this.canMerge(trips)) trips = [this.mergeCandidates(trips)];
+      else warnings.push('OCR_MERGE_CONFLICT');
+    }
+    markCandidateDuplicates(trips);
+    for (const document of documents) {
+      if (document.duplicateOf) {
+        const original = documents.find((source) => source.id === document.duplicateOf);
+        if (original?.status === OcrDocumentStatus.Failed) {
+          document.status = OcrDocumentStatus.Failed;
+          document.errorCode = original.errorCode;
+          document.candidateIds = [];
         }
-
-        const scored = this.scorer.score(parsed.perField, 1, meanConf);
-        const validatorWarnings = this.validator.validate({ ...EMPTY_PARSED, ...parsed.fields });
-        warnings.push(
-          ...parsed.warnings.map((w) => `card${slice.index}:${w}`),
-          ...scored.warnings.map((w) => `card${slice.index}:${w}`),
-          ...validatorWarnings.map((w) => `card${slice.index}:${w}`),
-        );
-        tripResults.push({
-          parsed: { ...EMPTY_PARSED, ...parsed.fields },
-          fieldConfidences: scored.final,
-        });
+      }
+      if (document.status === OcrDocumentStatus.Failed) warnings.push(document.errorCode ?? 'OCR_FAILED');
+      if (document.status === OcrDocumentStatus.Duplicate) warnings.push('OCR_DUPLICATE_IMAGE');
+      if (mode === 'single' && trips.length === 1 && trips[0].evidence) {
+        const candidate = trips[0];
+        if (candidate.evidence?.sources.some((source) => source.imageHash === document.imageHash)) {
+          document.candidateIds = [candidate.evidence.id];
+        }
       }
     }
-
-    if (tripResults.length === 0) {
-      // Defensive fallback: behave like single mode if splitting failed.
-      return this.assembleSingle(perFile, platformHint, hashes);
-    }
-
-    const meanOverall = ocrCount > 0 ? ocrMean / ocrCount : 0;
+    for (const trip of trips) warnings.push(...(trip.evidence?.warnings ?? []));
+    const platforms = new Set(trips.map((trip) => trip.evidence?.platform ?? null));
+    const platform = platforms.size === 1 ? trips[0]?.evidence?.platform ?? null : null;
+    const first = trips[0];
+    const completed = extracted.filter((result) => result.document.status === OcrDocumentStatus.Completed);
     return {
-      platform: platformHint,
-      platformConfidence: platformHint ? 1 : 0,
-      mode: 'multi',
-      parsed: tripResults[0].parsed,
-      fieldConfidences: tripResults[0].fieldConfidences,
-      trips: tripResults,
-      warnings: Array.from(new Set(warnings)),
-      imageHashes: hashes,
-      rawTextLengths: perFile.map(({ ocr }) => ocr.text.length),
-      ocrMeanConfidence: Number(meanOverall.toFixed(3)),
+      platform, platformConfidence: platform ? Math.min(...trips.map((trip) => trip.evidence?.platformConfidence ?? 0)) : 0,
+      mode, parsed: first?.parsed ?? { ...EMPTY_PARSED }, fieldConfidences: first?.fieldConfidences ?? {},
+      trips, warnings: [...new Set(warnings)], imageHashes: hashes, documents,
+      rawTextLengths: documents.map((document) => document.rawText.length),
+      ocrMeanConfidence: completed.length ? completed.reduce((sum, result) => sum + result.meanConfidence, 0) / completed.length : 0,
     };
   }
 
-  /**
-   * Pure assembly path — exposed so integration tests can stub the per-image
-   * evidence array and exercise merge/scorer/validator without making real
-   * Azure calls.
-   */
-  assemble(
-    evidence: ImageEvidence[],
-    hashes: string[],
-    mode: OcrExtractMode = 'single',
-    platformHint: OcrPlatform | null = null,
-  ): OcrExtractResponseDto {
-    const ocrMean = evidence.length
-      ? evidence.reduce((a, e) => a + e.read.meanConfidence, 0) / evidence.length
-      : 0;
-    const detection = this.detector.detect(evidence.map((e) => e.read.text));
-    const platform = platformHint ?? detection.platform;
-    const platformConfidence = platformHint ? 1 : detection.confidence;
-
-    const merged = this.merger.merge(evidence.map((e) => e.parsed));
-
-    const scored = this.scorer.score(merged.perField, platformConfidence, ocrMean);
-    const validatorWarnings = this.validator.validate(merged.parsed);
-    const detectorWarning: string[] = platform == null ? ['OCR_PLATFORM_UNKNOWN'] : [];
-
-    // App-shown distance is paidKm; the parser already approximates totalKm
-    // to paidKm. Keep the merged values; only fill EMPTY_PARSED defaults.
-    const parsed = { ...EMPTY_PARSED, ...merged.parsed };
-
-    return {
-      platform,
-      platformConfidence: Number(platformConfidence.toFixed(3)),
-      mode,
-      parsed,
-      fieldConfidences: scored.final,
-      trips: [{ parsed, fieldConfidences: scored.final }],
-      warnings: Array.from(
-        new Set([
-          ...merged.warnings,
-          ...scored.warnings,
-          ...validatorWarnings,
-          ...detectorWarning,
-        ]),
-      ),
-      imageHashes: hashes,
-      rawTextLengths: evidence.map((e) => e.read.text.length),
-      ocrMeanConfidence: Number(ocrMean.toFixed(3)),
+  async extractDocument(
+    file: OcrImageUpload, imageHash: string, index: number, hint: OcrPlatform | null, forceMulti: boolean,
+  ): Promise<DocumentExtraction> {
+    const document: OcrDocumentResult = {
+      id: `${imageHash}:${index}`, imageHash, index, status: OcrDocumentStatus.Completed,
+      duplicateOf: null, errorCode: null, rawText: '', candidateIds: [],
     };
-  }
-
-  private async callAzure(processed: Buffer): Promise<AzureAnalyzeResult> {
     try {
-      return await this.azure.analyze(processed);
-    } catch (err) {
-      const code = (err as Error & { code?: string }).code;
-      if (code === 'OCR_BUSY') {
-        throw new ServiceUnavailableException({ code: 'OCR_BUSY', message: 'OCR server busy' });
-      }
-      if (code === 'OCR_TIMEOUT') {
-        throw new ServiceUnavailableException({ code: 'OCR_TIMEOUT', message: 'OCR took too long' });
-      }
-      if (code === 'OCR_AUTH') {
-        throw new ServiceUnavailableException({ code: 'OCR_AUTH', message: 'OCR service not authorized' });
-      }
-      if (code === 'OCR_IMAGE_INVALID') {
-        throw new BadRequestException({ code: 'OCR_IMAGE_INVALID', message: 'Unable to decode the uploaded image' });
-      }
-      this.logger.error(`Azure OCR error: ${(err as Error).message}`);
-      throw new ServiceUnavailableException({ code: 'OCR_FAILED', message: 'OCR recognition failed' });
+      if (!OCR_ALLOWED_MIME.test(file.mimetype)) throw new BadRequestException({ code: 'OCR_UNSUPPORTED_MIME' });
+      if (file.buffer.length > OCR_MAX_IMAGE_BYTES) throw new BadRequestException({ code: 'OCR_IMAGE_TOO_LARGE' });
+      const signals = await this.limiter.run(async () => this.provider.recognize(await this.sharp.prepare(file.buffer)));
+      document.rawText = signals.read.text.slice(0, OCR_MAX_TEXT_LENGTH);
+      if (!document.rawText.trim()) throw new BadRequestException({ code: 'OCR_NO_TEXT' });
+      const trips = this.parseDocument(signals, document, hint, forceMulti);
+      document.candidateIds = trips.flatMap((trip) => trip.evidence ? [trip.evidence.id] : []);
+      return { document, trips, meanConfidence: signals.read.meanConfidence };
+    } catch (error) {
+      document.status = OcrDocumentStatus.Failed;
+      document.errorCode = documentErrorCode(error instanceof Error ? error : new Error());
+      return { document, trips: [], meanConfidence: 0 };
     }
   }
 
-  /**
-   * Detect the platform for a single image; falls back to UBER (with
-   * confidence retained) when nothing matches — the merge/scorer layer will
-   * still emit OCR_PLATFORM_UNKNOWN when the cross-image detector also fails.
-   */
-  private detectPlatformForImage(ocr: OcrResult): OcrPlatform {
-    const r = this.detector.detect([ocr.text]);
-    return r.platform ?? 'UBER';
+  private parseDocument(signals: ImageSignals, document: OcrDocumentResult, hint: OcrPlatform | null, forceMulti: boolean): OcrTripResultDto[] {
+    const { read, receipt } = signals;
+    const detection = this.detector.detect([read.text]);
+    const platform = detection.platform ?? hint;
+    const confidence = detection.platform ? detection.confidence : hint ? 0.7 : 0;
+    const warnings: string[] = [];
+    if (!platform) warnings.push('OCR_PLATFORM_UNKNOWN');
+    if (hint && detection.platform && detection.platform !== hint) warnings.push('OCR_PLATFORM_HINT_CONFLICT');
+    if (read.text.length > OCR_MAX_TEXT_LENGTH) warnings.push('OCR_TEXT_TRUNCATED');
+    const potentialSummary = platform === 'UBER' && (forceMulti || OCR_SUMMARY_HEADER.test(read.text));
+    const split = potentialSummary ? this.splitter.split(read) : [];
+    const summary = potentialSummary && (OCR_SUMMARY_HEADER.test(read.text) || split.length > 1);
+    const slices = summary ? split : [{ index: 1, text: read.text, lines: read.lines }];
+    if (slices.length > OCR_MAX_CANDIDATES) throw new BadRequestException({ code: 'OCR_TOO_MANY_TRIPS' });
+    return slices.map((slice) => {
+      const start = read.lines.indexOf(slice.lines[0]);
+      const words = slice.lines.flatMap((line) => line.words);
+      const raw: RawParsed = platform
+        ? this.parserMap[platform].parse(slice.text, words, {
+          lines: slice.lines, receipt: summary ? null : receipt,
+          dateText: summary ? read.lines.slice(0, Math.max(0, start))
+            .map((line) => normalizeNumeric(line.text))
+            .filter((line) => !line.includes(':') && /(?:19|20)\d{2}/.test(line)).at(-1) ?? '' : '',
+        })
+        : { fields: {}, perField: {}, warnings: [] };
+      if (summary) this.applySummaryIncome(slice, raw);
+      const parsed = { ...EMPTY_PARSED, ...raw.fields };
+      const scored = this.scorer.score(raw.perField, confidence, read.meanConfidence);
+      const candidateWarnings = [...new Set([...warnings, ...raw.warnings, ...scored.warnings, ...this.validator.validate(parsed)])];
+      const ready = platform && candidateWarnings.length === 0 && OCR_REQUIRED_FIELDS.every((field) =>
+        parsed[field] != null && (scored.final[field] ?? 0) >= OCR_READY_CONFIDENCE);
+      return {
+        parsed, fieldConfidences: scored.final,
+        evidence: {
+          id: hash(`${document.imageHash}:${slice.index}`), platform, platformConfidence: confidence,
+          status: ready ? OcrCandidateStatus.Ready : OcrCandidateStatus.Review,
+          duplicateOf: null, warnings: candidateWarnings, rawText: slice.text.slice(0, OCR_MAX_TEXT_LENGTH),
+          sources: [{ documentId: document.id, imageHash: document.imageHash, lineStart: Math.max(0, start), lineEnd: Math.max(0, start) + slice.lines.length }],
+        },
+      };
+    });
   }
 
-  private validateFiles(files: Array<{ buffer: Buffer; mimetype: string; size: number }>): void {
-    if (!files || files.length === 0) {
-      throw new BadRequestException({ code: 'OCR_NO_IMAGES', message: 'At least one image is required' });
+  private applySummaryIncome(slice: TripSlice, raw: RawParsed): void {
+    raw.fields.grossEgp = null;
+    raw.perField.grossEgp = 0;
+    raw.fields.commissionEgp = null;
+    raw.perField.commissionEgp = 0;
+    // The first decimal above the time marker is only a suggestion. The income
+    // screen does not establish a gross fare or imply zero commission.
+    for (const line of slice.lines.slice(0, 2)) {
+      const match = normalizeNumeric(line.text).match(/(?:^|\s)(\d+\.\d{2})(?=\s|$)/);
+      if (!match) continue;
+      raw.fields.receivedEgp = Number(match[1]);
+      raw.perField.receivedEgp = 0.65;
+      break;
     }
-    if (files.length > MAX_FILES) {
-      throw new BadRequestException({
-        code: 'OCR_TOO_MANY_IMAGES',
-        message: `Max ${MAX_FILES} images per request`,
-      });
-    }
-    for (const f of files) {
-      if (!ALLOWED_MIME.test(f.mimetype)) {
-        throw new BadRequestException({
-          code: 'OCR_UNSUPPORTED_MIME',
-          message: `Unsupported mimetype: ${f.mimetype}`,
-        });
-      }
-      if (f.size > MAX_BYTES) {
-        throw new BadRequestException({
-          code: 'OCR_IMAGE_TOO_LARGE',
-          message: `Image exceeds ${MAX_BYTES} bytes`,
-        });
-      }
+    raw.warnings.push('OCR_SUMMARY_NET_ONLY');
+  }
+
+  private canMerge(trips: OcrTripResultDto[]): boolean {
+    const platforms = new Set(trips.map((trip) => trip.evidence?.platform ?? null));
+    const starts = new Set(trips.flatMap((trip) => trip.parsed.startedAt ? [trip.parsed.startedAt] : []));
+    const ends = new Set(trips.flatMap((trip) => trip.parsed.endedAt ? [trip.parsed.endedAt] : []));
+    const documents = trips.flatMap((trip) => trip.evidence?.sources.map((source) => source.documentId) ?? []);
+    return platforms.size === 1 && !platforms.has(null) && starts.size <= 1 && ends.size <= 1 && new Set(documents).size === trips.length;
+  }
+
+  private mergeCandidates(trips: OcrTripResultDto[]): OcrTripResultDto {
+    const merged = this.merger.merge(trips.map((trip) => ({
+      fields: trip.parsed, perField: trip.fieldConfidences, warnings: trip.evidence?.warnings ?? [],
+    })));
+    const sources = trips.flatMap((trip) => trip.evidence?.sources ?? []);
+    return {
+      parsed: merged.parsed, fieldConfidences: merged.perField,
+      evidence: {
+        id: hash(trips.map((trip) => trip.evidence?.id ?? '').sort().join(':')),
+        platform: trips[0].evidence?.platform ?? null,
+        platformConfidence: Math.min(...trips.map((trip) => trip.evidence?.platformConfidence ?? 0)),
+        status: OcrCandidateStatus.Review, duplicateOf: null, sources,
+        warnings: [...new Set([...merged.warnings, 'OCR_MERGED_REVIEW'])],
+        rawText: trips.map((trip) => trip.evidence?.rawText ?? '').join('\n\n').slice(0, OCR_MAX_TEXT_LENGTH),
+      },
+    };
+  }
+
+  private validateBatch(files: OcrImageUpload[]): void {
+    if (!files.length) throw new BadRequestException({ code: 'OCR_NO_IMAGES' });
+    if (files.length > OCR_MAX_IMAGES) throw new BadRequestException({ code: 'OCR_TOO_MANY_IMAGES' });
+    if (files.reduce((sum, file) => sum + file.buffer.length, 0) > OCR_MAX_BATCH_BYTES) {
+      throw new BadRequestException({ code: 'OCR_BATCH_TOO_LARGE' });
     }
   }
 }
 
-/**
- * Bridges the Azure-native `AzureReadResult` into our domain `OcrResult` so
- * parsers don't need to know about Azure-specific shapes.
- */
-export function azureToOcrResult(read: AzureReadResult): OcrResult {
-  const lines: OcrLine[] = read.lines.map(toOcrLine);
-  const words: OcrWord[] = lines.flatMap((l) => l.words);
-  return {
-    text: read.text,
-    lines,
-    words,
-    meanConfidence: read.meanConfidence,
-  };
+function hash(value: Buffer | string): string {
+  return createHash('sha256').update(value).digest('hex');
 }
 
-function toOcrLine(line: AzureLine): OcrLine {
-  return {
-    text: line.text,
-    bbox: line.bbox,
-    meanConfidence: line.meanConfidence,
-    words: line.words.map((w) => ({
-      text: w.text,
-      confidence: w.confidence,
-      bbox: w.bbox,
-    })),
-  };
-}
-
-export type { ImageEvidence, ParseContext };
-
-/**
- * Uber's summary screen renders each card's prominent number ("الدخل") on
- * its own line 2-3 entries above the time stamp. OCR may mangle the
- * accompanying "ج.م." into ".P.@" / ".P.c" glyph noise — so findCurrencyOnLine
- * can't see it — but the bare decimal value still survives. Pull the first
- * decimal out of the top 4 lines of the slice and write it to receivedEgp;
- * clear the grossEgp that the base fallback may have mis-set to the
- * cash-collected line.
- */
-/**
- * Extracts the date header that Uber prints above the trip cards on its
- * "ملخص الدخل" summary screen — e.g. "الجمعة، 15 مايو". The year is never
- * shown so we infer it: pick the most recent past date that matches the
- * extracted day+month (current year if it's still upcoming this year minus
- * one day's slack, otherwise the previous year).
- */
-function extractSummaryHeaderDate(text: string): Date | null {
-  // Normalize once: strip Arabic diacritics and fold variants that the dictionary
-  // tolerates, so "الجمعةَ" / "الجمعه" both match.
-  const norm = text
-    .replace(/[ً-ٰٟۖ-ۜ۟-۪ۤۧۨ-ۭ]/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ة/g, 'ه');
-  const m = norm.match(
-    /(?:الجمعه|السبت|الاحد|الاثنين|الثلاثاء|الاربعاء|الخميس)[،,\s]+(\d{1,2})\s+(يناير|فبراير|مارس|ابريل|مايو|يونيو|يوليو|اغسطس|سبتمبر|اكتوبر|نوفمبر|ديسمبر)/i,
-  );
-  if (!m) return null;
-  const day = Number(m[1]);
-  const monthIdx = AR_MONTHS.indexOf(m[2]);
-  if (monthIdx < 0 || !Number.isFinite(day) || day < 1 || day > 31) return null;
-
-  const now = new Date();
-  // Build in UTC so toISOString later is deterministic across timezones and
-  // matches the rest of the parser pipeline (which also treats Uber's
-  // local-clock display as UTC components).
-  const candidate = new Date(Date.UTC(now.getUTCFullYear(), monthIdx, day));
-  if (candidate.getTime() - now.getTime() > 24 * 60 * 60 * 1000) {
-    candidate.setUTCFullYear(candidate.getUTCFullYear() - 1);
-  }
-  return candidate;
-}
-const AR_MONTHS = [
-  'يناير', 'فبراير', 'مارس', 'ابريل', 'مايو', 'يونيو',
-  'يوليو', 'اغسطس', 'سبتمبر', 'اكتوبر', 'نوفمبر', 'ديسمبر',
-];
-
-/**
- * Combines the global date header (from `extractSummaryHeaderDate`) with the
- * per-card time line to give each trip card a real timestamp. The card's
- * time line takes one of a few mangled OCR shapes — "₱ 5:32", "~ 5:49",
- * "10:46 PM" — so we accept any HH:MM substring near the top of the slice.
- *
- * Uber Egypt's summary screen displays times in 12h format with the م/ص
- * suffix. After OCR the suffix is unreliable, but the hour itself is
- * preserved, so we assume PM when hour < 12 — empirically every multi-trip
- * card we've seen in the field is from afternoon/evening shifts. The
- * driver can flip the time in the multi-trip review if that assumption is
- * wrong for them.
- */
-function applyMultiTripDatetimeFix(
-  slice: import('./merge/multi-trip.splitter').TripSlice,
-  parsed: RawParsed,
-  baseDate: Date | null,
-): void {
-  if (!baseDate) return;
-  if (parsed.fields.startedAt) return;
-  const head = slice.lines.slice(0, 4);
-  for (const l of head) {
-    const m = l.text.match(/(?:^|\s)(\d{1,2}):(\d{2})(?:\s|$)/);
-    if (!m) continue;
-    const h = Number(m[1]);
-    const mn = Number(m[2]);
-    if (!Number.isFinite(h) || !Number.isFinite(mn) || h > 23 || mn > 59) continue;
-    const hour24 = h < 12 ? h + 12 : h;
-    const dt = new Date(
-      Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate(), hour24, mn, 0),
-    );
-    parsed.fields.startedAt = dt.toISOString();
-    parsed.perField.startedAt = 0.75;
-    if (parsed.fields.durationSec && !parsed.fields.endedAt) {
-      const end = new Date(dt.getTime() + parsed.fields.durationSec * 1000);
-      parsed.fields.endedAt = end.toISOString();
-      parsed.perField.endedAt = 0.7;
-    }
-    return;
-  }
-}
-
-function applyMultiTripAmountFix(
-  slice: import('./merge/multi-trip.splitter').TripSlice,
-  parsed: RawParsed,
-): void {
-  const head = slice.lines.slice(0, 4);
-  for (const l of head) {
-    const m = l.text.match(/(\d+\.\d{2})/);
-    if (!m) continue;
-    const n = Number(m[1]);
-    if (!Number.isFinite(n) || n <= 0 || n >= 10000) continue;
-    parsed.fields.receivedEgp = n;
-    parsed.perField.receivedEgp = 0.85;
-    // Unconditional clear: Uber's "ملخص الدخل" summary cards NEVER show the
-    // gross fare (الأجرة) — only the post-commission income (الدخل) is
-    // displayed prominently. Whatever the base parser found for grossEgp on
-    // this slice is therefore noise (commonly the cash-collected line, or
-    // the surge banner "زادت قيمة الأجرة" matching the fare label).
-    parsed.fields.grossEgp = undefined;
-    parsed.perField.grossEgp = undefined;
-    return;
-  }
+function documentErrorCode(error: Error): string {
+  let code = 'OCR_FAILED';
+  if (error instanceof HttpException) {
+    const response = error.getResponse();
+    if (typeof response === 'object' && 'code' in response && typeof response.code === 'string') code = response.code;
+  } else if ('code' in error && typeof error.code === 'string') code = error.code;
+  return /^(?:OCR_(?:UNSUPPORTED_MIME|IMAGE_TOO_LARGE|IMAGE_INVALID|NO_TEXT|TOO_MANY_TRIPS|BUSY|TIMEOUT|AUTH|FAILED)|RATE_LIMITED)$/.test(code) ? code : 'OCR_FAILED';
 }

@@ -9,6 +9,7 @@ import ImageAnalysisClient, {
 } from '@azure-rest/ai-vision-image-analysis';
 import { AzureKeyCredential } from '@azure/core-auth';
 import { loadEnv } from '../../../config/env';
+import { OCR_PROVIDER_TIMEOUT_MS } from '../ocr.control';
 import {
   type AzureLine,
   type AzureReadResult,
@@ -40,6 +41,7 @@ export class AzureVisionClient {
     this.client = ImageAnalysisClient(
       env.AZURE_VISION_ENDPOINT,
       new AzureKeyCredential(env.AZURE_VISION_KEY),
+      { retryOptions: { maxRetries: 1 } },
     );
   }
 
@@ -47,6 +49,8 @@ export class AzureVisionClient {
     let response;
     try {
       response = await this.client.path('/imageanalysis:analyze').post({
+        abortSignal: AbortSignal.timeout(OCR_PROVIDER_TIMEOUT_MS),
+        timeout: OCR_PROVIDER_TIMEOUT_MS,
         body: image,
         queryParameters: { features: ['read'] },
         contentType: 'application/octet-stream',
@@ -68,7 +72,7 @@ export class AzureVisionClient {
  */
 export function parseImageAnalysisResult(body: ImageAnalysisResultOutput): AzureReadResult {
   const lines: AzureLine[] = [];
-  const blockLines = body.readResult?.blocks?.[0]?.lines ?? [];
+  const blockLines = body.readResult?.blocks?.flatMap((block) => block.lines) ?? [];
   for (const line of blockLines) {
     lines.push(toAzureLine(line));
   }
@@ -165,6 +169,6 @@ function wrapServiceError(response: unknown): Error & { code: string } {
 function wrapNetworkError(err: unknown): Error & { code: string } {
   const original = err instanceof Error ? err : new Error(String(err));
   const out = new Error(`Azure Vision transport failure: ${original.message}`) as Error & { code: string };
-  out.code = 'OCR_FAILED';
+  out.code = /abort|timeout/i.test(original.name) ? 'OCR_TIMEOUT' : 'OCR_FAILED';
   return out;
 }

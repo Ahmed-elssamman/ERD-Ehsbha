@@ -18,6 +18,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ScoreModule } from './modules/score/score.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { HealthModule } from './modules/health/health.module';
 import { OdometerModule } from './modules/odometer/odometer.module';
@@ -51,6 +52,7 @@ import { IdempotencyModule } from './modules/idempotency/idempotency.module';
     RecommendationsModule,
     ScoreModule,
     NotificationsModule,
+    ReportsModule,
     SyncModule,
     HealthModule,
     OdometerModule,

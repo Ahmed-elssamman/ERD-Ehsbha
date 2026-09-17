@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { normalizeErrorCode, getErrorDefinition } from '../../../packages/api-contracts/dist/types/core/errors.js';
 
 const IDEMPOTENCY_KEY_MIN = 8;
 const IDEMPOTENCY_KEY_MAX = 128;
@@ -9,10 +8,6 @@ const DEFAULT_RETENTION_HOURS = 24;
 
 function canonicalHash(payload) {
   return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
-}
-
-function makeKey(scope, realm, actor, operationId, rawKey) {
-  return `${scope}::${realm}::${actor}::${operationId}::${rawKey}`;
 }
 
 function isExpired(createdAt, retentionHours) {

@@ -31,33 +31,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-22-npm-
 
-      - name: Setup PostgreSQL 16
+      - name: Validate Neon CI configuration
         shell: pwsh
         env:
-          PGPASSWORD: ehsbha_test_pass
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_CI }}
+          DIRECT_URL: ${{ secrets.NEON_DIRECT_URL_CI }}
         run: |
-          choco install postgresql16 --params "/Password:ehsbha_test_pass" -y --no-progress
-          $pgBin = "C:\Program Files\PostgreSQL\16\bin"
-          $pgBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          $service = Get-Service -Name "postgresql*" | Select-Object -First 1
-          if ($service.Status -ne "Running") { Start-Service $service.Name }
-          for ($i = 0; $i -lt 30; $i++) {
-            & "$pgBin\pg_isready.exe" -h localhost -p 5432
-            if ($LASTEXITCODE -eq 0) { break }
-            Start-Sleep -Seconds 2
-          }
-          if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not become ready" }
-          $roleExists = & "$pgBin\psql.exe" -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='ehsbha'"
-          if (-not $roleExists) {
-            & "$pgBin\psql.exe" -U postgres -v ON_ERROR_STOP=1 -c "CREATE USER ehsbha WITH PASSWORD 'ehsbha_test_pass';"
-          }
-          $databaseExists = & "$pgBin\psql.exe" -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='ehsbha_test_ci'"
-          if (-not $databaseExists) {
-            & "$pgBin\createdb.exe" -U postgres -O ehsbha ehsbha_test_ci
-          }
+          if (-not $env:DATABASE_URL) { throw "Missing secret NEON_DATABASE_URL_CI" }
+          if (-not $env:DIRECT_URL) { throw "Missing secret NEON_DIRECT_URL_CI" }
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install browser test runtime
+        run: npx playwright install chromium
 
       - name: Validate Git status
         shell: pwsh
@@ -73,11 +60,18 @@ jobs:
         run: npm run verify
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://ehsbha:ehsbha_test_pass@localhost:5432/ehsbha_test_ci
-          JWT_DRIVER_SECRET: ci-test-driver-secret
-          JWT_ADMIN_SECRET: ci-test-admin-secret
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL_CI }}
+          DIRECT_URL: ${{ secrets.NEON_DIRECT_URL_CI }}
+          JWT_ACCESS_SECRET: ci-test-driver-access-secret-that-is-long-enough
+          JWT_REFRESH_SECRET: ci-test-driver-refresh-secret-that-is-long-enough
+          ADMIN_JWT_ACCESS_SECRET: ci-test-admin-access-secret-that-is-long-enough
+          ADMIN_JWT_REFRESH_SECRET: ci-test-admin-refresh-secret-that-is-long-enough
           OCR_SUBSTITUTE_MODE: true
           MAIL_SUBSTITUTE_MODE: true
+          AZURE_VISION_ENDPOINT: https://example.cognitiveservices.azure.com/
+          AZURE_VISION_KEY: ci-test-azure-vision-key-not-for-production
+          AZURE_VISION_REGION: eastus
+          AZURE_DOC_INTELLIGENCE_ENABLED: false
           SMOKE_DRIVER_PHONE: +201000000001
           SMOKE_DRIVER_PASSWORD: demo-test-password
           ADMIN_SEED_PASSWORD: admin-test-password

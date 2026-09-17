@@ -1,7 +1,10 @@
+import { FuelQueriesService } from '../../modules/fuel/fuel-queries.service';
+import { fuelResponse } from '../../modules/fuel/fuel-response.mapper';
 import { ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
+import { Prisma } from '@prisma/client';
 import {
   API_VERSION,
   CONTRACT_VERSION,
@@ -11,6 +14,7 @@ import {
   SuccessEnvelopeSchema,
   communityListResponseSchema,
   driverVehicleSchema,
+  fuelPageSchema,
   lookupEmailResultSchema,
   ocrExtractResponseSchema,
   tripsListResponseSchema,
@@ -26,6 +30,8 @@ import { TripsController } from '../../modules/trips/trips.controller';
 import { TripsService } from '../../modules/trips/trips.service';
 import { VehiclesController } from '../../modules/vehicles/vehicles.controller';
 import { VehiclesService } from '../../modules/vehicles/vehicles.service';
+import { FuelController } from '../../modules/fuel/fuel.controller';
+import { FuelService } from '../../modules/fuel/fuel.service';
 import { GlobalExceptionFilter } from '../filters/exception.filter';
 import { TransformResponseInterceptor } from '../interceptors/transform-response.interceptor';
 import { RequestContextMiddleware } from '../middleware/request-context.middleware';
@@ -37,7 +43,7 @@ describe('Driver HTTP Agreement', () => {
   let app: INestApplication;
 
   const trip = {
-    id: 'trip-1',
+    id: 'trip-1', version: 1, source: 'MANUAL', deletedAt: null,
     vehicleId: 'vehicle-1',
     driverAppId: 'app-1',
     areaId: null,
@@ -61,8 +67,9 @@ describe('Driver HTTP Agreement', () => {
     year: 2022,
     fuelType: 'PETROL_92',
     tankLiters: 45,
-    baselineKmPerLiter: 12,
-    odometerMeters: 80000,
+    baselineKmPerLiter: new Prisma.Decimal('12.75'),
+    odometerSource: 'MANUAL', odometerAsOf: null, odometerSourceId: null, odometerVersion: 1,
+    odometerMeters: 80000n,
     isActive: true,
   };
   const ocrResult: OcrExtractResponse = {
@@ -107,10 +114,17 @@ describe('Driver HTTP Agreement', () => {
         AuthController,
         TripsController,
         VehiclesController,
+        FuelController,
         OcrController,
         CommunityController,
       ],
       providers: [
+        { provide: FuelService, useValue: {} },
+        { provide: FuelQueriesService, useValue: { list: jest.fn().mockResolvedValue({ items: [fuelResponse({ id: 'fuel-1', vehicleId: 'vehicle-1', driverId: DRIVER_ID,
+          dateTime: new Date('2026-09-14T08:00Z'), quantity: new Prisma.Decimal('1.25'), pricePerUnitPiastres: 2000,
+          totalPiastres: 2500, odometerMeters: 80000n, isFullTank: false, notes: null, fuelKind: 'PETROL_92', fillCoverage: 'UNCONFIRMED',
+          linkedExpenseId: null, clientMutationId: null, deletedAt: null, version: 1, createdAt: new Date(), updatedAt: new Date() })],
+          summary: { recordCount: 1, totalPiastres: 2500 }, nextCursor: null }) } },
         {
           provide: AuthService,
           useValue: {
@@ -212,7 +226,7 @@ describe('Driver HTTP Agreement', () => {
 
   it('normalizes production 204 controllers to a metadata-bearing success envelope', async () => {
     const response = await request(app.getHttpServer())
-      .delete(`${API_PREFIX}/trips/trip-1`)
+      .delete(`${API_PREFIX}/trips/trip-1?expectedVersion=1`)
       .set('X-Request-Id', 'driver-delete-request-0001')
       .expect(200);
 
@@ -236,6 +250,7 @@ describe('Driver HTTP Agreement', () => {
       .expect(200);
 
     expect(SuccessEnvelopeSchema(driverVehicleSchema.array()).safeParse(response.body).success).toBe(true);
+    expect(response.body.data[0]).toMatchObject({ baselineKmPerLiter: 12.75, odometerMeters: 80000 });
   });
 
   it('uses production community controller and validates pagination and metadata', async () => {
@@ -244,6 +259,10 @@ describe('Driver HTTP Agreement', () => {
       .expect(200);
 
     expect(SuccessEnvelopeSchema(communityListResponseSchema).safeParse(response.body).success).toBe(true);
+  });
+  it('serializes actual Prisma fuel numeric values through the production controller', async () => {
+    const response = await request(app.getHttpServer()).get(`${API_PREFIX}/fuel`).expect(200);
+    expect(SuccessEnvelopeSchema(fuelPageSchema).parse(response.body).data.items[0]).toMatchObject({ quantity: 1.25, odometerMeters: 80000 });
   });
 });
 

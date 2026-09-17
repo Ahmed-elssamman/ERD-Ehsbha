@@ -3,7 +3,6 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
-  statSync,
   writeFileSync,
 } from 'fs';
 import { extname, relative, resolve } from 'path';

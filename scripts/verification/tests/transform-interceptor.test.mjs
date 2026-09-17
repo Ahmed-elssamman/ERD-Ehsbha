@@ -14,14 +14,14 @@ describe('transform response interceptor', () => {
         requestId: 'test-request-id',
         serverTime: new Date().toISOString(),
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     };
 
     assert.ok(envelope.data, 'Response must have data field');
     assert.ok(envelope.meta, 'Response must have meta field');
     assert.equal(envelope.meta.apiVersion, 'v1');
-    assert.equal(envelope.meta.contractVersion, '1.0.0');
+    assert.equal(envelope.meta.contractVersion, '2.0.0');
     assert.ok(typeof envelope.meta.requestId === 'string');
     assert.ok(typeof envelope.meta.serverTime === 'string');
   });
@@ -37,7 +37,7 @@ describe('transform response interceptor', () => {
     // The interceptor should detect and skip wrapping
     const alreadyEnveloped = {
       data: { items: [] },
-      meta: { requestId: 'existing', serverTime: '2026-01-01T00:00:00Z', apiVersion: 'v1', contractVersion: '1.0.0' },
+      meta: { requestId: 'existing', serverTime: '2026-01-01T00:00:00Z', apiVersion: 'v1', contractVersion: '2.0.0' },
     };
     assert.ok(alreadyEnveloped.data);
     assert.ok(alreadyEnveloped.meta);

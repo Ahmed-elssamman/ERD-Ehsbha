@@ -15,8 +15,13 @@ describe('Environment Example File', () => {
     const requiredKeys = [
       'NODE_ENV',
       'DATABASE_URL',
-      'JWT_DRIVER_SECRET',
-      'JWT_ADMIN_SECRET',
+      'DIRECT_URL',
+      'JWT_ACCESS_SECRET',
+      'JWT_REFRESH_SECRET',
+      'ADMIN_JWT_ACCESS_SECRET',
+      'ADMIN_JWT_REFRESH_SECRET',
+      'AZURE_VISION_ENDPOINT',
+      'AZURE_VISION_KEY',
       'OCR_SUBSTITUTE_MODE',
       'MAIL_SUBSTITUTE_MODE',
       'API_PORT',
@@ -59,8 +64,12 @@ describe('Environment Example File', () => {
     const lines = content.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
     const credentialKeys = new Set([
       'DATABASE_URL',
-      'JWT_DRIVER_SECRET',
-      'JWT_ADMIN_SECRET',
+      'DIRECT_URL',
+      'JWT_ACCESS_SECRET',
+      'JWT_REFRESH_SECRET',
+      'ADMIN_JWT_ACCESS_SECRET',
+      'ADMIN_JWT_REFRESH_SECRET',
+      'AZURE_VISION_KEY',
       'SMOKE_DRIVER_PASSWORD',
       'ADMIN_SEED_PASSWORD',
     ]);

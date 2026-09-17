@@ -7,17 +7,26 @@ const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://
 
 export const apiBaseUrl = API_URL;
 
+interface AccountRequestConfig extends InternalAxiosRequestConfig {
+  accountId?: string | null;
+  __retry?: boolean;
+}
+
 export const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-api.interceptors.request.use((config) => {
-  const token = useAuth.getState().accessToken;
-  if (token) {
+api.interceptors.request.use((config: AccountRequestConfig) => {
+  const state = useAuth.getState();
+  const accessToken = state.accessToken;
+  config.accountId = state.user?.id ?? null;
+  if (accessToken) {
     config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+    (config.headers as Record<string, string>).Authorization = `Bearer ${accessToken}`;
+  } else {
+    config.headers.delete('Authorization');
   }
   return config;
 });
@@ -27,11 +36,12 @@ let refreshing: Promise<string | null> | null = null;
 api.interceptors.response.use(
   (r) => r,
   async (err: AxiosError<{ error?: { code?: string; message?: string } }>) => {
-    const original = err.config as (InternalAxiosRequestConfig & { __retry?: boolean }) | undefined;
+    const original = err.config as AccountRequestConfig | null;
     if (!original || err.response?.status !== 401 || original.__retry) {
       throw err;
     }
     const state = useAuth.getState();
+    if (original.url?.startsWith('/auth/') || original.accountId !== (state.user?.id ?? null)) throw err;
     if (!state.refreshToken) {
       state.clear();
       throw err;
@@ -47,17 +57,20 @@ api.interceptors.response.use(
             { timeout: 15_000 },
           );
           const data = parseData(driverAuthResultSchema, resp.data, 'driver.auth.refresh');
+          if (useAuth.getState().refreshToken !== state.refreshToken) return null;
           useAuth.getState().setSession({
             user: data.user,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           });
           return data.accessToken;
-        } catch {
-          useAuth.getState().clear();
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            const status = error.response?.status ?? null;
+            if (status === null || status === 408 || status === 429 || status >= 500) throw error;
+          }
+          if (useAuth.getState().refreshToken === state.refreshToken) useAuth.getState().clear();
           return null;
-        } finally {
-          // released below
         }
       })().finally(() => {
         refreshing = null;
@@ -65,7 +78,7 @@ api.interceptors.response.use(
     }
 
     const newAccess = await refreshing;
-    if (!newAccess) throw err;
+    if (!newAccess || original.accountId !== (useAuth.getState().user?.id ?? null)) throw err;
     original.headers = original.headers ?? {};
     (original.headers as Record<string, string>).Authorization = `Bearer ${newAccess}`;
     return api.request(original);

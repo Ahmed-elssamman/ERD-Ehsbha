@@ -8,6 +8,7 @@ import DocumentIntelligence, {
 } from '@azure-rest/ai-document-intelligence';
 import { loadEnv } from '../../../config/env';
 import type { AzureDocReceiptResult } from './types';
+import { OCR_PROVIDER_TIMEOUT_MS } from '../ocr.control';
 
 /**
  * Calls Document Intelligence's prebuilt-receipt model.
@@ -37,7 +38,7 @@ export class AzureDocumentIntelligenceClient {
     // dedicated Document Intelligence resource and set the *_DOC_*_ env vars.
     const endpoint = env.AZURE_DOC_INTELLIGENCE_ENDPOINT ?? env.AZURE_VISION_ENDPOINT;
     const key = env.AZURE_DOC_INTELLIGENCE_KEY ?? env.AZURE_VISION_KEY;
-    this.client = this.enabled ? DocumentIntelligence(endpoint, { key }) : null;
+    this.client = this.enabled ? DocumentIntelligence(endpoint, { key }, { retryOptions: { maxRetries: 1 } }) : null;
   }
 
   isEnabled(): boolean {
@@ -46,32 +47,35 @@ export class AzureDocumentIntelligenceClient {
 
   async analyzeReceipt(image: Buffer): Promise<AzureDocReceiptResult | null> {
     if (!this.client) return null;
+    const abortSignal = AbortSignal.timeout(OCR_PROVIDER_TIMEOUT_MS);
     let initial;
     try {
       initial = await this.client
         .path('/documentModels/{modelId}:analyze', 'prebuilt-receipt')
         .post({
+          abortSignal,
+          timeout: OCR_PROVIDER_TIMEOUT_MS,
           contentType: 'application/octet-stream',
           body: image,
           queryParameters: { stringIndexType: 'utf16CodeUnit' },
         });
-    } catch (err) {
+    } catch {
       // DI failures must NOT take down the OCR request; Read OCR is the
       // primary signal. We log and degrade silently.
-      this.logger.warn(`DI receipt analyze transport failure: ${(err as Error).message}`);
+      this.logger.warn('Optional receipt transport unavailable');
       return null;
     }
 
     if (isUnexpected(initial)) {
       this.logger.warn(
-        `DI receipt analyze service error: ${initial.status} ${initial.body?.error?.code ?? ''}`,
+        'Optional receipt service unavailable',
       );
       return null;
     }
 
     try {
       const poller = getLongRunningPoller(this.client, initial, { intervalInMs: 800 });
-      const final = await poller.pollUntilDone();
+      const final = await poller.pollUntilDone({ abortSignal });
       if (isUnexpected(final)) {
         this.logger.warn(`DI receipt poll error: ${final.status}`);
         return null;
@@ -85,8 +89,8 @@ export class AzureDocumentIntelligenceClient {
       const fields = doc?.fields;
       if (!fields) return { ...emptyFields(), isReceipt: false };
       return extractReceiptFields(fields);
-    } catch (err) {
-      this.logger.warn(`DI receipt LRO failure: ${(err as Error).message}`);
+    } catch {
+      this.logger.warn('Optional receipt polling unavailable');
       return null;
     }
   }

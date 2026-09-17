@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import { getAllOperations, getActiveOperations } from '../../../packages/api-contracts/dist/types/index.js';
+import { getAllOperations, getActiveOperations, CONTRACT_RELEASE } from '../../../packages/api-contracts/dist/types/index.js';
 import { API_VERSION, CONTRACT_VERSION, SUPPORTED_MAJOR_VERSION } from '../../../packages/api-contracts/dist/types/core/version.js';
 
 const OPERATION_ID_PATTERN = /^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*){2,}$/;
@@ -50,8 +50,8 @@ describe('contract artifacts freshness', () => {
 
   it('API and contract version constants are consistent', () => {
     assert.equal(API_VERSION, 'v1');
-    assert.equal(CONTRACT_VERSION, '1.0.0');
-    assert.equal(SUPPORTED_MAJOR_VERSION, 1);
+    assert.equal(CONTRACT_VERSION, '2.0.0');
+    assert.equal(SUPPORTED_MAJOR_VERSION, 2);
 
     const parsed = CONTRACT_VERSION.split('.').map(Number);
     assert.equal(parsed[0], SUPPORTED_MAJOR_VERSION,
@@ -66,10 +66,10 @@ describe('contract artifacts freshness', () => {
     }
   });
 
-  it('all active operations report additive-compatible in major version 1', () => {
+  it('only declared major-cutover operations report an incompatible change', () => {
     const activeOps = getActiveOperations();
     for (const op of activeOps) {
-      assert.equal(op.compatibility, 'additive-compatible',
+      assert.equal(op.compatibility, CONTRACT_RELEASE.incompatibleOperations.includes(op.operationId) ? 'incompatible' : 'additive-compatible',
         `Active operation ${op.operationId} is ${op.compatibility} in contract major version ${SUPPORTED_MAJOR_VERSION}`);
     }
   });

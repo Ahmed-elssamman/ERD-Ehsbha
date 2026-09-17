@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { relative, resolve } from 'path';
 import { repoRoot } from './paths.mjs';
 
@@ -50,9 +50,26 @@ const SECRET_PATTERNS = [
 
 const ALLOWLIST_VALUE = /^(?:\$\{|\$\{\{|<[^>]+>|`|process\.env|process\.argv|in-memory|new[A-Z]|dto\.|useAuth|ehsbha_|z\.\w+\(|(?:this\.)?env\.|demo-|admin-|example|placeholder|changeme|redacted|fake|test|ci-test|not-a-real|your[_-])/i;
 
+function hasDisappeared(error) {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
+}
+
+function currentFileStat(path) {
+  try { return statSync(path); }
+  catch (error) {
+    if (hasDisappeared(error)) return null;
+    throw error;
+  }
+}
+
 function walk(directory) {
-  if (!existsSync(directory)) return [];
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+  let entries;
+  try { entries = readdirSync(directory, { withFileTypes: true }); }
+  catch (error) {
+    if (hasDisappeared(error)) return [];
+    throw error;
+  }
+  return entries.flatMap((entry) => {
     if (entry.isDirectory() && EXCLUDED_DIRECTORIES.has(entry.name)) return [];
     const path = resolve(directory, entry.name);
     return entry.isDirectory() ? walk(path) : [path];
@@ -87,7 +104,7 @@ export function collectRepositoryScanPaths(root = repoRoot()) {
       ...statusPaths.map((path) => resolve(root, path)),
       ...generated,
       ...sensitiveNamedFiles,
-    ])].filter((path) => existsSync(path) && statSync(path).isFile()),
+    ])].filter((path) => currentFileStat(path)?.isFile()),
   };
 }
 
@@ -95,6 +112,8 @@ export function scanSensitiveFiles(files, root = repoRoot()) {
   const findings = [];
 
   for (const file of files) {
+    const fileStat = currentFileStat(file);
+    if (!fileStat?.isFile()) continue;
     const relativePath = relative(root, file).replace(/\\/g, '/');
     const name = relativePath.split('/').pop();
     if (relativePath.startsWith('scripts/verification/tests/')) continue;
@@ -106,14 +125,24 @@ export function scanSensitiveFiles(files, root = repoRoot()) {
     }
 
     const extension = name.includes('.') ? `.${name.split('.').pop().toLowerCase()}` : '';
-    if (!TEXT_EXTENSIONS.has(extension) || statSync(file).size > 5 * 1024 * 1024) continue;
-    const content = readFileSync(file, 'utf-8');
+    if (!TEXT_EXTENSIONS.has(extension) || fileStat.size > 5 * 1024 * 1024) continue;
+    let content;
+    try { content = readFileSync(file, 'utf-8'); }
+    catch (error) {
+      if (hasDisappeared(error)) continue;
+      throw error;
+    }
 
     for (const { label, pattern } of SECRET_PATTERNS) {
       pattern.lastIndex = 0;
       let match;
       while ((match = pattern.exec(content)) !== null) {
         const value = match[1] || match[0];
+        if (
+          label === 'unquoted secret'
+          && /\.(?:[cm]?[jt]sx?)$/i.test(name)
+          && /^(?:window\.)?(?:localStorage|sessionStorage)\.getItem\(/.test(value)
+        ) continue;
         if (
           label === 'credentialed PostgreSQL URL'
           && (

@@ -9,31 +9,37 @@
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
     "*": {
-      "core": ["./dist/types/core/index.d.ts"],
-      "catalog": ["./dist/types/catalog/index.d.ts"],
-      "openapi": ["./dist/types/openapi/index.d.ts"]
+      "core": [
+        "./dist/types/core/index.d.ts"
+      ],
+      "catalog": [
+        "./dist/types/catalog/index.d.ts"
+      ],
+      "openapi": [
+        "./dist/types/openapi/index.d.ts"
+      ]
     }
   },
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/cjs/index.js"
     },
     "./core": {
+      "types": "./dist/types/core/index.d.ts",
       "import": "./dist/esm/core/index.js",
-      "require": "./dist/cjs/core/index.js",
-      "types": "./dist/types/core/index.d.ts"
+      "require": "./dist/cjs/core/index.js"
     },
     "./catalog": {
+      "types": "./dist/types/catalog/index.d.ts",
       "import": "./dist/esm/catalog/index.js",
-      "require": "./dist/cjs/catalog/index.js",
-      "types": "./dist/types/catalog/index.d.ts"
+      "require": "./dist/cjs/catalog/index.js"
     },
     "./openapi": {
+      "types": "./dist/types/openapi/index.d.ts",
       "import": "./dist/esm/openapi/index.js",
-      "require": "./dist/cjs/openapi/index.js",
-      "types": "./dist/types/openapi/index.d.ts"
+      "require": "./dist/cjs/openapi/index.js"
     }
   },
   "scripts": {
@@ -45,11 +51,11 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "vitest": "^3.0.0"
+    "vitest": "^5.0.1"
   },
   "dependencies": {
-    "zod": "^3.23.8",
     "@asteasolutions/zod-to-openapi": "7.3.4",
-    "@ehsbha/shared-types": "*"
+    "@ehsbha/shared-types": "*",
+    "zod": "^3.23.8"
   }
 }

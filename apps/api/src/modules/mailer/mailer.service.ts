@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { loadEnv } from '../../config/env';
@@ -55,8 +55,8 @@ export class MailerService {
       : `Your ${this.env.APP_PUBLIC_NAME} verification code: ${code}\n\nValid for 15 minutes. Do not share it.\nIf you did not request this code, you can ignore this email.\n\n${this.env.APP_PUBLIC_URL}`;
 
     if (!transporter) {
-      this.logger.warn(`[mailer] SMTP not configured — code for ${to}: ${code}`);
-      return;
+      if (this.env.NODE_ENV === 'test') return;
+      throw new ServiceUnavailableException({ code: 'SERVICE_UNAVAILABLE', message: 'Email delivery is unavailable' });
     }
 
     try {
@@ -68,10 +68,9 @@ export class MailerService {
         text,
         html,
       });
-      this.logger.log(`[mailer] reset code sent to ${to}`);
-    } catch (err) {
-      this.logger.error(`[mailer] failed to send reset email to ${to}`, err as Error);
-      throw err;
+    } catch {
+      this.logger.error('Password recovery email delivery failed');
+      throw new ServiceUnavailableException({ code: 'SERVICE_UNAVAILABLE', message: 'Email delivery is unavailable' });
     }
   }
 

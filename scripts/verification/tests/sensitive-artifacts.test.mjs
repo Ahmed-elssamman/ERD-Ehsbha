@@ -1,6 +1,6 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, rmSync, writeFileSync } from 'fs';
+import { mkdirSync, rmSync, unlinkSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { tmpdir } from 'os';
 import { scanSensitiveFiles } from '../lib/security-scan.mjs';
@@ -20,6 +20,19 @@ afterEach(() => directories.splice(0).forEach((directory) =>
   rmSync(directory, { recursive: true, force: true })));
 
 describe('repository sensitive artifact scanner', () => {
+  it('continues detecting credentials when an enumerated temporary file disappears', () => {
+    const { root, path } = fixture('settings.yml', 'JWT_SECRET: actual-production-credential');
+    const temporary = resolve(root, 'temporary.txt');
+    writeFileSync(temporary, 'temporary artifact');
+    unlinkSync(temporary);
+    const findings = scanSensitiveFiles([temporary, path], root);
+    assert.ok(findings.some((finding) => finding.path === 'settings.yml' && finding.type === 'unquoted secret'));
+  });
+
+  it('does not suppress filesystem errors other than a disappeared path', () => {
+    assert.throws(() => scanSensitiveFiles(['invalid\0path']), { code: 'ERR_INVALID_ARG_VALUE' });
+  });
+
   it('detects an injected credentialed connection string', () => {
     const connection = ['postgresql://admin:', 'real-secret', '@prod/db'].join('');
     const { root, path } = fixture('config.json', JSON.stringify({ database: connection }));
@@ -63,6 +76,21 @@ describe('repository sensitive artifact scanner', () => {
   it('allows test-only and example unquoted values', () => {
     const { root, path } = fixture('.env', 'JWT_SECRET=test-driver-secret\nPASSWORD=example-password\nAPI_KEY=changeme-key');
     assert.deepEqual(scanSensitiveFiles([path], root), []);
+  });
+
+  it('recognizes browser storage expressions in source code', () => {
+    const { root, path } = fixture('client.ts', "const token = localStorage.getItem('driver-token');");
+    assert.deepEqual(scanSensitiveFiles([path], root), []);
+  });
+
+  it('still detects a literal secret next to a storage expression', () => {
+    const { root, path } = fixture('client.ts', "const token = localStorage.getItem('driver-token');\nconst SECRET = 'actual-production-credential';");
+    assert.ok(scanSensitiveFiles([path], root).some((finding) => finding.type === 'assigned secret'));
+  });
+
+  it('does not exempt storage-looking values in configuration files', () => {
+    const { root, path } = fixture('settings.yml', 'TOKEN: localStorage.getItem(unusual-credential)');
+    assert.ok(scanSensitiveFiles([path], root).some((finding) => finding.type === 'unquoted secret'));
   });
 
   it('allows explicit examples and test placeholders', () => {

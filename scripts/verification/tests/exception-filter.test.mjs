@@ -30,12 +30,12 @@ describe('exception filter - governed error mapping', () => {
       requestId: 'test-id',
       serverTime: new Date().toISOString(),
       apiVersion: 'v1',
-      contractVersion: '1.0.0',
+      contractVersion: '2.0.0',
     };
     assert.ok(meta.requestId);
     assert.ok(meta.serverTime);
     assert.equal(meta.apiVersion, 'v1');
-    assert.equal(meta.contractVersion, '1.0.0');
+    assert.equal(meta.contractVersion, '2.0.0');
   });
 
   it('does not leak raw stack traces in error responses', () => {
@@ -50,7 +50,7 @@ describe('exception filter - governed error mapping', () => {
         requestId: 'test-id',
         serverTime: new Date().toISOString(),
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     };
     assert.equal(errorResponse.error.stack, undefined);

@@ -1,8 +1,9 @@
 import { extractApiEndpoints } from '../verification/lib/extract-api-endpoints.mjs';
 import { extractApiConsumers, pathsMatch } from '../verification/lib/extract-api-consumers.mjs';
+import { CONTRACT_VERSION } from '../../packages/api-contracts/dist/types/core/version.js';
 
-export const EXPECTED_ROUTE_COUNT = 161;
-export const EXPECTED_CONTROLLER_COUNT = 40;
+export const EXPECTED_ROUTE_COUNT = 198;
+export const EXPECTED_CONTROLLER_COUNT = 42;
 export const GENERATED_AT = '2026-06-12T00:00:00.000Z';
 
 function canonicalPath(path) {
@@ -127,7 +128,7 @@ export async function buildCatalogData(registryOperations) {
 
   return {
     catalog: {
-      contractVersion: '1.0.0',
+      contractVersion: CONTRACT_VERSION,
       apiVersion: 'v1',
       generatedAt: GENERATED_AT,
       operations,

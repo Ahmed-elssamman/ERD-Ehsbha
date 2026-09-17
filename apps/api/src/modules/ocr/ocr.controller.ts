@@ -5,26 +5,27 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { OcrService } from './ocr.service';
 import { OcrExtractRequestHintsSchema, type OcrExtractRequestHints } from './dto/ocr.dto';
+import { OCR_MAX_IMAGES, OCR_MAX_IMAGE_BYTES } from '@ehsbha/api-contracts';
+import { OcrAdmissionGuard } from './ocr-admission.guard';
 
-const MAX_FILES = 5;
-const MAX_BYTES = 5 * 1024 * 1024;
+interface OcrMultipartHints { mode?: string; platform?: string }
 
 @Controller('ocr')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, OcrAdmissionGuard)
 export class OcrController {
   constructor(private readonly svc: OcrService) {}
 
   @Post('extract')
   @UseInterceptors(
-    FilesInterceptor('images', MAX_FILES, {
+    FilesInterceptor('images', OCR_MAX_IMAGES, {
       storage: memoryStorage(),
-      limits: { fileSize: MAX_BYTES, files: MAX_FILES },
+      limits: { fileSize: OCR_MAX_IMAGE_BYTES, files: OCR_MAX_IMAGES, fields: 2, fieldSize: 32, parts: OCR_MAX_IMAGES + 2 },
     }),
   )
   async extract(
     @CurrentDriverId() _driverId: string,
     @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: Record<string, unknown>,
+    @Body() body: OcrMultipartHints,
   ) {
     const hints = parseHints(body);
     return this.svc.extract(files ?? [], hints);
@@ -36,7 +37,7 @@ export class OcrController {
  * UI now sends, validates them through the Zod schema, and surfaces a 400
  * with a stable error code when the driver picks an unsupported value.
  */
-function parseHints(body: Record<string, unknown>): OcrExtractRequestHints {
+function parseHints(body: OcrMultipartHints): OcrExtractRequestHints {
   // Multipart form values arrive as strings; an unselected platform is sent
   // as an empty string. Normalize before validation so the Zod schema's
   // `OcrPlatformSchema.nullable()` accepts it.
@@ -44,9 +45,9 @@ function parseHints(body: Record<string, unknown>): OcrExtractRequestHints {
   const platform =
     typeof rawPlatform === 'string' && rawPlatform.trim() === '' ? null : rawPlatform ?? null;
   const rawMode = body?.mode;
-  const mode = typeof rawMode === 'string' && rawMode.trim() !== '' ? rawMode : undefined;
+  const mode = rawMode === '' || rawMode == null ? 'auto' : rawMode;
 
-  const parsed = OcrExtractRequestHintsSchema.safeParse({ mode, platform });
+  const parsed = OcrExtractRequestHintsSchema.safeParse({ ...body, mode, platform });
   if (!parsed.success) {
     throw new BadRequestException({
       code: 'OCR_INVALID_HINTS',

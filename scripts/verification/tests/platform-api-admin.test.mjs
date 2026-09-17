@@ -2,9 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
 import {
-  normalizeErrorCode,
   getErrorDefinition,
-  GOVERNED_ERROR_REGISTRY,
 } from '../../../packages/api-contracts/dist/types/core/errors.js';
 import {
   isSupportedMajorVersion,
@@ -19,7 +17,7 @@ function validMeta() {
     requestId: 'b'.repeat(20),
     serverTime: '2026-06-11T12:00:00.000Z',
     apiVersion: 'v1',
-    contractVersion: '1.0.0',
+    contractVersion: '2.0.0',
   };
 }
 
@@ -179,7 +177,7 @@ describe('admin client - safe-read retries classification', () => {
 
 describe('admin client - contract mismatch detection', () => {
   it('rejects unsupported contract major version', () => {
-    assert.equal(isSupportedMajorVersion('2.0.0'), false);
+    assert.equal(isSupportedMajorVersion('1.0.0'), false);
     assert.equal(isSupportedMajorVersion('0.0.0'), false);
   });
 
@@ -193,7 +191,7 @@ describe('admin client - contract mismatch detection', () => {
     });
     assert.equal(result.kind, 'contract-mismatch');
     if (result.kind === 'contract-mismatch') {
-      assert.equal(result.expectedMajor, 1);
+      assert.equal(result.expectedMajor, 2);
       assert.equal(result.receivedVersion, '3.0.0');
     }
   });
@@ -208,7 +206,7 @@ describe('admin client - contract mismatch detection', () => {
   it('contract version mismatch returns meta when available', () => {
     const schema = z.object({ id: z.string() });
     const meta = validMeta();
-    meta.contractVersion = '2.0.0';
+    meta.contractVersion = '1.0.0';
     const result = parseSuccessResponse(schema, {
       data: { id: 'x' },
       meta,

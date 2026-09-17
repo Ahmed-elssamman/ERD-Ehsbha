@@ -1,31 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { computeDriverScore } from '../analytics/engines/score.engine';
+import { computeDriverScore, WORK_SCORE_VERSION } from '../analytics/engines/score.engine';
 import { addDays, startOfUtcDay } from '../../common/utils/date';
+import { businessDate } from '@ehsbha/shared-types';
+import { AggregatesService } from '../aggregates/aggregates.service';
+
+import { scoreResponse } from './score-response';
 
 @Injectable()
 export class ScoreService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private aggregates: AggregatesService) {}
 
   async today(driverId: string) {
-    const today = startOfUtcDay(new Date());
-    const existing = await this.prisma.scoreSnapshot.findUnique({
-      where: { driverId_date: { driverId, date: today } },
-    });
-    if (existing) return existing;
-
+    await this.aggregates.ensureCalendar(driverId);
+    const today = businessDate(new Date());
     const score = await this.compute(driverId, today);
-    return this.prisma.scoreSnapshot.upsert({
-      where: { driverId_date: { driverId, date: today } },
+    const row = await this.prisma.scoreSnapshot.upsert({
+      where: { driverId_date_algorithmVersion: { driverId, date: today, algorithmVersion: WORK_SCORE_VERSION } },
       create: { driverId, date: today, ...score },
       update: score,
     });
+    return scoreResponse(row);
   }
 
-  history(driverId: string, from?: Date, to?: Date) {
-    return this.prisma.scoreSnapshot.findMany({
+  async history(driverId: string, from?: Date, to?: Date) {
+    const rows = await this.prisma.scoreSnapshot.findMany({
       where: {
-        driverId,
+        driverId, algorithmVersion: WORK_SCORE_VERSION,
         ...(from || to
           ? {
               date: {
@@ -38,10 +39,11 @@ export class ScoreService {
       orderBy: { date: 'desc' },
       take: 60,
     });
+    return rows.map(scoreResponse);
   }
 
   private async compute(driverId: string, date: Date) {
-    const since14 = addDays(date, -14);
+    const since14 = addDays(date, -13);
     const rows = await this.prisma.dailyAggregate.findMany({
       where: { driverId, date: { gte: since14, lte: date } },
       orderBy: { date: 'asc' },
@@ -49,12 +51,13 @@ export class ScoreService {
 
     const todayRow = rows.find((r) => r.date.getTime() === date.getTime());
 
-    const pricePerKmList = rows.map((r) => r.profitPerKmPiastres).filter((v) => v > 0);
-    const netList = rows.map((r) => Number(r.netProfitPiastres)).filter((v) => v !== 0);
-    const onlineMinList = rows.map((r) => r.onlineMinutes);
+    const prior = rows.filter((r) => r.date.getTime() < date.getTime());
+    const pricePerKmList = prior.filter((r) => r.totalKmMeters > 0n).map((r) => r.profitPerKmPiastres);
+    const netList = prior.map((r) => Number(r.netProfitPiastres));
+    const onlineMinList = prior.map((r) => r.onlineMinutes);
 
     const median = (arr: number[]) => {
-      if (!arr.length) return 0;
+      if (arr.length < 3) return null;
       const s = [...arr].sort((a, b) => a - b);
       const m = Math.floor(s.length / 2);
       return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
@@ -65,37 +68,12 @@ export class ScoreService {
       return arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length;
     };
 
-    const profitPerKm = todayRow?.profitPerKmPiastres ?? 0;
-    const net = todayRow ? Number(todayRow.netProfitPiastres) : 0;
-    const emptyBp = todayRow?.emptyRatioBp ?? 0;
-
-    const trips = todayRow
-      ? await this.prisma.trip.findMany({
-          where: { driverId, startedAt: { gte: date, lt: addDays(date, 1) } },
-          select: { startedAt: true, endedAt: true },
-        })
-      : [];
-    let nightMin = 0;
-    let totalMin = 0;
-    for (const t of trips) {
-      const dur = Math.max(0, (t.endedAt.getTime() - t.startedAt.getTime()) / 60_000);
-      totalMin += dur;
-      const h = t.startedAt.getUTCHours();
-      if (h >= 23 || h < 5) nightMin += dur;
-    }
-    const lateNightShare = totalMin > 0 ? nightMin / totalMin : 0;
-
-    const onlineStd = Math.sqrt(variance(onlineMinList));
-
     return computeDriverScore({
-      profitPerKmPiastres: profitPerKm,
+      profitPerKmPiastres: todayRow && todayRow.totalKmMeters > 0n ? todayRow.profitPerKmPiastres : null,
       profitPerKmMedian: median(pricePerKmList),
-      netProfitPiastres: net,
+      netProfitPiastres: todayRow ? Number(todayRow.netProfitPiastres) : null,
       netProfitMedian: median(netList),
-      emptyRatioBp: emptyBp,
-      lateNightShare,
-      onlineMinutesVarianceMinutes: onlineStd,
-      fatigueScore: 0,
+      onlineMinutesDeviation: todayRow && prior.length >= 3 ? Math.sqrt(variance(onlineMinList)) : null,
     });
   }
 }

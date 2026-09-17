@@ -1,9 +1,10 @@
+import { financialCoverageShape } from './financial-coverage'
 import { z } from 'zod'
 import { registerOperation } from '../catalog/registry'
-import { EmptySuccessDataSchema } from '../core/envelope'
+import { OperatingCostBasis, isCalendarDate, TripCostBasis } from '@ehsbha/shared-types'
 
 export const DateSchema = z.object({
-  date: z.coerce.date().optional(),
+  date: z.string().refine(isCalendarDate, 'Expected a calendar date in YYYY-MM-DD format').optional(),
 }).strict()
 
 export const WeekSchema = z.object({
@@ -17,7 +18,7 @@ export const MonthSchema = z.object({
 }).strict()
 
 export const WindowSchema = z.object({
-  window: z.string().regex(/^\d+d$/).default('7d'),
+  window: z.string().regex(/^[1-9]\d*d$/).refine((value) => Number(value.slice(0, -1)) <= 3650, 'Maximum reporting window is 3650 days').default('7d'),
 }).strict()
 
 export const HistorySchema = z.object({
@@ -87,8 +88,11 @@ export const dailyAnalyticsSchema = z.object({
   paidKmMeters: z.number().int(),
   emptyKmMeters: z.number().int(),
   onlineMinutes: z.number().int(),
-  grossPiastres: z.number().int(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable(),
   fuelPiastres: z.number().int(),
+  costBasis: z.nativeEnum(OperatingCostBasis).optional(),
+  maintenancePiastres: z.number().int().optional(), retainedMaintenanceEstimatePiastres: z.number().int().optional(),
   expensePiastres: z.number().int(),
   netProfitPiastres: z.number().int(),
   profitPerKmPiastres: z.number(),
@@ -104,9 +108,12 @@ export const weeklyAnalyticsSchema = z.object({
   paidKmMeters: z.number().int().optional(),
   emptyKmMeters: z.number().int().optional(),
   onlineMinutes: z.number().int().optional(),
-  grossPiastres: z.number().int().optional(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable().optional(),
   netProfitPiastres: z.number().int(),
   fuelPiastres: z.number().int().optional(),
+  costBasis: z.nativeEnum(OperatingCostBasis).optional(),
+  maintenancePiastres: z.number().int().optional(), retainedMaintenanceEstimatePiastres: z.number().int().optional(),
   expensePiastres: z.number().int().optional(),
   profitPerKmPiastres: z.number().optional(),
   profitPerHourPiastres: z.number().optional(),
@@ -121,9 +128,12 @@ export const monthlyAnalyticsSchema = z.object({
   paidKmMeters: z.number().int().optional(),
   emptyKmMeters: z.number().int().optional(),
   onlineMinutes: z.number().int().optional(),
-  grossPiastres: z.number().int().optional(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable().optional(),
   netProfitPiastres: z.number().int(),
   fuelPiastres: z.number().int().optional(),
+  costBasis: z.nativeEnum(OperatingCostBasis).optional(),
+  maintenancePiastres: z.number().int().optional(), retainedMaintenanceEstimatePiastres: z.number().int().optional(),
   expensePiastres: z.number().int().optional(),
   profitPerKmPiastres: z.number().optional(),
   profitPerHourPiastres: z.number().optional(),
@@ -131,12 +141,14 @@ export const monthlyAnalyticsSchema = z.object({
 }).passthrough()
 
 export const appPerformanceSchema = z.object({
+  costBasis: z.nativeEnum(TripCostBasis).optional(),
   driverAppId: z.string(),
   appName: z.string(),
   color: z.string().nullable(),
   tripCount: z.number().int(),
   netProfitPiastres: z.number().int(),
-  grossPiastres: z.number().int(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable(),
   totalKmMeters: z.number().int(),
   onlineMinutes: z.number().int(),
   profitPerKmPiastres: z.number(),
@@ -144,17 +156,20 @@ export const appPerformanceSchema = z.object({
 }).passthrough()
 
 export const areaPerformanceSchema = z.object({
+  costBasis: z.nativeEnum(TripCostBasis).optional(),
   areaId: z.string(),
   name: z.string(),
   color: z.string().nullable(),
   tripCount: z.number().int(),
   netProfitPiastres: z.number().int(),
-  grossPiastres: z.number().int(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable(),
   totalKmMeters: z.number().int(),
   profitPerKmPiastres: z.number(),
 }).passthrough()
 
 export const hourBucketSchema = z.object({
+  costBasis: z.nativeEnum(TripCostBasis).optional(),
   bucket: z.enum(['morning', 'afternoon', 'evening', 'night']),
   tripCount: z.number().int(),
   netProfitPiastres: z.number().int(),
@@ -186,11 +201,11 @@ export const decisionCardSchema = z.object({
 
 export const driverScoreSchema = z.object({
   date: z.string(),
-  overall: z.number(),
-  efficiency: z.number(),
-  profit: z.number(),
-  safety: z.number(),
-  consistency: z.number(),
+  algorithmVersion: z.literal(2),
+  overall: z.number().int().min(0).max(100).nullable(),
+  efficiency: z.number().int().min(0).max(100).nullable(),
+  profit: z.number().int().min(0).max(100).nullable(),
+  consistency: z.number().int().min(0).max(100).nullable(),
 }).passthrough()
 
 const producer = [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }] as const
@@ -206,7 +221,7 @@ registerOperation({
   successData: 'dailyAnalyticsSchema',
   failureCodes: ['UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -224,7 +239,7 @@ registerOperation({
   successData: 'dailyAnalyticsSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -242,7 +257,7 @@ registerOperation({
   successData: 'weeklyAnalyticsSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -260,7 +275,7 @@ registerOperation({
   successData: 'monthlyAnalyticsSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -314,7 +329,7 @@ registerOperation({
   successData: 'hourBucketSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -332,7 +347,7 @@ registerOperation({
   successData: 'monthlyForecastSchema',
   failureCodes: ['UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -350,7 +365,7 @@ registerOperation({
   successData: 'recommendationSchema',
   failureCodes: ['UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -386,7 +401,7 @@ registerOperation({
   successData: 'recommendationSchema',
   failureCodes: ['UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -404,7 +419,7 @@ registerOperation({
   successData: 'driverScoreSchema',
   failureCodes: ['UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -422,7 +437,7 @@ registerOperation({
   successData: 'driverScoreSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,

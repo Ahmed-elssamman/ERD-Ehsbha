@@ -12,7 +12,7 @@ if (existsSync(webDist)) {
   const webManifestPath = resolve(webDist, '.vite/manifest.json')
   if (existsSync(webManifestPath)) {
     const manifest = JSON.parse(execSync(`type "${webManifestPath}"`, { encoding: 'utf-8', shell: true }))
-    for (const [key, entry] of Object.entries(manifest)) {
+    for (const [, entry] of Object.entries(manifest)) {
       if (entry.src && (entry.src.includes('/admin/') || entry.src.includes('admin-'))) {
         console.error(`Found admin source in web artifact: ${entry.src}`)
         exitCode = 1
@@ -33,7 +33,7 @@ if (existsSync(adminDist)) {
   const adminManifestPath = resolve(adminDist, '.vite/manifest.json')
   if (existsSync(adminManifestPath)) {
     const manifest = JSON.parse(execSync(`type "${adminManifestPath}"`, { encoding: 'utf-8', shell: true }))
-    for (const [key, entry] of Object.entries(manifest)) {
+    for (const [, entry] of Object.entries(manifest)) {
       if (entry.src && (entry.src.includes('/web/') || entry.src.includes('web-'))) {
         console.error(`Found web source in admin artifact: ${entry.src}`)
         exitCode = 1

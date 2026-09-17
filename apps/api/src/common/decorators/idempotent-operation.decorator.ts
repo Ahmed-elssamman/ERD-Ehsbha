@@ -7,6 +7,8 @@ export interface IdempotentOperationOptions {
   operationId: string;
   realm: 'driver' | 'admin' | 'system';
   requestSchema: ZodTypeAny;
+  querySchema?: ZodTypeAny;
+  pathParameters?: string[];
   retentionHours?: number;
 }
 

@@ -20,6 +20,16 @@ describe('AzureVisionClient pure helpers', () => {
   });
 
   describe('parseImageAnalysisResult', () => {
+    it('retains lines from every text block', () => {
+      const result = parseImageAnalysisResult({
+        modelVersion: 'latest', metadata: { width: 100, height: 100 },
+        readResult: { blocks: [
+          { lines: [{ text: 'first card', boundingPolygon: [], words: [] }] },
+          { lines: [{ text: 'second card', boundingPolygon: [], words: [] }] },
+        ] },
+      });
+      expect(result.lines.map((line) => line.text)).toEqual(['first card', 'second card']);
+    });
     it('preserves reading order by Y then X', () => {
       const body: ImageAnalysisResultOutput = {
         metadata: { width: 1000, height: 2000 },

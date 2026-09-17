@@ -16,14 +16,16 @@ describe('contract compatibility', () => {
     assert.equal(fixture.compatibility, 'additive-compatible');
   });
 
-  it('every active operation is additive-compatible in major version 1', async () => {
-    // In major version 1, all operations must be additive-compatible
-    // (incompatible changes require a major version bump)
-    const { getActiveOperations } = await import(pathToFileURL(resolve(repoRoot, 'packages/api-contracts/dist/types/index.js')).href);
+  it('breaking operations exactly match the declared major-version cutover', async () => {
+    const { getActiveOperations, CONTRACT_RELEASE, CONTRACT_VERSION, SUPPORTED_MAJOR_VERSION } = await import(pathToFileURL(resolve(repoRoot, 'packages/api-contracts/dist/types/index.js')).href);
+    assert.equal(CONTRACT_RELEASE.version, CONTRACT_VERSION);
+    assert.equal(CONTRACT_RELEASE.previousMajor + 1, SUPPORTED_MAJOR_VERSION);
+    assert.equal(CONTRACT_VERSION, `${SUPPORTED_MAJOR_VERSION}.0.0`);
     const activeOps = getActiveOperations();
+    assert.deepEqual(activeOps.filter((op) => op.compatibility === 'incompatible').map((op) => op.operationId).sort(), [...CONTRACT_RELEASE.incompatibleOperations].sort());
     for (const op of activeOps) {
-      assert.equal(op.compatibility, 'additive-compatible',
-        `Active operation ${op.operationId} is ${op.compatibility} in major version 1`);
+      const expected = CONTRACT_RELEASE.incompatibleOperations.includes(op.operationId) ? 'incompatible' : 'additive-compatible';
+      assert.equal(op.compatibility, expected, `Undeclared compatibility change for ${op.operationId}`);
     }
   });
 

@@ -1,5 +1,4 @@
 import { v4 as uuidv4, validate as isValidUuid } from 'uuid'
-import type { Request } from 'express'
 
 export interface RequestContext {
   requestId: string

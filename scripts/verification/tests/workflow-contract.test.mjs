@@ -25,9 +25,11 @@ describe('CI Workflow Contract', () => {
     assert.ok(content.includes('npm ci'), 'Must use npm ci');
   });
 
-  it('sets up PostgreSQL', () => {
+  it('uses Neon database URLs instead of installing local PostgreSQL', () => {
     const content = readFileSync(workflowPath, 'utf-8');
-    assert.ok(content.includes('postgres') || content.includes('PostgreSQL') || content.includes('DATABASE_URL'), 'Must set up PostgreSQL');
+    assert.ok(content.includes('NEON_DATABASE_URL_CI') || content.includes('DATABASE_URL'), 'Must provide a Neon DATABASE_URL');
+    assert.ok(content.includes('NEON_DIRECT_URL_CI') || content.includes('DIRECT_URL'), 'Must provide a Neon DIRECT_URL');
+    assert.ok(!content.includes('choco install postgresql'), 'Workflow must not install local PostgreSQL');
   });
 
   it('runs npm run verify', () => {

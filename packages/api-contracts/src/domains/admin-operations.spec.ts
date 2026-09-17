@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { moderationActionSchema, auditRecordSchema, roleSchema, adminSettingsSchema } from './admin-operations'
+import { auditRecordSchema } from './admin-operations'
 
 describe('admin-operations contracts', () => {
   it('validates audit record', () => {

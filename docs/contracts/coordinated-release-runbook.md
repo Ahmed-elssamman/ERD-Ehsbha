@@ -20,8 +20,8 @@ Before initiating a coordinated release, confirm the following:
 - [ ] `npm run lint` reports no errors
 - [ ] No competing local response definitions remain
 - [ ] All operation IDs are unique and deterministic
-- [ ] Contract compatibility is `additive-compatible` for all active operations
-- [ ] Database migrations are backward-compatible (additive only)
+- [ ] Additive operations retain their compatibility; breaking operations exactly match the current major-cutover manifest and its major-version increment
+- [ ] Database migration and writer compatibility have been reviewed together; linked/archived expenses require compatible writers even when columns are additive
 - [ ] Rollback plan is reviewed and approved
 - [ ] Release notes are drafted and communicated to stakeholders
 
@@ -89,7 +89,7 @@ checks before proceeding to the next.
 #### 1. Deploy API
 
 - Deploy the built `apps/api` artifact to the target environment
-- Run database migrations (must be backward-compatible)
+- Run the reviewed database migrations and deploy compatible writers together
 - Verify API health endpoint returns 200
 - Proceed to web deployment only after API passes health checks
 

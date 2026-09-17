@@ -1,8 +1,17 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { listTripRecords, tripHistory, type TripHistoryQuery } from './trip-queries';
+import { recordTripChange } from './trip-history';
+import { classifyTripError } from './trip-errors';
+import { AGGREGATE_TRANSACTION_TIMEOUT_MS } from '../aggregates/aggregate.control';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma, type Trip } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AggregatesService } from '../aggregates/aggregates.service';
 import { CreateTripDto, CreateTripSchema, ListTripsDto, UpdateTripDto } from './dto/trips.dto';
+import { assertDriverReferences } from '../../common/authorization/driver-ownership';
+import { assertMutationMatches } from '../../common/utils/mutation-payload';
+import { lockDriverWrites } from '../../common/authorization/driver-write-lock';
+import { resolveTripFinancials, TripRecordSource, TripChange, type TripVersionTarget } from '@ehsbha/shared-types';
+import { validateLinkedTripFees } from '../expenses/expense-links';
 
 /**
  * Governed error codes used by this service:
@@ -17,160 +26,119 @@ export class TripsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aggregates: AggregatesService,
-  ) {}
+  ) { }
 
-  async list(driverId: string, q: ListTripsDto) {
-    const where: any = { driverId };
-    if (q.from || q.to) {
-      where.startedAt = {};
-      if (q.from) where.startedAt.gte = q.from;
-      if (q.to) where.startedAt.lte = q.to;
-    }
-    if (q.appId) where.driverAppId = q.appId;
-    if (q.areaId) where.areaId = q.areaId;
-
-    const cursor = q.cursor ? { id: q.cursor } : undefined;
-    const items = await this.prisma.trip.findMany({
-      where,
-      orderBy: { startedAt: 'desc' },
-      take: q.limit + 1,
-      ...(cursor ? { cursor, skip: 1 } : {}),
-    });
-    const hasNext = items.length > q.limit;
-    const page = hasNext ? items.slice(0, q.limit) : items;
-    return {
-      items: page,
-      nextCursor: hasNext ? page[page.length - 1].id : null,
-    };
-  }
+  list(driverId: string, q: ListTripsDto) { return listTripRecords(this.prisma, driverId, q); }
+  history(driverId: string, id: string, q: TripHistoryQuery) { return tripHistory(this.prisma, driverId, id, q); }
 
   async get(driverId: string, id: string) {
     const t = await this.prisma.trip.findFirst({ where: { id, driverId } });
-    if (!t) throw new NotFoundException({ code: 'TRIP_NOT_FOUND' });
+    if (!t) throw new NotFoundException({ code: 'NOT_FOUND' });
     return t;
   }
 
-  async create(driverId: string, dto: CreateTripDto) {
+  async create(driverId: string, dto: CreateTripDto, source = TripRecordSource.Manual) {
+    return this.prisma.$transaction((tx) => this.createInTransaction(tx, driverId, dto, source), { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS });
+  }
+
+  async createInTransaction(tx: Prisma.TransactionClient, driverId: string, dto: CreateTripDto, source = TripRecordSource.Manual): Promise<Trip> {
+    await lockDriverWrites(tx, driverId);
+    await assertDriverReferences(tx, driverId, dto);
+    const validated = CreateTripSchema.safeParse(dto);
+    if (!validated.success) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const financials = resolveTripFinancials(dto);
+    if (!financials) throw new BadRequestException({ code: 'TRIP_FINANCIAL_EVIDENCE_INVALID' });
     if (dto.clientMutationId) {
-      const dup = await this.prisma.trip.findUnique({ where: { clientMutationId: dto.clientMutationId } });
-      if (dup) return dup;
+      const dup = await tx.trip.findUnique({
+        where: { driverId_clientMutationId: { driverId, clientMutationId: dto.clientMutationId } },
+      });
+      if (dup) {
+        const storedFinancials = resolveTripFinancials(dup);
+        if (!storedFinancials) throw new BadRequestException({ code: 'TRIP_FINANCIAL_EVIDENCE_INVALID' });
+        assertMutationMatches({ ...dto, ...financials }, { ...dup, ...storedFinancials });
+        return dup;
+      }
     }
     const emptyKmMeters = dto.totalKmMeters - dto.paidKmMeters;
-    // If the driver entered what they actually received after the platform deduction,
-    // derive the commission from that. Otherwise fall back to whatever was passed.
-    const commissionPiastres = dto.receivedPiastres !== undefined && dto.receivedPiastres !== null
-      ? Math.max(0, dto.grossPiastres - dto.receivedPiastres)
-      : dto.commissionPiastres;
-    const trip = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.trip.create({
-        data: {
-          driverId,
-          vehicleId: dto.vehicleId,
-          driverAppId: dto.driverAppId,
-          areaId: dto.areaId ?? null,
-          startedAt: dto.startedAt,
-          endedAt: dto.endedAt,
-          grossPiastres: dto.grossPiastres,
-          receivedPiastres: dto.receivedPiastres ?? null,
-          tipPiastres: dto.tipPiastres,
-          commissionPiastres,
-          tollPiastres: dto.tollPiastres,
-          parkingPiastres: dto.parkingPiastres,
-          totalKmMeters: dto.totalKmMeters,
-          paidKmMeters: dto.paidKmMeters,
-          emptyKmMeters,
-          notes: dto.notes ?? null,
-          clientMutationId: dto.clientMutationId ?? null,
-        },
-      });
-      await this.aggregates.applyTrip({
-        driverId,
-        driverAppId: created.driverAppId,
-        areaId: created.areaId,
-        startedAt: created.startedAt,
-        endedAt: created.endedAt,
-        grossPiastres: created.grossPiastres,
-        tipPiastres: created.tipPiastres,
-        commissionPiastres: created.commissionPiastres,
-        totalKmMeters: created.totalKmMeters,
-        paidKmMeters: created.paidKmMeters,
-        emptyKmMeters: created.emptyKmMeters,
-        sign: 1,
-      }, tx);
-      return created;
+    const created = await tx.trip.create({
+      data: {
+        driverId, source,
+        vehicleId: dto.vehicleId,
+        driverAppId: dto.driverAppId,
+        areaId: dto.areaId ?? null,
+        startedAt: dto.startedAt,
+        endedAt: dto.endedAt,
+        ...financials,
+        earningsPiastres: BigInt(financials.earningsPiastres),
+        tollPiastres: dto.tollPiastres,
+        parkingPiastres: dto.parkingPiastres,
+        totalKmMeters: dto.totalKmMeters,
+        paidKmMeters: dto.paidKmMeters,
+        emptyKmMeters,
+        notes: dto.notes ?? null,
+        pickup: dto.pickup ?? null,
+        destination: dto.destination ?? null,
+        paymentMethod: dto.paymentMethod ?? 'unknown',
+        waitingFeePiastres: dto.waitingFeePiastres ?? null,
+        clientMutationId: dto.clientMutationId ?? null,
+      },
     });
-    return trip;
+    await recordTripChange(tx, created, TripChange.Created);
+    await this.aggregates.refreshIntervals(driverId, [created], tx);
+    return created;
   }
 
   async update(driverId: string, id: string, dto: UpdateTripDto) {
-    const existing = await this.get(driverId, id);
     return this.prisma.$transaction(async (tx) => {
-      await this.aggregates.applyTrip({
-        driverId,
-        driverAppId: existing.driverAppId,
-        areaId: existing.areaId,
-        startedAt: existing.startedAt,
-        endedAt: existing.endedAt,
-        grossPiastres: existing.grossPiastres,
-        tipPiastres: existing.tipPiastres,
-        commissionPiastres: existing.commissionPiastres,
-        totalKmMeters: existing.totalKmMeters,
-        paidKmMeters: existing.paidKmMeters,
-        emptyKmMeters: existing.emptyKmMeters,
-        sign: -1,
-      }, tx);
-
-      const next = {
-        ...existing,
-        ...dto,
-        emptyKmMeters: (dto.totalKmMeters ?? existing.totalKmMeters) - (dto.paidKmMeters ?? existing.paidKmMeters),
-      };
-
+      await lockDriverWrites(tx, driverId);
+      const existing = await tx.trip.findFirst({ where: { id, driverId } });
+      if (!existing) throw new NotFoundException({ code: 'NOT_FOUND' });
+      await assertDriverReferences(tx, driverId, dto);
+      if (existing.deletedAt || existing.version !== dto.expectedVersion) throw new ConflictException({ code: 'TRIP_VERSION_CONFLICT' });
+      const { clientMutationId: _clientMutationId, ...stored } = existing;
+      const { expectedVersion: _expectedVersion, ...patch } = dto;
+      const combined = { ...stored, earningsPiastres: stored.earningsPiastres == null ? null : Number(stored.earningsPiastres), ...patch };
+      // A money patch replaces the relevant equation; unrelated edits preserve every fact.
+      const changesIncome = dto.grossPiastres !== undefined || dto.commissionPiastres !== undefined
+        || dto.receivedPiastres !== undefined || dto.tipPiastres !== undefined || dto.earningsPiastres !== undefined;
+      if (changesIncome) {
+        if (combined.grossPiastres === null && combined.earningsPiastres !== null && dto.receivedPiastres === undefined) combined.receivedPiastres = null;
+        if (dto.earningsPiastres != null) {
+          if (dto.receivedPiastres === undefined) combined.receivedPiastres = null;
+        } else if (combined.grossPiastres !== null && combined.commissionPiastres !== null) {
+          combined.earningsPiastres = null;
+          if (dto.receivedPiastres === undefined) combined.receivedPiastres = null;
+          else if (dto.commissionPiastres === undefined) combined.commissionPiastres = null;
+        } else if (dto.receivedPiastres != null) combined.earningsPiastres = null;
+      }
+      const shape = CreateTripSchema.innerType().strip().safeParse(combined);
+      if (!shape.success) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+      const validated = CreateTripSchema.safeParse(shape.data);
+      if (!validated.success) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+      const financials = resolveTripFinancials(validated.data);
+      if (!financials) throw new BadRequestException({ code: 'TRIP_FINANCIAL_EVIDENCE_INVALID' });
+      const next = { ...validated.data, ...financials, earningsPiastres: BigInt(financials.earningsPiastres) };
+      await validateLinkedTripFees(tx, driverId, { ...next, id });
       const updated = await tx.trip.update({
         where: { id },
         data: {
-          vehicleId: dto.vehicleId ?? undefined,
-          driverAppId: dto.driverAppId ?? undefined,
-          areaId: dto.areaId === undefined ? undefined : dto.areaId,
-          startedAt: dto.startedAt ?? undefined,
-          endedAt: dto.endedAt ?? undefined,
-          grossPiastres: dto.grossPiastres ?? undefined,
-          tipPiastres: dto.tipPiastres ?? undefined,
-          commissionPiastres: dto.commissionPiastres ?? undefined,
-          totalKmMeters: dto.totalKmMeters ?? undefined,
-          paidKmMeters: dto.paidKmMeters ?? undefined,
-          emptyKmMeters: next.emptyKmMeters,
-          notes: dto.notes === undefined ? undefined : dto.notes,
+          ...next, version: { increment: 1 },
+          emptyKmMeters: next.totalKmMeters - next.paidKmMeters,
         },
       });
 
-      await this.aggregates.applyTrip({
-        driverId,
-        driverAppId: updated.driverAppId,
-        areaId: updated.areaId,
-        startedAt: updated.startedAt,
-        endedAt: updated.endedAt,
-        grossPiastres: updated.grossPiastres,
-        tipPiastres: updated.tipPiastres,
-        commissionPiastres: updated.commissionPiastres,
-        totalKmMeters: updated.totalKmMeters,
-        paidKmMeters: updated.paidKmMeters,
-        emptyKmMeters: updated.emptyKmMeters,
-        sign: 1,
-      }, tx);
+      await recordTripChange(tx, updated, TripChange.Updated, existing);
+      await this.aggregates.refreshIntervals(driverId, [existing, updated], tx);
 
       return updated;
-    });
+    }, { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS });
   }
 
   /**
    * Bulk-create N trips for a driver in ONE request. Each item is processed
    * inside its own transaction so a single failure (FK violation, validation
-   * error, …) doesn't roll back the others. We deliberately run sequentially
-   * — not Promise.all — because the aggregates upsert hits the same
-   * `(driver, day, app)` row that all cards from the same screenshot would
-   * map to, and concurrent transactions on that row contend on the unique
-   * index and intermittently raise P2034 / P2002.
+   * error, …) doesn't roll back the others. Sequential processing limits
+   * contention on the driver lock used by financial reconciliation.
    *
    * Returns the successfully created trips plus a per-index error array so
    * the client can surface "saved X of N, Y failed" without ambiguity.
@@ -195,7 +163,7 @@ export class TripsService {
         const trip = await this.create(driverId, parsed.data);
         created.push(trip);
       } catch (err) {
-        const mapped = this.classifyError(err);
+        const mapped = err instanceof Error ? classifyTripError(err) : { code: 'INTERNAL_ERROR', message: 'INTERNAL_ERROR' };
         errors.push({ index: i, ...mapped });
         this.logger.warn(
           `createBatch item ${i} failed: ${mapped.code} ${mapped.message}`,
@@ -207,24 +175,19 @@ export class TripsService {
   }
 
   /**
-   * Bulk-delete N trips. Same sequential-transaction rationale as
-   * `createBatch` — concurrent aggregate decrements race on the same
-   * counter row.
+   * Bulk-delete N trips with independent, sequential source/projection transactions.
    */
-  async removeBatch(driverId: string, ids: string[]) {
+  async removeBatch(driverId: string, items: TripVersionTarget[]) {
     const deleted: string[] = [];
     const errors: Array<{ id: string; code: string; message: string }> = [];
 
-    // Dedupe; preserve input order so the client can correlate.
-    const seen = new Set<string>();
-    const ordered = ids.filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
-
-    for (const id of ordered) {
+    for (const item of items) {
+      const { id, expectedVersion } = item;
       try {
-        await this.remove(driverId, id);
+        await this.remove(driverId, id, expectedVersion);
         deleted.push(id);
       } catch (err) {
-        const mapped = this.classifyError(err);
+        const mapped = err instanceof Error ? classifyTripError(err) : { code: 'INTERNAL_ERROR', message: 'INTERNAL_ERROR' };
         errors.push({ id, ...mapped });
         this.logger.warn(
           `removeBatch trip ${id} failed: ${mapped.code} ${mapped.message}`,
@@ -235,45 +198,22 @@ export class TripsService {
     return { deleted, errors };
   }
 
-  private classifyError(err: unknown): { code: string; message: string } {
-    if (err instanceof NotFoundException) {
-      return { code: 'TRIP_NOT_FOUND', message: 'Trip not found' };
-    }
-    if (err instanceof ConflictException) {
-      const r = err.getResponse() as { code?: string; message?: string };
-      return { code: r?.code ?? 'CONFLICT', message: r?.message ?? 'Conflict' };
-    }
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') return { code: 'DUPLICATE', message: 'Already exists' };
-      if (err.code === 'P2025') return { code: 'NOT_FOUND', message: 'Resource not found' };
-      if (err.code === 'P2003') return { code: 'FOREIGN_KEY', message: 'Related resource missing' };
-      return { code: `PRISMA_${err.code}`, message: err.message };
-    }
-    if (err instanceof Prisma.PrismaClientValidationError) {
-      return { code: 'PRISMA_VALIDATION', message: err.message };
-    }
-    if (err instanceof Error) return { code: 'UNKNOWN', message: err.message };
-    return { code: 'UNKNOWN', message: 'Unknown error' };
+  async remove(driverId: string, id: string, expectedVersion: number) {
+    await this.changeDeletion(driverId, id, expectedVersion, new Date());
   }
-
-  async remove(driverId: string, id: string) {
-    const existing = await this.get(driverId, id);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.trip.delete({ where: { id } });
-      await this.aggregates.applyTrip({
-        driverId,
-        driverAppId: existing.driverAppId,
-        areaId: existing.areaId,
-        startedAt: existing.startedAt,
-        endedAt: existing.endedAt,
-        grossPiastres: existing.grossPiastres,
-        tipPiastres: existing.tipPiastres,
-        commissionPiastres: existing.commissionPiastres,
-        totalKmMeters: existing.totalKmMeters,
-        paidKmMeters: existing.paidKmMeters,
-        emptyKmMeters: existing.emptyKmMeters,
-        sign: -1,
-      }, tx);
-    });
+  restore(driverId: string, id: string, expectedVersion: number) { return this.changeDeletion(driverId, id, expectedVersion, null); }
+  private changeDeletion(driverId: string, id: string, expectedVersion: number, deletedAt: Date | null) {
+    return this.prisma.$transaction(async (tx) => {
+      await lockDriverWrites(tx, driverId);
+      const existing = await tx.trip.findFirst({ where: { id, driverId } });
+      if (!existing) throw new NotFoundException({ code: 'NOT_FOUND' });
+      if (existing.version !== expectedVersion) throw new ConflictException({ code: 'TRIP_VERSION_CONFLICT' });
+      if (!!existing.deletedAt === !!deletedAt) return existing;
+      if (!deletedAt) await validateLinkedTripFees(tx, driverId, existing);
+      const updated = await tx.trip.update({ where: { id }, data: { deletedAt, version: { increment: 1 } } });
+      await recordTripChange(tx, updated, deletedAt ? TripChange.Deleted : TripChange.Restored, existing);
+      await this.aggregates.refreshIntervals(driverId, [existing, updated], tx);
+      return updated;
+    }, { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS });
   }
 }

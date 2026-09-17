@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { vehicleSchema, createVehicleSchema, appSourceSchema, areaSchema } from './vehicle-app-area'
+import { vehicleSchema, createVehicleSchema, areaSchema } from './vehicle-app-area'
 
 describe('vehicle-app-area contracts', () => {
   it('validates a vehicle', () => {

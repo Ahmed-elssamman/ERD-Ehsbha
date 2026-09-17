@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // T075: Error code inventory - compares thrown/mapped API codes with the governed registry
 
-import { readFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { GOVERNED_ERROR_REGISTRY } from '../../packages/api-contracts/dist/types/core/errors.js';
 

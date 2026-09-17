@@ -1,195 +1,83 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { OcrDocumentStatus } from '@ehsbha/api-contracts';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n';
-import { readApiError } from '@/lib/api/client';
-import { useOcrExtract } from '@/hooks/use-ocr-extract';
-import type {
-  OcrExtractMode,
-  OcrExtractResponseDto,
-  OcrPlatform,
-} from '@/lib/api/ocr.api';
+import { AppsApi, VehiclesApi } from '@/lib/api/endpoints';
+import { useOcrCapture } from '@/hooks/use-ocr-capture';
+import type { OcrSaveOutcome, OcrSelectedTrip } from '@/lib/ocr/ocr-to-trip';
 import { OcrDropzone } from './ocr-dropzone';
 import { OcrProgress } from './ocr-progress';
-import { OcrReviewForm } from './ocr-review-form';
 import { OcrMultiTripReview } from './ocr-multi-trip-review';
 import { OcrSourceSelector } from './ocr-source-selector';
 
 interface Props {
   open: boolean;
-  onOpenChange: (b: boolean) => void;
-  /**
-   * Called with the extracted (and optionally driver-edited) trip data when
-   * the user confirms. May be async — in multi-trip mode the parent batches
-   * `result.trips.length` create requests, so we await before closing the
-   * dialog so the saving indicator stays visible.
-   *
-   * Throw or return a status object to keep the dialog open and surface the
-   * message inside the review form. Returning void (or true) closes it.
-   */
-  onParsed: (
-    result: OcrExtractResponseDto,
-  ) =>
-    | void
-    | { keepOpen: true; statusMessage?: { kind: 'error' | 'success'; text: string } }
-    | Promise<
-        void | { keepOpen: true; statusMessage?: { kind: 'error' | 'success'; text: string } }
-      >;
+  onOpenChange: (open: boolean) => void;
+  onParsed: (batchId: string, selected: OcrSelectedTrip[]) => Promise<OcrSaveOutcome>;
 }
 
-/**
- * Two-step upload dialog. Step 1 (always first): pick the source app and
- * whether the screenshot is a single trip or a multi-trip earnings summary.
- * Step 2: drop the files and extract. Both inputs are required — the
- * dropzone and extract button stay disabled until the driver picks a
- * platform.
- *
- * The dialog re-uses the existing single-trip review when `result.mode`
- * comes back as 'single', and switches to a scrollable multi-trip review
- * for 'multi'.
- */
 export function OcrUploadDialog({ open, onOpenChange, onParsed }: Props) {
   const { t, tf } = useI18n();
-  const [files, setFiles] = useState<File[]>([]);
-  const [platform, setPlatform] = useState<OcrPlatform | null>(null);
-  const [mode, setMode] = useState<OcrExtractMode>('single');
-  const [result, setResult] = useState<OcrExtractResponseDto | null>(null);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const capture = useOcrCapture(open);
   const [saving, setSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<
-    { kind: 'error' | 'success'; text: string } | null
-  >(null);
-  const mut = useOcrExtract();
-
-  useEffect(() => {
-    if (!open) {
-      setFiles([]);
-      setPlatform(null);
-      setMode('single');
-      setResult(null);
-      setErrorCode(null);
-      setSaving(false);
-      setStatusMessage(null);
-      mut.reset();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const startExtract = async () => {
-    if (!platform) {
-      setErrorCode('OCR_NO_PLATFORM');
-      return;
-    }
-    if (files.length === 0) {
-      setErrorCode('OCR_NO_IMAGES');
-      return;
-    }
-    setErrorCode(null);
-    try {
-      const r = await mut.mutateAsync({ files, platform, mode });
-      setResult(r);
-    } catch (err) {
-      const e = readApiError(err);
-      setErrorCode(e.code || 'UNKNOWN');
-    }
-  };
-
-  const apply = async (edited: OcrExtractResponseDto) => {
+  const vehicles = useQuery({ queryKey: ['vehicles'], queryFn: VehiclesApi.list, enabled: open });
+  const apps = useQuery({ queryKey: ['apps', 'mine'], queryFn: AppsApi.mine, enabled: open });
+  const result = capture.draft?.detail?.result ?? null;
+  const busy = saving || capture.running || capture.restoring;
+  const close = () => { if (!saving) onOpenChange(false); };
+  const apply = async (selected: OcrSelectedTrip[]): Promise<OcrSaveOutcome> => {
+    const batchId = capture.draft?.batchId;
+    if (!batchId) throw new Error('OCR_CANDIDATE_NOT_FOUND');
     setSaving(true);
-    setStatusMessage(null);
     try {
-      const r = await Promise.resolve(onParsed(edited));
-      if (r && typeof r === 'object' && r.keepOpen) {
-        if (r.statusMessage) setStatusMessage(r.statusMessage);
-        return;
-      }
-      onOpenChange(false);
-    } catch (err) {
-      const e = readApiError(err);
-      setStatusMessage({
-        kind: 'error',
-        text: tf(`trips.ocr.error.${e.code || 'UNKNOWN'}`, e.code || 'UNKNOWN'),
-      });
-    } finally {
-      setSaving(false);
-    }
+      const outcome = await onParsed(batchId, selected);
+      await capture.refresh();
+      return outcome;
+    } finally { setSaving(false); }
   };
-
-  const discardResult = () => {
-    setResult(null);
-    setFiles([]);
-    setStatusMessage(null);
-  };
-
-  const isPending = mut.isPending;
-  const errorMessage = errorCode
-    ? errorCode === 'OCR_NO_PLATFORM'
-      ? t('trips.ocr.selectPlatformFirst')
-      : tf(`trips.ocr.error.${errorCode}`, errorCode)
-    : null;
-
-  const showFooter = !result;
-  const canExtract = !isPending && files.length > 0 && platform != null;
-  // The multi-trip review can host up to 20 expandable cards — give it the
-  // widest dialog size so each card has horizontal room. Single-trip review
-  // and the initial picker stay compact.
-  const dialogSize = result && result.mode === 'multi' && result.trips.length > 1 ? 'xl' : 'lg';
+  const failedDocuments = result?.documents?.filter((document) => document.status === OcrDocumentStatus.Failed) ?? [];
+  const detail = capture.draft?.detail;
+  const reviewed = capture.draft?.review?.cards ?? [];
+  const canRetryFailed = result?.trips.length === 0 || (reviewed.length > 0 && reviewed.every((card) => card.saved));
 
   return (
-    <Dialog
-      open={open}
-      onClose={() => onOpenChange(false)}
-      size={dialogSize}
-      title={t('trips.ocr.dialogTitle')}
-      description={t('trips.ocr.dialogSubtitle')}
-      footer={
-        showFooter ? (
-          <>
-            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={startExtract} loading={isPending} disabled={!canExtract}>
-              {isPending ? t('trips.ocr.extracting') : t('trips.ocr.extract')}
-            </Button>
-          </>
-        ) : null
-      }
-    >
-      {result ? (
-        result.mode === 'multi' && result.trips.length > 1 ? (
-          <OcrMultiTripReview
-            result={result}
-            onApply={apply}
-            onDiscard={discardResult}
-            saving={saving}
-            statusMessage={statusMessage}
-          />
-        ) : (
-          <OcrReviewForm result={result} onApply={apply} onDiscard={discardResult} />
-        )
-      ) : isPending ? (
-        <OcrProgress />
-      ) : (
-        <div className="space-y-4">
-          <OcrSourceSelector
-            platform={platform}
-            mode={mode}
-            onPlatformChange={setPlatform}
-            onModeChange={setMode}
-            disabled={isPending}
-          />
-          <OcrDropzone
-            files={files}
-            onChange={setFiles}
-            disabled={isPending || platform == null}
-          />
-          {errorMessage ? (
-            <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-              {errorMessage}
-            </p>
-          ) : null}
-        </div>
-      )}
+    <Dialog open={open} onClose={close} size={result ? 'xl' : 'lg'} title={t('trips.ocr.dialogTitle')} description={t('trips.ocr.dialogSubtitle')}>
+      <div className="space-y-4">
+        {capture.storageError ? <div role="alert" className="rounded-lg border border-warning/40 p-3 text-sm"><p>{t('trips.ocr.error.OCR_DRAFT_STORAGE')}</p>{capture.draft ? <Button variant="ghost" onClick={capture.retryStorage}>{t('common.retry')}</Button> : null}</div> : capture.draft ? <p role="status" className="text-xs text-muted-foreground">{t(capture.writing ? 'trips.ocr.savingDraft' : 'trips.ocr.draftSaved')}</p> : null}
+        {capture.errorCode ? <div role="alert" className="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">
+          <p>{tf(`trips.ocr.error.${capture.errorCode}`, t('trips.ocr.error.UNKNOWN'))}</p>
+          {result ? <Button variant="ghost" onClick={capture.refresh} disabled={capture.checking}>{t('common.retry')}</Button> : null}
+        </div> : null}
+        {capture.restoring ? <p role="status">{t('trips.ocr.restoringDraft')}</p> : result ? <div className="space-y-4">
+          {failedDocuments.length ? <section className="space-y-2 rounded-lg border border-warning/40 p-3" aria-label={t('trips.ocr.failedImages')}>
+            <p className="text-sm font-medium">{t('trips.ocr.failedCount', { n: failedDocuments.length })}</p>
+            {failedDocuments.map((document) => <details key={document.id}><summary className="min-h-11 cursor-pointer py-3 text-sm">{t('trips.ocr.imageNumber', { n: document.index + 1 })}: {tf(`trips.ocr.error.${document.errorCode}`, t('trips.ocr.error.OCR_FAILED'))}</summary><pre dir="auto" className="whitespace-pre-wrap break-words text-sm">{document.rawText || t('trips.ocr.noReadableText')}</pre></details>)}
+            {canRetryFailed ? <Button variant="secondary" onClick={capture.retryFailed} disabled={busy}>{t('trips.ocr.retryFailed')}</Button> : <p className="text-xs">{t('trips.ocr.retryAfterReview')}</p>}
+          </section> : null}
+          {result.trips.length ? <OcrMultiTripReview key={result.imageHashes.join(':')} result={result} vehicles={vehicles.data ?? []} apps={apps.data ?? []}
+            loading={vehicles.isPending || apps.isPending || capture.checking} lookupError={vehicles.isError || apps.isError}
+            onRetryLookups={() => { void vehicles.refetch(); void apps.refetch(); }} onApply={apply} onDiscard={close} saving={saving}
+            draft={capture.draft?.review ?? null} onDraftChange={capture.updateReview} confirmations={detail?.confirmations ?? []} />
+            : <Button onClick={close}>{t('trips.ocr.manualFallback')}</Button>}
+          <Button variant="ghost" onClick={capture.reset} disabled={busy}>{t('trips.ocr.newUpload')}</Button>
+        </div> : capture.running ? <div className="space-y-3">
+          <OcrProgress />
+          {detail ? <p className="text-sm">{t('trips.ocr.imageProgress', { done: detail.finishedImageCount, total: detail.imageCount })}</p> : null}
+          <p className="text-sm text-muted-foreground">{t('trips.ocr.backgroundCapture')}</p>
+          <div className="flex justify-end gap-2"><Button variant="ghost" onClick={capture.reset}>{t('common.cancel')}</Button><Button variant="secondary" onClick={close}>{t('common.close')}</Button></div>
+        </div> : <div className="space-y-4">
+          <OcrDropzone files={capture.files} onChange={capture.setFiles} disabled={busy || capture.draft !== null} />
+          <details><summary className="min-h-11 cursor-pointer py-3 text-sm">{t('trips.ocr.optionalSettings')}</summary><OcrSourceSelector platform={capture.platform} mode={capture.mode} onPlatformChange={capture.setPlatform} onModeChange={capture.setMode} disabled={busy || capture.draft !== null} /></details>
+          {capture.draft ? <p className="text-sm">{t('trips.ocr.resumeCapture')}</p> : null}
+          <div className="flex flex-wrap justify-end gap-2">
+            {capture.draft ? <Button variant="ghost" onClick={capture.reset}>{t('trips.ocr.newUpload')}</Button> : null}
+            <Button variant="ghost" onClick={close}>{t('common.cancel')}</Button>
+            <Button onClick={capture.start} disabled={!capture.files.length || busy}>{t('trips.ocr.extract')}</Button>
+          </div>
+        </div>}
+      </div>
     </Dialog>
   );
 }

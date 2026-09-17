@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { communityPostSchema, reviewSchema, supportTicketSchema, notificationSchema } from './communications'
+import { notificationSchema } from './communications'
 
 describe('communications contracts', () => {
   it('validates notification', () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { API_VERSION, CONTRACT_VERSION } from './version'
 
 export const ResponseMetaSchema = z.object({
   requestId: z.string().min(16).max(128),
@@ -13,8 +14,8 @@ export function createSuccessMeta(requestId: string): ResponseMeta {
   return {
     requestId,
     serverTime: new Date().toISOString(),
-    apiVersion: 'v1',
-    contractVersion: '1.0.0',
+    apiVersion: API_VERSION,
+    contractVersion: CONTRACT_VERSION,
   }
 }
 

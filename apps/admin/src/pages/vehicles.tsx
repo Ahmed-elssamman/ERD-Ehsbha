@@ -22,7 +22,8 @@ interface Row {
   year: number | null;
   fuelType: string;
   isActive: boolean;
-  odometerMeters: number;
+  odometerMeters: number | null;
+  odometerSource: string;
   driverPhone: string;
   driverDisplayName: string;
   tripCount: number;
@@ -71,7 +72,7 @@ export function VehiclesPage() {
       ),
       sortValue: (r) => r.driverDisplayName,
     },
-    { key: 'odo', header: t('vehicles.odometer'), align: 'right', cell: (r) => `${formatNumber(Math.round(r.odometerMeters / 1000))} km`, sortValue: (r) => r.odometerMeters },
+    { key: 'odo', header: t('vehicles.odometer'), align: 'right', cell: (r) => `${r.odometerMeters === null ? t('vehicles.mileageUnknown') : `${formatNumber(r.odometerMeters / 1000)} km`} · ${t(`vehicles.mileageSource.${r.odometerSource}`)}`, sortValue: (r) => r.odometerMeters ?? -1 },
     { key: 'trips', header: t('users.tripsCount'), align: 'right', cell: (r) => formatNumber(r.tripCount), sortValue: (r) => r.tripCount },
     { key: 'active', header: t('vehicles.active'), cell: (r) => r.isActive ? <Badge variant="success">{t('vehicles.on')}</Badge> : <Badge variant="muted">{t('vehicles.off')}</Badge>, sortValue: (r) => (r.isActive ? 1 : 0) },
   ];

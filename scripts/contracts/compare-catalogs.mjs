@@ -1,5 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs'
-import { getAllOperations } from '../../packages/api-contracts/src/catalog/registry.js'
+import { readFileSync } from 'fs'
 
 const [,, basePath, headPath] = process.argv
 

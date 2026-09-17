@@ -1,6 +1,8 @@
+import { tripWriteIdempotency } from './trip-records';
+import { financialCoverageShape } from './financial-coverage'
 import { z } from 'zod'
 import { registerOperation } from '../catalog/registry'
-import { affectedResultSchema, cursorPageSchema, okResultSchema } from './admin-core'
+import { cursorPageSchema } from './admin-core'
 
 export const adminAuditListQuerySchema = z.object({
   cursor: z.string().optional(),
@@ -387,25 +389,28 @@ export const adminAnalyticsOverviewSchema = z.object({
     driverAppId: z.string(),
     appName: z.string(),
     tripCount: z.number().int(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
   }).strict()),
   tripsByDay: z.array(z.object({
     day: z.string(),
     trips: z.number().int(),
-    gross: z.number(),
+    gross: z.number().nullable(), ...financialCoverageShape,
   }).strict()),
   tripsByArea: z.array(z.object({
     areaId: z.string().nullable(),
     areaName: z.string(),
     tripCount: z.number().int(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
   }).strict()),
   topDriversByProfit: z.array(z.object({
     driverId: z.string(),
     year: z.number().int(),
     month: z.number().int(),
     netProfitPiastres: z.number(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
     phone: z.string(),
     displayName: z.string(),
   }).strict()),
@@ -426,10 +431,14 @@ export const adminAnalyticsOverviewSchema = z.object({
     count: z.number().int(),
   }).strict()),
   totals: z.object({
-    grossPiastres: z.number(),
+    tripCount: z.number().int().nonnegative().optional(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
     netProfitPiastres: z.number(),
     totalKmMeters: z.number(),
     fuelPiastres: z.number(),
+    maintenancePiastres: z.number().optional(), retainedMaintenanceEstimatePiastres: z.number().optional(),
+    expensePiastres: z.number().optional(),
   }).strict(),
 }).passthrough()
 
@@ -469,10 +478,10 @@ function op(operationId: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', pa
     successData,
     failureCodes,
     consumers: [...producer],
-    compatibility: 'additive-compatible',
+    compatibility: operationId === 'admin.analytics.overview' || operationId.startsWith('admin.bulk.trips.') ? 'incompatible' : 'additive-compatible',
     owner: 'platform',
     pagination: null,
-    idempotency: null,
+    idempotency: operationId.startsWith('admin.bulk.trips.') ? tripWriteIdempotency : null,
     followUp: null,
   })
 }
@@ -484,8 +493,8 @@ op('admin.audit.get', 'GET', '/api/v1/admin/audit/:id', {}, 'adminAuditDetailSch
 
 op('admin.bulk.drivers.suspend', 'POST', '/api/v1/admin/drivers/bulk/suspend', { body: 'BulkBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])
 op('admin.bulk.drivers.activate', 'POST', '/api/v1/admin/drivers/bulk/activate', { body: 'BulkBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])
-op('admin.bulk.trips.delete', 'POST', '/api/v1/admin/trips/bulk/delete', { body: 'BulkBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])
-op('admin.bulk.trips.restore', 'POST', '/api/v1/admin/trips/bulk/restore', { body: 'BulkBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])
+op('admin.bulk.trips.delete', 'POST', '/api/v1/admin/trips/bulk/delete', { body: 'TripBulkActionSchema' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND', 'TRIP_VERSION_CONFLICT', 'EXPENSE_LINK_CONFLICT', 'DAILY_DISTANCE_CONFLICT'])
+op('admin.bulk.trips.restore', 'POST', '/api/v1/admin/trips/bulk/restore', { body: 'TripBulkActionSchema' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND', 'TRIP_VERSION_CONFLICT', 'EXPENSE_LINK_CONFLICT', 'DAILY_DISTANCE_CONFLICT'])
 op('admin.bulk.community.posts.delete', 'POST', '/api/v1/admin/community/posts/bulk/delete', { body: 'BulkBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])
 op('admin.bulk.reviews.delete', 'POST', '/api/v1/admin/reviews/bulk/delete', { body: 'BulkBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])
 op('admin.bulk.support.tickets.transition', 'POST', '/api/v1/admin/support/tickets/bulk/transition', { body: 'BulkTransitionBody' }, 'affectedResultSchema', ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN'])

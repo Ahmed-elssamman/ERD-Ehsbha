@@ -69,10 +69,17 @@ model RefreshToken {
 
 // ─── Driver, vehicles, apps, areas ──────────────────────────────────────────
 
+enum ReportingCalendar {
+  UTC
+  CAIRO
+}
+
 model Driver {
   id          String   @id @default(cuid())
   userId      String   @unique @map("user_id")
   displayName String   @map("display_name")
+  reportingCalendar ReportingCalendar @default(CAIRO) @map("reporting_calendar")
+  financialProjectionVersion Int @default(3) @map("financial_projection_version")
   photoUrl    String?  @map("photo_url")
   baseCity    String?  @map("base_city")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -86,10 +93,16 @@ model Driver {
   sessions            Session[]
   fuelLogs            FuelLog[]
   expenses            Expense[]
+  expenseRevisions    ExpenseRevision[]
   maintenanceRecords  MaintenanceRecord[]
+  maintenanceRevisions MaintenanceRevision[]
   goals               Goal[]
   recommendations     Recommendation[]
   notifications       Notification[]
+  notificationPreferences NotificationPreferences?
+  reports DriverReport[]
+  reportRevisions ReportRevision[]
+  reportPreferences ReportPreferences?
   scoreSnapshots      ScoreSnapshot[]
   dailyAggregates     DailyAggregate[]
   weeklyAggregates    WeeklyAggregate[]
@@ -100,8 +113,88 @@ model Driver {
   communityPosts      CommunityPost[]
   communityReactions  CommunityReaction[]
   platformReview      PlatformReview?
+  ocrImports          OcrImportBatch[]
+  ocrConfirmations    OcrTripConfirmation[]
 
   @@map("drivers")
+  tripRevisions TripRevision[]
+  fuelRevisions FuelRevision[]
+  mutationReceipts DriverMutationReceipt[]
+  sessionRevisions SessionRevision[]
+}
+
+model DriverMutationReceipt {
+  driverId String @map("driver_id")
+  clientMutationId String @map("client_mutation_id") @db.VarChar(64)
+  requestHash String @map("request_hash") @db.Char(64)
+  recordId String @map("record_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@id([driverId, clientMutationId])
+  @@map("driver_mutation_receipts")
+}
+
+// Upload reservations and short-lived OCR evidence. Financial records are created
+// separately after review; processing a document never creates a trip.
+model OcrImportBatch {
+  id               String   @id @default(cuid())
+  driverId         String   @map("driver_id")
+  clientMutationId String   @map("client_mutation_id")
+  requestHash      String   @map("request_hash")
+  hints            Json
+  result           Json?
+  cancelledAt      DateTime? @map("cancelled_at")
+  uploadExpiresAt  DateTime @map("upload_expires_at")
+  expiresAt        DateTime @map("expires_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  images OcrImportImage[]
+  confirmations OcrTripConfirmation[]
+
+  @@unique([driverId, clientMutationId])
+  @@index([driverId, createdAt, id])
+  @@index([expiresAt])
+  @@map("ocr_import_batches")
+}
+
+enum OcrImportImageState {
+  awaiting_upload
+  queued
+  processing
+  completed
+  failed
+  duplicate
+}
+
+model OcrImportImage {
+  id             String @id @default(cuid())
+  batchId        String @map("batch_id")
+  index          Int
+  imageHash      String @map("image_hash")
+  size           Int
+  mimeType       String @map("mime_type")
+  status         OcrImportImageState @default(awaiting_upload)
+  duplicateOf    String? @map("duplicate_of")
+  reservedBytes  Int @default(0) @map("reserved_bytes")
+  payload        Bytes?
+  extraction     Json?
+  errorCode      String? @map("error_code")
+  attempts       Int @default(0)
+  leaseToken     String? @map("lease_token")
+  leaseUntil     DateTime? @map("lease_until")
+  availableAt    DateTime @default(now()) @map("available_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  batch OcrImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, index])
+  @@index([status, availableAt, createdAt])
+  @@index([leaseUntil])
+  @@map("ocr_import_images")
 }
 
 model DailyOdometer {
@@ -132,6 +225,14 @@ enum FuelType {
   ELECTRIC
 }
 
+enum VehicleOdometerSource {
+  UNKNOWN
+  LEGACY
+  MANUAL
+  FUEL
+  AMBIGUOUS
+}
+
 model Vehicle {
   id                 String      @id @default(cuid())
   driverId           String      @map("driver_id")
@@ -143,6 +244,13 @@ model Vehicle {
   tankLiters         Int         @default(45) @map("tank_liters")
   baselineKmPerLiter Decimal     @default("12") @map("baseline_km_per_liter") @db.Decimal(6, 2)
   odometerMeters     BigInt      @default(0) @map("odometer_meters")
+  odometerBaselineMeters BigInt? @map("odometer_baseline_meters")
+  odometerBaselineAt DateTime? @map("odometer_baseline_at")
+  odometerBaselineSource VehicleOdometerSource @default(UNKNOWN) @map("odometer_baseline_source")
+  odometerSource VehicleOdometerSource @default(UNKNOWN) @map("odometer_source")
+  odometerSourceId String? @map("odometer_source_id")
+  odometerAsOf DateTime? @map("odometer_as_of")
+  odometerVersion Int @default(1) @map("odometer_version")
   isActive           Boolean     @default(true) @map("is_active")
 
   // Cost intelligence (all piastres, all intervals in km except battery in months)
@@ -170,6 +278,7 @@ model Vehicle {
   expenses           Expense[]
   maintenanceRecords MaintenanceRecord[]
 
+  @@unique([driverId, id])
   @@index([driverId, isActive])
   @@map("vehicles")
 }
@@ -206,6 +315,7 @@ model DriverApp {
 
   @@unique([driverId, appSourceId, customName])
   @@index([driverId])
+  @@index([driverId, id])
   @@map("driver_apps")
 }
 
@@ -222,12 +332,33 @@ model Area {
 
   @@unique([driverId, name])
   @@index([driverId])
+  @@index([driverId, id])
   @@map("areas")
 }
 
 // ─── Operations: Trips, Sessions, Fuel, Expenses, Maintenance ───────────────
 
+enum TripRecordSource {
+  LEGACY
+  MANUAL
+  OCR
+  SYNC
+}
+enum TripRevisionAction {
+  CREATED
+  UPDATED
+  DELETED
+  RESTORED
+}
+enum TripRevisionActor {
+  DRIVER
+  ADMIN
+}
+
 model Trip {
+  version Int @default(1)
+  source TripRecordSource @default(LEGACY)
+  revisions TripRevision[]
   id                 String   @id @default(cuid())
   driverId           String   @map("driver_id")
   vehicleId          String   @map("vehicle_id")
@@ -235,17 +366,22 @@ model Trip {
   areaId             String?  @map("area_id")
   startedAt          DateTime @map("started_at")
   endedAt            DateTime @map("ended_at")
-  grossPiastres      Int      @map("gross_piastres")
+  grossPiastres      Int?     @map("gross_piastres")
+  earningsPiastres   BigInt?  @map("earnings_piastres")
   receivedPiastres   Int?     @map("received_piastres")
   tipPiastres        Int      @default(0) @map("tip_piastres")
-  commissionPiastres Int      @default(0) @map("commission_piastres")
+  commissionPiastres Int?     @map("commission_piastres")
   tollPiastres       Int      @default(0) @map("toll_piastres")
   parkingPiastres    Int      @default(0) @map("parking_piastres")
   totalKmMeters      Int      @map("total_km_meters")
   paidKmMeters       Int      @map("paid_km_meters")
   emptyKmMeters      Int      @map("empty_km_meters")
   notes              String?
-  clientMutationId   String?  @unique @map("client_mutation_id")
+  pickup             String?
+  destination        String?
+  paymentMethod      TripPaymentMethod @default(unknown) @map("payment_method")
+  waitingFeePiastres  Int? @map("waiting_fee_piastres")
+  clientMutationId   String?  @map("client_mutation_id")
   deletedAt          DateTime? @map("deleted_at")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
@@ -254,30 +390,101 @@ model Trip {
   vehicle   Vehicle   @relation(fields: [vehicleId], references: [id])
   driverApp DriverApp @relation(fields: [driverAppId], references: [id])
   area      Area?     @relation(fields: [areaId], references: [id])
+  ocrConfirmations OcrTripConfirmation[]
+  linkedExpenses Expense[]
 
   @@index([driverId, startedAt(sort: Desc)])
   @@index([driverId, driverAppId, startedAt])
+  @@index([driverId, endedAt])
   @@index([driverId, areaId, startedAt])
   @@index([deletedAt])
+  @@unique([driverId, clientMutationId])
+  @@unique([driverId, id])
   @@map("trips")
+  @@index([driverId, deletedAt, startedAt(sort: Desc), id(sort: Desc)])
+}
+
+enum TripPaymentMethod {
+  unknown
+  cash
+  card
+  wallet
+}
+
+// Immutable import acknowledgement and correction evidence. Image bytes/raw
+// OCR text are deliberately excluded. Batch expiry must not erase a saved trip's
+// origin or permit an acknowledged candidate to be inserted again.
+model OcrTripConfirmation {
+  id             String @id @default(cuid())
+  driverId       String @map("driver_id")
+  batchId        String? @map("batch_id")
+  candidateId    String @map("candidate_id")
+  tripId         String? @map("trip_id")
+  originalTripId String @map("original_trip_id")
+  requestHash    String @map("request_hash")
+  original       Json
+  confirmed      Json
+  correctedFields String[] @map("corrected_fields")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  batch OcrImportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  trip Trip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
+
+  @@unique([driverId, candidateId])
+  @@index([batchId])
+  @@index([tripId])
+  @@map("ocr_trip_confirmations")
 }
 
 model Session {
   id               String    @id @default(cuid())
   driverId         String    @map("driver_id")
-  driverAppId      String    @map("driver_app_id")
+  driverAppId      String?   @map("driver_app_id")
   startedAt        DateTime  @map("started_at")
   endedAt          DateTime? @map("ended_at")
   activeMinutes    Int       @default(0) @map("active_minutes")
-  clientMutationId String?   @unique @map("client_mutation_id")
+  clientMutationId String?   @map("client_mutation_id")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
+  version Int @default(1)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+  revisions SessionRevision[]
+
   driver    Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  driverApp DriverApp @relation(fields: [driverAppId], references: [id])
+  driverApp DriverApp? @relation(fields: [driverAppId], references: [id], onDelete: Restrict)
 
   @@index([driverId, startedAt(sort: Desc)])
+  @@index([driverId, endedAt])
+  @@unique([driverId, clientMutationId])
+  // The migration also enforces one open session per driver with a partial unique index.
+  @@index([driverId, id])
+  @@index([driverId, startedAt(sort: Desc), id(sort: Desc)])
   @@map("sessions")
+}
+
+enum SessionRevisionAction {
+  STARTED
+  CREATED
+  ENDED
+  CORRECTED
+  DELETED
+  RESTORED
+}
+
+model SessionRevision {
+  id String @id @default(cuid())
+  driverId String @map("driver_id")
+  sessionId String @map("session_id")
+  action SessionRevisionAction
+  before Json?
+  after Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([driverId, sessionId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("session_revisions")
 }
 
 model FuelLog {
@@ -285,22 +492,64 @@ model FuelLog {
   driverId              String   @map("driver_id")
   vehicleId             String   @map("vehicle_id")
   dateTime              DateTime @map("date_time")
-  liters                Decimal  @db.Decimal(7, 3)
-  pricePerLiterPiastres Int      @map("price_per_liter_piastres")
+  quantity              Decimal? @db.Decimal(7, 3)
+  fuelKind FuelType? @map("fuel_kind")
+  fillCoverage FuelFillCoverage @default(UNCONFIRMED) @map("fill_coverage")
+  pricePerUnitPiastres Int? @map("price_per_unit_piastres")
   totalPiastres         Int      @map("total_piastres")
-  odometerMeters        BigInt   @map("odometer_meters")
+  odometerMeters        BigInt?  @map("odometer_meters")
   isFullTank            Boolean  @default(false) @map("is_full_tank")
   notes                 String?
-  clientMutationId      String?  @unique @map("client_mutation_id")
+  clientMutationId      String?  @map("client_mutation_id")
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
+  linkedExpenseId String? @map("linked_expense_id")
+  deletedAt DateTime? @map("deleted_at")
+  version Int @default(1)
+  linkedExpense Expense? @relation(fields: [driverId, linkedExpenseId], references: [driverId, id], onDelete: NoAction)
+  revisions FuelRevision[]
+
   driver  Driver  @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [driverId, vehicleId], references: [driverId, id])
 
   @@index([driverId, dateTime(sort: Desc)])
   @@index([vehicleId, dateTime])
+  @@unique([driverId, clientMutationId])
+  @@index([driverId, vehicleId, deletedAt, dateTime(sort: Desc), id(sort: Desc)])
+  @@index([driverId, deletedAt, dateTime(sort: Desc), id(sort: Desc)])
+  @@index([driverId, id])
   @@map("fuel_logs")
+}
+
+enum FuelFillCoverage {
+  UNCONFIRMED
+  COMPLETE
+  MISSING
+}
+
+enum FuelRevisionAction {
+  CREATED
+  UPDATED
+  DELETED
+  RESTORED
+}
+
+model FuelRevision {
+  id String @id @default(cuid())
+  driverId String @map("driver_id")
+  recordId String @map("record_id")
+  version Int
+  action FuelRevisionAction
+  before Json?
+  after Json
+  createdAt DateTime @default(now()) @map("created_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  record FuelLog @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, version])
+  @@index([driverId, recordId, version(sort: Desc)])
+  @@map("fuel_revisions")
 }
 
 enum ExpenseCategory {
@@ -325,16 +574,49 @@ model Expense {
   isRecurring      Boolean         @default(false) @map("is_recurring")
   recurrenceRule   String?         @map("recurrence_rule")
   notes            String?
-  clientMutationId String?         @unique @map("client_mutation_id")
+  clientMutationId String?         @map("client_mutation_id")
+  linkedTripId     String?         @map("linked_trip_id")
+  deletedAt        DateTime?       @map("deleted_at")
+  version          Int             @default(1)
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
 
   driver  Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  linkedTrip Trip? @relation(fields: [driverId, linkedTripId], references: [driverId, id], onDelete: NoAction)
+  revisions ExpenseRevision[]
+  linkedMaintenance MaintenanceRecord[]
+  linkedFuel FuelLog[]
 
+  @@unique([driverId, id])
   @@index([driverId, dateTime(sort: Desc)])
   @@index([driverId, category])
+  @@index([driverId, deletedAt, dateTime(sort: Desc), id(sort: Desc)])
+  @@unique([driverId, clientMutationId])
   @@map("expenses")
+}
+
+enum ExpenseRevisionAction {
+  CREATED
+  UPDATED
+  DELETED
+  RESTORED
+}
+
+model ExpenseRevision {
+  id        String @id @default(cuid())
+  driverId  String @map("driver_id")
+  expenseId String @map("expense_id")
+  action    ExpenseRevisionAction
+  before    Json?
+  after     Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, expenseId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("expense_revisions")
 }
 
 model MaintenanceItem {
@@ -360,15 +642,48 @@ model MaintenanceRecord {
   odometerMeters    BigInt   @map("odometer_meters")
   costPiastres      Int      @map("cost_piastres")
   notes             String?
+  linkedExpenseId   String? @map("linked_expense_id")
+  clientMutationId  String? @map("client_mutation_id")
+  deletedAt         DateTime? @map("deleted_at")
+  version           Int @default(1)
+  updatedAt         DateTime @updatedAt @map("updated_at")
   createdAt         DateTime @default(now()) @map("created_at")
 
   driver          Driver          @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  vehicle         Vehicle         @relation(fields: [vehicleId], references: [id])
+  vehicle         Vehicle         @relation(fields: [driverId, vehicleId], references: [driverId, id])
   maintenanceItem MaintenanceItem @relation(fields: [maintenanceItemId], references: [id])
+  linkedExpense Expense? @relation(fields: [driverId, linkedExpenseId], references: [driverId, id], onDelete: NoAction)
+  revisions MaintenanceRevision[]
 
+  @@unique([driverId, clientMutationId])
+  @@index([driverId, vehicleId, deletedAt, performedAt(sort: Desc), id(sort: Desc)])
   @@index([driverId, performedAt(sort: Desc)])
   @@index([vehicleId, maintenanceItemId, performedAt(sort: Desc)])
   @@map("maintenance_records")
+}
+
+enum MaintenanceRevisionAction {
+  CREATED
+  UPDATED
+  DELETED
+  RESTORED
+}
+
+model MaintenanceRevision {
+  id String @id @default(cuid())
+  driverId String @map("driver_id")
+  recordId String @map("record_id")
+  version Int
+  action MaintenanceRevisionAction
+  before Json?
+  after Json
+  createdAt DateTime @default(now()) @map("created_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  record MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, version])
+  @@index([driverId, recordId, version(sort: Desc)])
+  @@map("maintenance_revisions")
 }
 
 // ─── Goals, Recommendations, Notifications, Score ───────────────────────────
@@ -393,6 +708,7 @@ model Goal {
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@index([driverId, isActive])
+  @@index([driverId, id])
   @@map("goals")
 }
 
@@ -412,6 +728,7 @@ model Recommendation {
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@index([driverId, surface, dismissedAt, expiresAt])
+  @@index([driverId, id])
   @@map("recommendations")
 }
 
@@ -420,19 +737,52 @@ enum NotificationChannel {
   INAPP
 }
 
+enum NotificationKind {
+  REPORT_READY
+  GENERAL
+  DAILY_DIGEST
+}
+
+enum DigestFrequency {
+  DAILY
+  EVERY_THREE_DAYS
+  WEEKLY
+}
+
+model NotificationPreferences {
+  driverId String @id @map("driver_id")
+  digestEnabled Boolean @default(true) @map("digest_enabled")
+  digestFrequency DigestFrequency @default(DAILY) @map("digest_frequency")
+  deliveryMinute Int @default(510) @map("delivery_minute")
+  quietEnabled Boolean @default(true) @map("quiet_enabled")
+  quietStartMinute Int @default(1380) @map("quiet_start_minute")
+  quietEndMinute Int @default(420) @map("quiet_end_minute")
+  version Int @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3) @map("updated_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
 model Notification {
   id       String              @id @default(cuid())
   driverId String              @map("driver_id")
   channel  NotificationChannel
+  kind     NotificationKind @default(GENERAL)
+  eventKey String? @map("event_key")
+  eventDate DateTime? @db.Date @map("event_date")
   title    String
   body     String
   data     Json?
-  sentAt   DateTime            @default(now()) @map("sent_at")
-  readAt   DateTime?           @map("read_at")
+  sentAt   DateTime            @default(now()) @db.Timestamptz(3) @map("sent_at")
+  readAt   DateTime?           @db.Timestamptz(3) @map("read_at")
 
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@index([driverId, readAt, sentAt(sort: Desc)])
+  @@index([driverId, sentAt(sort: Desc), id(sort: Desc)])
+  @@index([driverId, kind, eventDate(sort: Desc)])
+  @@unique([driverId, eventKey])
   @@map("notifications")
 }
 
@@ -454,16 +804,17 @@ model ScoreSnapshot {
   id          String   @id @default(cuid())
   driverId    String   @map("driver_id")
   date        DateTime @db.Date
-  overall     Int
-  efficiency  Int
-  profit      Int
-  safety      Int
-  consistency Int
+  algorithmVersion Int @default(1) @map("algorithm_version")
+  overall     Int?
+  efficiency  Int?
+  profit      Int?
+  safety      Int?
+  consistency Int?
   createdAt   DateTime @default(now()) @map("created_at")
 
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  @@unique([driverId, date])
+  @@unique([driverId, date, algorithmVersion])
   @@map("score_snapshots")
 }
 
@@ -473,6 +824,8 @@ model DailyAggregate {
   driverId              String   @map("driver_id")
   date                  DateTime @db.Date
   tripCount             Int      @default(0) @map("trip_count")
+  grossKnownTripCount Int @default(0) @map("gross_known_trip_count")
+  commissionKnownTripCount Int @default(0) @map("commission_known_trip_count")
   totalKmMeters         BigInt   @default(0) @map("total_km_meters")
   paidKmMeters          BigInt   @default(0) @map("paid_km_meters")
   emptyKmMeters         BigInt   @default(0) @map("empty_km_meters")
@@ -482,6 +835,7 @@ model DailyAggregate {
   commissionPiastres    BigInt   @default(0) @map("commission_piastres")
   fuelPiastres          BigInt   @default(0) @map("fuel_piastres")
   expensePiastres       BigInt   @default(0) @map("expense_piastres")
+  maintenancePiastres   BigInt   @default(0) @map("maintenance_piastres")
   maintAmortPiastres    BigInt   @default(0) @map("maint_amort_piastres")
   netProfitPiastres     BigInt   @default(0) @map("net_profit_piastres")
   profitPerKmPiastres   Int      @default(0) @map("profit_per_km_piastres")
@@ -502,6 +856,8 @@ model WeeklyAggregate {
   isoYear               Int      @map("iso_year")
   isoWeek               Int      @map("iso_week")
   tripCount             Int      @default(0) @map("trip_count")
+  grossKnownTripCount Int @default(0) @map("gross_known_trip_count")
+  commissionKnownTripCount Int @default(0) @map("commission_known_trip_count")
   totalKmMeters         BigInt   @default(0) @map("total_km_meters")
   paidKmMeters          BigInt   @default(0) @map("paid_km_meters")
   emptyKmMeters         BigInt   @default(0) @map("empty_km_meters")
@@ -510,6 +866,7 @@ model WeeklyAggregate {
   netProfitPiastres     BigInt   @default(0) @map("net_profit_piastres")
   fuelPiastres          BigInt   @default(0) @map("fuel_piastres")
   expensePiastres       BigInt   @default(0) @map("expense_piastres")
+  maintenancePiastres   BigInt   @default(0) @map("maintenance_piastres")
   maintAmortPiastres    BigInt   @default(0) @map("maint_amort_piastres")
   profitPerKmPiastres   Int      @default(0) @map("profit_per_km_piastres")
   profitPerHourPiastres Int      @default(0) @map("profit_per_hour_piastres")
@@ -527,6 +884,8 @@ model MonthlyAggregate {
   year                  Int
   month                 Int
   tripCount             Int      @default(0) @map("trip_count")
+  grossKnownTripCount Int @default(0) @map("gross_known_trip_count")
+  commissionKnownTripCount Int @default(0) @map("commission_known_trip_count")
   totalKmMeters         BigInt   @default(0) @map("total_km_meters")
   paidKmMeters          BigInt   @default(0) @map("paid_km_meters")
   emptyKmMeters         BigInt   @default(0) @map("empty_km_meters")
@@ -535,6 +894,7 @@ model MonthlyAggregate {
   netProfitPiastres     BigInt   @default(0) @map("net_profit_piastres")
   fuelPiastres          BigInt   @default(0) @map("fuel_piastres")
   expensePiastres       BigInt   @default(0) @map("expense_piastres")
+  maintenancePiastres   BigInt   @default(0) @map("maintenance_piastres")
   maintAmortPiastres    BigInt   @default(0) @map("maint_amort_piastres")
   profitPerKmPiastres   Int      @default(0) @map("profit_per_km_piastres")
   profitPerHourPiastres Int      @default(0) @map("profit_per_hour_piastres")
@@ -552,6 +912,8 @@ model AppDailyAggregate {
   driverAppId       String   @map("driver_app_id")
   date              DateTime @db.Date
   tripCount         Int      @default(0) @map("trip_count")
+  grossKnownTripCount Int @default(0) @map("gross_known_trip_count")
+  commissionKnownTripCount Int @default(0) @map("commission_known_trip_count")
   totalKmMeters     BigInt   @default(0) @map("total_km_meters")
   onlineMinutes     Int      @default(0) @map("online_minutes")
   grossPiastres     BigInt   @default(0) @map("gross_piastres")
@@ -571,6 +933,8 @@ model AreaDailyAggregate {
   areaId            String   @map("area_id")
   date              DateTime @db.Date
   tripCount         Int      @default(0) @map("trip_count")
+  grossKnownTripCount Int @default(0) @map("gross_known_trip_count")
+  commissionKnownTripCount Int @default(0) @map("commission_known_trip_count")
   totalKmMeters     BigInt   @default(0) @map("total_km_meters")
   grossPiastres     BigInt   @default(0) @map("gross_piastres")
   netProfitPiastres BigInt   @default(0) @map("net_profit_piastres")
@@ -890,4 +1254,72 @@ model IdempotencyRecord {
   @@index([expiresAt])
   @@index([actorId, createdAt(sort: Desc)])
   @@map("idempotency_records")
+}
+
+model TripRevision {
+  id String @id @default(cuid())
+  driverId String @map("driver_id")
+  recordId String @map("record_id")
+  version Int
+  action TripRevisionAction
+  actor TripRevisionActor
+  before Json?
+  after Json
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')")) @map("created_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  record Trip @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  @@unique([recordId, version])
+  @@index([driverId, recordId, version(sort: Desc)])
+  @@map("trip_revisions")
+}
+
+enum ReportPeriod {
+  WEEKLY
+  MONTHLY
+}
+
+model DriverReport {
+  id String @id @default(cuid())
+  driverId String @map("driver_id")
+  period ReportPeriod
+  startsOn DateTime @db.Date @map("starts_on")
+  endsOn DateTime @db.Date @map("ends_on")
+  version Int @default(1)
+  content Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
+  capturedAt DateTime @db.Timestamptz(3) @map("captured_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  revisions ReportRevision[]
+  @@unique([driverId, period, startsOn])
+  @@unique([driverId, id])
+  @@index([driverId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("driver_reports")
+}
+
+model ReportRevision {
+  id String @id @default(cuid())
+  driverId String @map("driver_id")
+  reportId String @map("report_id")
+  version Int
+  content Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  report DriverReport @relation(fields: [driverId, reportId], references: [driverId, id], onDelete: Cascade, map: "report_revisions_report_owner_fkey")
+  @@unique([reportId, version])
+  @@index([driverId, reportId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("report_revisions")
+}
+
+model ReportPreferences {
+  driverId String @id @map("driver_id")
+  weeklyEnabled Boolean @default(true) @map("weekly_enabled")
+  monthlyEnabled Boolean @default(true) @map("monthly_enabled")
+  deliveryMinute Int @default(540) @map("delivery_minute")
+  quietEnabled Boolean @default(true) @map("quiet_enabled")
+  quietStartMinute Int @default(1380) @map("quiet_start_minute")
+  quietEndMinute Int @default(420) @map("quiet_end_minute")
+  version Int @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3) @map("updated_at")
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  @@map("report_preferences")
 }

@@ -1,9 +1,6 @@
 import { mkdirSync, writeFileSync, renameSync, existsSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { repoRoot, reportDir, tempResultDir } from './paths.mjs';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { resolve } from 'path';
+import { reportDir, tempResultDir } from './paths.mjs';
 
 let stepCounter = 0;
 

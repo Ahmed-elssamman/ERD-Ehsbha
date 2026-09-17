@@ -3,7 +3,17 @@
  * `AzureVisionClient.read()` and consumed by parsers, the platform detector,
  * the merger, and the confidence scorer.
  */
-import type { AzureDocReceiptResult } from './azure/types';
+export interface ReceiptSignals {
+  total: number | null;
+  subtotal: number | null;
+  tip: number | null;
+  tax: number | null;
+  transactionDate: string | null;
+  transactionTime: string | null;
+  merchantName: string | null;
+  meanConfidence: number;
+  isReceipt: boolean;
+}
 
 export interface BoundingBox {
   x: number;
@@ -39,12 +49,13 @@ export interface OcrResult {
 /** Bundle of every signal extracted from a single image. */
 export interface ImageSignals {
   read: OcrResult;
-  receipt: AzureDocReceiptResult | null;
+  receipt: ReceiptSignals | null;
 }
 
 export interface ParseContext {
+  dateText?: string;
   text: string;
   words: OcrWord[];
   lines: OcrLine[];
-  receipt: AzureDocReceiptResult | null;
+  receipt: ReceiptSignals | null;
 }

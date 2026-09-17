@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { createReport, writeReport } from '../lib/report-writer.mjs';
+import { createReport } from '../lib/report-writer.mjs';
 import { validateReport } from '../lib/validate-report.mjs';
 
 describe('Report Writer', () => {

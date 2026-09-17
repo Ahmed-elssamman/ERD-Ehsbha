@@ -8,6 +8,7 @@ export class RequestContextMiddleware implements NestMiddleware {
     const inbound = req.headers['x-request-id'] as string | undefined
     req.requestContext = createRequestContext(inbound)
     res.setHeader('X-Request-Id', req.requestContext.requestId)
+    res.setHeader('Cache-Control', 'no-store')
     next()
   }
 }

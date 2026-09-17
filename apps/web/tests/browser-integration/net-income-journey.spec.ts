@@ -1,0 +1,115 @@
+import { randomInt } from 'node:crypto';
+import { test, expect } from '@playwright/test';
+import { z } from 'zod';
+import { CreateTripSchema, driverAuthResultSchema, driverAppBindingSchema, tripsListResponseSchema, dailyAnalyticsSchema, tripItemSchema } from '@ehsbha/api-contracts';
+import { journeyFields, journeyImage } from './ocr-journey.data';
+
+test.use({ timezoneId: 'America/Los_Angeles' });
+
+test('manual and OCR take-home income survive edit, reload and Arabic mobile review', async ({ page, request }) => {
+  const base = 'http://127.0.0.1:55443/api/v1';
+  const phone = `010${randomInt(10000000, 99999999)}`;
+  const password = `browser-test-${randomInt(10000000, 99999999)}`;
+  const registration = await request.post(`${base}/auth/register`, { data: {
+    phone: `+2${phone}`, email: `${phone}@example.test`, password, displayName: 'Income journey', locale: 'en', timezone: 'Africa/Cairo',
+  } });
+  expect(registration.status()).toBe(201);
+  const auth = z.object({ data: driverAuthResultSchema }).parse(await registration.json()).data;
+  const headers = { Authorization: `Bearer ${auth.accessToken}` };
+  expect((await request.post(`${base}/vehicles`, { headers, data: { type: 'CAR', fuelType: 'PETROL_92', make: 'Income', model: 'Vehicle' } })).status()).toBe(201);
+  const appResponse = await request.post(`${base}/drivers/me/apps`, { headers, data: { customName: 'Uber', commissionPct: 40 } });
+  expect(appResponse.status()).toBe(201);
+  const app = z.object({ data: driverAppBindingSchema }).parse(await appResponse.json()).data;
+  await page.addInitScript(() => { if (!localStorage.getItem('ehsbha.locale')) localStorage.setItem('ehsbha.locale', 'en'); });
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/login');
+  await page.locator('#phone').fill(phone);
+  await page.locator('#password').fill(password);
+  await page.locator('button[type=submit]').click();
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goto('/trips/new');
+  await page.locator('#incomeMode').selectOption('take_home');
+  await page.locator('#startedAt').fill('2026-09-16T17:00');
+  await page.locator('#endedAt').fill('2026-09-16T17:30');
+  await page.locator('#earningsEgp').fill('85');
+  await page.locator('#tipEgp').fill('5');
+  await page.locator('#totalKm').fill('10');
+  await page.locator('#paidKm').fill('8');
+  const saving = page.waitForResponse((response) => response.url().endsWith('/api/v1/trips') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  const saved = await saving;
+  expect(saved.status()).toBe(201);
+  await expect(page).toHaveURL(/\/trips\/(?!new)[^/]+$/);
+  await expect(page.getByText('Gross fare and commission were not supplied.', { exact: false })).toBeVisible();
+  const manualUrl = page.url();
+  let response = await request.get(`${base}/trips`, { headers });
+  let items = z.object({ data: tripsListResponseSchema }).parse(await response.json()).data.items;
+  expect(items).toHaveLength(1);
+  expect(items[0]).toMatchObject({ grossPiastres: null, commissionPiastres: null, earningsPiastres: 8500, receivedPiastres: 8000, tipPiastres: 500 });
+  const savedInput = CreateTripSchema.parse(saved.request().postDataJSON());
+  const replayHeaders = { ...headers, 'Idempotency-Key': saved.request().headers()['idempotency-key'] };
+  const replay = await request.post(`${base}/trips`, { headers: replayHeaders, data: savedInput });
+  expect(replay.status()).toBe(201);
+  expect(replay.headers()['idempotency-replayed']).toBe('true');
+  expect(z.object({ data: tripItemSchema }).parse(await replay.json()).data).toMatchObject({ id: items[0].id, earningsPiastres: 8500, startedAt: '2026-09-16T14:00:00.000Z' });
+  const conflict = await request.post(`${base}/trips`, { headers: replayHeaders, data: { ...savedInput, startedAt: '2026-09-16T13:00:00Z' } });
+  expect(conflict.status()).toBe(409);
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.locator('#incomeMode')).toHaveValue('take_home');
+  await page.locator('#tipEgp').fill('10');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Gross fare and commission were not supplied.', { exact: false })).toBeVisible();
+
+  await page.goto('/trips/new');
+  await page.getByRole('button', { name: 'Extract from screenshot' }).click();
+  await page.locator('input[type=file]').setInputFiles({ name: 'take-home.png', mimeType: 'image/png', buffer: journeyImage });
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Extract', exact: true }).click();
+  await dialog.getByRole('button', { name: /Trip 1/ }).click({ timeout: 20_000 });
+  await dialog.getByRole('combobox', { name: /^App/ }).selectOption(app.id);
+  await dialog.getByRole('combobox', { name: 'Income information' }).selectOption('take_home');
+  await expect(dialog.getByLabel('Take-home income', { exact: false })).toHaveValue('');
+  await dialog.getByLabel('Take-home income', { exact: false }).fill('85');
+  await dialog.getByLabel('Tip included above', { exact: false }).fill('5');
+  await dialog.getByRole('combobox', { name: 'Income information' }).selectOption('breakdown');
+  await dialog.getByRole('combobox', { name: 'Income information' }).selectOption('take_home');
+  await expect(dialog.getByLabel('Take-home income', { exact: false })).toHaveValue('85');
+  for (const field of journeyFields.slice(3)) await dialog.getByLabel(field.label, { exact: false }).fill(field.value);
+  await dialog.getByRole('checkbox').check();
+  await expect(dialog.getByText('Capture saved on this device. You can return to it later.')).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Extract from screenshot' }).click();
+  await expect(dialog.getByLabel('Take-home income', { exact: false })).toHaveValue('85');
+  await dialog.getByRole('button', { name: 'Save selected (1)' }).click();
+  await expect(dialog.getByRole('button', { name: 'Save selected (0)' })).toBeDisabled();
+  response = await request.get(`${base}/trips`, { headers });
+  items = z.object({ data: tripsListResponseSchema }).parse(await response.json()).data.items;
+  expect(items).toHaveLength(2);
+  expect(items.every((item) => item.grossPiastres === null && item.commissionPiastres === null && item.earningsPiastres === 8500)).toBe(true);
+  const daily = await request.get(`${base}/analytics/daily?date=2026-09-16`, { headers });
+  expect(z.object({ data: dailyAnalyticsSchema }).parse(await daily.json()).data).toMatchObject({
+    grossPiastres: null, knownGrossPiastres: 0, grossKnownTripCount: 0, tripCount: 2, netProfitPiastres: 17000,
+  });
+  await page.goto('/analytics');
+  await page.getByRole('tab', { name: 'Monthly', exact: true }).click();
+  await expect(page.getByText('Gross fare is available for 0 of 2 trips.', { exact: false })).toBeVisible();
+  await page.evaluate(() => localStorage.setItem('ehsbha.locale', 'ar'));
+  await page.goto(manualUrl);
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.getByText('لم تُسجّل الأجرة قبل الخصم أو العمولة.', { exact: false })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.evaluate(() => localStorage.setItem('ehsbha.locale', 'en'));
+  await page.reload();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.locator('#incomeMode').selectOption('breakdown');
+  await page.locator('#grossEgp').fill('100');
+  await page.locator('#commissionEgp').fill('25');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+  const enriched = await request.get(`${base}/analytics/daily?date=2026-09-16`, { headers });
+  expect(z.object({ data: dailyAnalyticsSchema }).parse(await enriched.json()).data).toMatchObject({
+    grossPiastres: null, knownGrossPiastres: 10000, grossKnownTripCount: 1, tripCount: 2, netProfitPiastres: 17000,
+  });
+});

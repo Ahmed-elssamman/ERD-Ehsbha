@@ -1,14 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { TripChange, TripChangeActor, type TripVersionTarget } from '@ehsbha/shared-types';
+import { recordTripChange } from '../trips/trip-history';
+import { validateLinkedTripFees } from '../expenses/expense-links';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { TicketStatus, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from './audit.service';
 import type { AuthenticatedAdmin } from './admin.types';
+import { lockDriverWrites } from '../../common/authorization/driver-write-lock';
+import { AggregatesService } from '../aggregates/aggregates.service';
+import { AGGREGATE_TRANSACTION_TIMEOUT_MS } from '../aggregates/aggregate.control';
 
 @Injectable()
 export class AdminBulkService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
+    private aggregates: AggregatesService,
   ) {}
 
   /** Bulk suspend/activate the user accounts behind a list of driverIds. */
@@ -55,67 +62,42 @@ export class AdminBulkService {
     return { affected: drivers.length };
   }
 
-  /** Soft-delete trips by setting deletedAt. */
-  async softDeleteTrips(actor: AuthenticatedAdmin, ids: string[], reason: string) {
-    if (ids.length === 0) return { affected: 0 };
-    const targets = await this.prisma.trip.findMany({
-      where: { id: { in: ids }, deletedAt: null },
-      select: { id: true, driverId: true, deletedAt: true },
-    });
-    if (targets.length === 0) return { affected: 0 };
-
-    const now = new Date();
-    await this.prisma.trip.updateMany({
-      where: { id: { in: targets.map((t) => t.id) } },
-      data: { deletedAt: now },
-    });
-
-    await Promise.all(
-      targets.map((before) =>
-        this.audit.record({
-          actor,
-          action: 'trips.delete',
-          targetType: 'Trip',
-          targetId: before.id,
-          before,
-          after: { ...before, deletedAt: now },
-          reason,
-        }),
-      ),
-    );
-
-    return { affected: targets.length };
+  async softDeleteTrips(actor: AuthenticatedAdmin, items: TripVersionTarget[], reason: string) {
+    return this.changeTripDeletion(actor, items, reason, new Date());
   }
 
-  /** Restore soft-deleted trips. */
-  async restoreTrips(actor: AuthenticatedAdmin, ids: string[], reason: string) {
-    if (ids.length === 0) return { affected: 0 };
-    const targets = await this.prisma.trip.findMany({
-      where: { id: { in: ids }, deletedAt: { not: null } },
-      select: { id: true, driverId: true, deletedAt: true },
-    });
-    if (targets.length === 0) return { affected: 0 };
+  async restoreTrips(actor: AuthenticatedAdmin, items: TripVersionTarget[], reason: string) {
+    return this.changeTripDeletion(actor, items, reason, null);
+  }
 
-    await this.prisma.trip.updateMany({
-      where: { id: { in: targets.map((t) => t.id) } },
-      data: { deletedAt: null },
-    });
-
-    await Promise.all(
-      targets.map((before) =>
-        this.audit.record({
-          actor,
-          action: 'trips.restore',
-          targetType: 'Trip',
-          targetId: before.id,
-          before,
-          after: { ...before, deletedAt: null },
-          reason,
-        }),
-      ),
-    );
-
-    return { affected: targets.length };
+  private async changeTripDeletion(actor: AuthenticatedAdmin, items: TripVersionTarget[], reason: string, deletedAt: Date | null) {
+    if (!items.length) return { affected: 0 };
+    const ids = items.map((item) => item.id);
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.trip.findMany({ where: { id: { in: ids } }, select: { driverId: true } });
+      const driverIds = [...new Set(rows.map((row) => row.driverId))].sort();
+      for (const driverId of driverIds) await lockDriverWrites(tx, driverId);
+      const records = await tx.trip.findMany({ where: { id: { in: ids } } });
+      if (records.length !== items.length) throw new NotFoundException({ code: 'NOT_FOUND' });
+      for (const target of items) {
+        const record = records.find((trip) => trip.id === target.id);
+        if (!record || record.version !== target.expectedVersion) throw new ConflictException({ code: 'TRIP_VERSION_CONFLICT' });
+      }
+      const targets = records.filter((record) => !!record.deletedAt !== !!deletedAt);
+      for (const trip of targets) {
+        if (!deletedAt) await validateLinkedTripFees(tx, trip.driverId, trip);
+        const updated = await tx.trip.update({ where: { id: trip.id }, data: { deletedAt, version: { increment: 1 } } });
+        await recordTripChange(tx, updated, deletedAt ? TripChange.Deleted : TripChange.Restored, trip, TripChangeActor.Admin);
+        const before = { id: trip.id, driverId: trip.driverId, deletedAt: trip.deletedAt?.toISOString() ?? null, version: trip.version };
+        await this.audit.record({ actor, action: deletedAt ? 'trips.delete' : 'trips.restore', targetType: 'Trip',
+          targetId: trip.id, before, after: { ...before, deletedAt: deletedAt?.toISOString() ?? null, version: updated.version }, reason }, tx);
+      }
+      for (const driverId of driverIds) {
+        const intervals = targets.filter((trip) => trip.driverId === driverId);
+        if (intervals.length) await this.aggregates.refreshIntervals(driverId, intervals, tx);
+      }
+      return { affected: targets.length };
+    }, { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS });
   }
 
   /** Hard-delete community posts. */

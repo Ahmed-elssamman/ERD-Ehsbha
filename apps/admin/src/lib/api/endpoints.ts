@@ -1,3 +1,4 @@
+import type { TripVersionTarget } from '@ehsbha/shared-types';
 import type { AxiosResponse } from 'axios';
 import { z } from 'zod';
 import {
@@ -59,8 +60,8 @@ async function governed<S extends z.ZodTypeAny>(
   return parseData(schema, response.data, operationId);
 }
 
-const idempotencyConfig = () => ({
-  headers: { 'Idempotency-Key': generateIdempotencyKey() },
+const idempotencyConfig = (key = generateIdempotencyKey()) => ({
+  headers: { 'Idempotency-Key': key },
 });
 
 export const usersApi = {
@@ -84,19 +85,19 @@ export const usersApi = {
     governed(
       adminApi.post('/admin/users/bulk/suspend', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.users.bulk-suspend',
+      'admin.users.bulk.suspend',
     ),
   bulkActivate: (ids: string[], reason: string) =>
     governed(
       adminApi.post('/admin/users/bulk/activate', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.users.bulk-activate',
+      'admin.users.bulk.activate',
     ),
   bulkDelete: (ids: string[], reason: string) =>
     governed(
       adminApi.post('/admin/users/bulk/delete', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.users.bulk-delete',
+      'admin.users.bulk.delete',
     ),
 };
 
@@ -109,19 +110,19 @@ export const driversApi = {
     governed(
       adminApi.get(`/admin/drivers/${id}/trips`, { params: { limit } }),
       z.array(adminRecentTripSchema),
-      'admin.drivers.recent-trips',
+      'admin.drivers.trips',
     ),
   bulkSuspend: (ids: string[], reason: string) =>
     governed(
       adminApi.post('/admin/drivers/bulk/suspend', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.drivers.bulk-suspend',
+      'admin.bulk.drivers.suspend',
     ),
   bulkActivate: (ids: string[], reason: string) =>
     governed(
       adminApi.post('/admin/drivers/bulk/activate', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.drivers.bulk-activate',
+      'admin.bulk.drivers.activate',
     ),
 };
 
@@ -136,17 +137,17 @@ export const tripsApi = {
   }) => governed(adminApi.get('/admin/trips', { params }), adminTripsPageSchema, 'admin.trips.list'),
   get: (id: string) =>
     governed(adminApi.get(`/admin/trips/${id}`), adminTripDetailSchema, 'admin.trips.get'),
-  bulkDelete: (ids: string[], reason: string) =>
+  bulkDelete: (items: TripVersionTarget[], reason: string, key?: string) =>
     governed(
-      adminApi.post('/admin/trips/bulk/delete', { ids, reason }, idempotencyConfig()),
+      adminApi.post('/admin/trips/bulk/delete', { items, reason }, idempotencyConfig(key)),
       affectedResultSchema,
-      'admin.trips.bulk-delete',
+      'admin.bulk.trips.delete',
     ),
-  bulkRestore: (ids: string[], reason: string) =>
+  bulkRestore: (items: TripVersionTarget[], reason: string, key?: string) =>
     governed(
-      adminApi.post('/admin/trips/bulk/restore', { ids, reason }, idempotencyConfig()),
+      adminApi.post('/admin/trips/bulk/restore', { items, reason }, idempotencyConfig(key)),
       affectedResultSchema,
-      'admin.trips.bulk-restore',
+      'admin.bulk.trips.restore',
     ),
 };
 
@@ -159,7 +160,7 @@ export const vehiclesApi = {
     governed(
       adminApi.post('/admin/vehicles/bulk/delete', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.vehicles.bulk-delete',
+      'admin.bulk.vehicles.delete',
     ),
 };
 
@@ -193,7 +194,7 @@ export const communityApi = {
     governed(
       adminApi.post('/admin/community/posts/bulk/delete', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.community.posts.bulk-delete',
+      'admin.bulk.community.posts.delete',
     ),
 };
 
@@ -236,7 +237,7 @@ export const reviewsApi = {
     governed(
       adminApi.post('/admin/reviews/bulk/delete', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.reviews.bulk-delete',
+      'admin.bulk.reviews.delete',
     ),
 };
 
@@ -267,13 +268,13 @@ export const supportApi = {
     governed(
       adminApi.post('/admin/support/tickets/bulk/transition', { ids, status, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.support.tickets.bulk-transition',
+      'admin.bulk.support.tickets.transition',
     ),
   bulkDelete: (ids: string[], reason: string) =>
     governed(
       adminApi.post('/admin/support/tickets/bulk/delete', { ids, reason }, idempotencyConfig()),
       affectedResultSchema,
-      'admin.support.tickets.bulk-delete',
+      'admin.bulk.support.tickets.delete',
     ),
 };
 
@@ -319,7 +320,7 @@ export const rolesApi = {
     governed(
       adminApi.patch(`/admin/roles/${id}/permissions`, { permissions }, idempotencyConfig()),
       adminRolePermissionsSchema,
-      'admin.roles.update-permissions',
+      'admin.roles.set-permissions',
     ),
 };
 

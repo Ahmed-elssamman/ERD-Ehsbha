@@ -1,3 +1,4 @@
+import { vehicleResponse } from '../vehicles/vehicle-response.mapper';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, VehicleType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -51,7 +52,7 @@ export class AdminVehiclesService {
         year: v.year,
         fuelType: v.fuelType,
         isActive: v.isActive,
-        odometerMeters: Number(v.odometerMeters),
+        odometerMeters: vehicleResponse(v).odometerMeters, odometerSource: v.odometerSource,
         driverId: v.driverId,
         driverPhone: v.driver.user.phone,
         driverDisplayName: v.driver.displayName,
@@ -72,7 +73,7 @@ export class AdminVehiclesService {
         _count: { select: { trips: true, fuelLogs: true, maintenanceRecords: true, expenses: true } },
       },
     });
-    if (!v) throw new NotFoundException({ code: 'VEHICLE_NOT_FOUND' });
-    return v;
+    if (!v) throw new NotFoundException({ code: 'NOT_FOUND' });
+    return { ...v, ...vehicleResponse(v) };
   }
 }

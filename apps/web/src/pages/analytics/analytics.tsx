@@ -1,3 +1,5 @@
+import { OperatingCostSummary } from '@/components/operating-cost-summary';
+import { ReportLoadError } from '@/components/report-load-error';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +22,9 @@ import { useI18n } from '@/i18n';
 import { AnalyticsApi } from '@/lib/api/endpoints';
 import { formatDuration, formatKm, formatMoney, formatNumber } from '@/lib/format';
 import { isoYearWeek } from '@/lib/time';
+import { calendarDateValue } from '@ehsbha/shared-types';
+import { useBusinessDate } from '@/hooks/use-business-date';
+import { FinancialCoverageNotice } from '@/components/financial-coverage-notice';
 
 type AnalyticsTab = 'daily' | 'weekly' | 'monthly' | 'apps' | 'areas' | 'hours';
 type WindowKey = '7d' | '30d' | '90d';
@@ -31,6 +36,7 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader title={t('analytics.title')} subtitle={t('analytics.subtitle')} />
+      <p className="text-sm text-muted-foreground">{t('time.reportBasis')}</p>
 
       <div className="overflow-x-auto pb-1">
         <Tabs<AnalyticsTab>
@@ -69,12 +75,16 @@ export function AnalyticsPage() {
 
 function DailyTab() {
   const { t, locale } = useI18n();
-  const { data, isLoading } = useQuery({
-    queryKey: ['analytics', 'today'],
+  const today = useBusinessDate();
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['analytics', 'today', today],
     queryFn: AnalyticsApi.today,
   });
+  if (error) return <ReportLoadError error={error} retry={() => { void refetch(); }} />;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {data ? <FinancialCoverageNotice {...data} /> : null}
+      {data ? <OperatingCostSummary {...data} /> : null}
       <SummaryCard label={t('dashboard.netProfit')} value={data ? formatMoney(data.netProfitPiastres, locale) : ''} loading={isLoading} />
       <SummaryCard label={t('dashboard.trips')} value={data ? formatNumber(data.tripCount, locale) : ''} loading={isLoading} />
       <SummaryCard label={t('dashboard.distance')} value={data ? `${formatKm(data.totalKmMeters, locale)} km` : ''} loading={isLoading} />
@@ -89,13 +99,16 @@ function DailyTab() {
 
 function WeeklyTab() {
   const { t, locale } = useI18n();
-  const { isoYear, isoWeek } = isoYearWeek(new Date());
-  const { data, isLoading } = useQuery({
+  const { isoYear, isoWeek } = isoYearWeek(calendarDateValue(useBusinessDate()));
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['analytics', 'weekly', isoYear, isoWeek],
     queryFn: () => AnalyticsApi.weekly(isoYear, isoWeek),
   });
+  if (error) return <ReportLoadError error={error} retry={() => { void refetch(); }} />;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {data ? <FinancialCoverageNotice {...data} /> : null}
+      {data ? <OperatingCostSummary {...data} /> : null}
       <SummaryCard label={t('dashboard.netProfit')} value={data ? formatMoney(data.netProfitPiastres, locale) : ''} loading={isLoading} />
       <SummaryCard label={t('dashboard.trips')} value={data ? formatNumber(data.tripCount, locale) : ''} loading={isLoading} />
       <SummaryCard label={t('dashboard.distance')} value={data && data.totalKmMeters ? `${formatKm(data.totalKmMeters, locale)} km` : '—'} loading={isLoading} />
@@ -106,13 +119,16 @@ function WeeklyTab() {
 
 function MonthlyTab() {
   const { t, locale } = useI18n();
-  const now = new Date();
-  const { data, isLoading } = useQuery({
-    queryKey: ['analytics', 'monthly', now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => AnalyticsApi.monthly(now.getFullYear(), now.getMonth() + 1),
+  const now = calendarDateValue(useBusinessDate());
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['analytics', 'monthly', now.getUTCFullYear(), now.getUTCMonth() + 1],
+    queryFn: () => AnalyticsApi.monthly(now.getUTCFullYear(), now.getUTCMonth() + 1),
   });
+  if (error) return <ReportLoadError error={error} retry={() => { void refetch(); }} />;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {data ? <FinancialCoverageNotice {...data} /> : null}
+      {data ? <OperatingCostSummary {...data} /> : null}
       <SummaryCard label={t('dashboard.netProfit')} value={data ? formatMoney(data.netProfitPiastres, locale) : ''} loading={isLoading} />
       <SummaryCard label={t('dashboard.trips')} value={data ? formatNumber(data.tripCount, locale) : ''} loading={isLoading} />
       <SummaryCard label={t('dashboard.distance')} value={data && data.totalKmMeters ? `${formatKm(data.totalKmMeters, locale)} km` : '—'} loading={isLoading} />
@@ -140,8 +156,9 @@ function WindowSelector({ value, onChange }: { value: WindowKey; onChange: (w: W
 function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
   const { t, locale, dir } = useI18n();
   const [w, setW] = useState<WindowKey>('7d');
-  const { data, isLoading } = useQuery({
-    queryKey: ['analytics', kind, w],
+  const today = useBusinessDate();
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['analytics', kind, w, today],
     queryFn: async () => {
       if (kind === 'apps') {
         const result = await AnalyticsApi.apps(w);
@@ -154,6 +171,7 @@ function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
     },
   });
 
+  if (error) return <ReportLoadError error={error} retry={() => { void refetch(); }} />;
   const items = data?.items ?? [];
 
   const chartData = items.map((it) => ({
@@ -170,6 +188,8 @@ function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
         </h2>
         <WindowSelector value={w} onChange={setW} />
       </div>
+      <p className="text-sm font-medium">{t('analytics.contribution')}</p>
+      <p className="text-sm text-muted-foreground">{t('analytics.contributionHint')}</p>
       <Card>
         <CardContent className="pt-5">
           {isLoading ? (
@@ -206,7 +226,7 @@ function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
                       formatter={(v: number) => formatMoney(Math.round(v * 100), locale)}
                       cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
                     />
-                    <Bar dataKey="net" radius={[8, 8, 0, 0]}>
+                    <Bar name={t('analytics.contribution')} dataKey="net" radius={[8, 8, 0, 0]}>
                       {chartData.map((d) => (
                         <Cell key={d.name} fill={d.color || '#34D399'} />
                       ))}
@@ -253,11 +273,13 @@ function WindowedTab({ kind }: { kind: 'apps' | 'areas' }) {
 function HoursTab() {
   const { t, locale } = useI18n();
   const [w, setW] = useState<WindowKey>('7d');
-  const { data, isLoading } = useQuery({
-    queryKey: ['analytics', 'hours', w],
+  const today = useBusinessDate();
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['analytics', 'hours', w, today],
     queryFn: () => AnalyticsApi.hours(w),
   });
 
+  if (error) return <ReportLoadError error={error} retry={() => { void refetch(); }} />;
   const items = data?.items ?? [];
   const chart = items.map((it) => ({
     name: t(`analytics.buckets.${it.bucket}`),
@@ -271,6 +293,8 @@ function HoursTab() {
         <h2 className="text-sm font-semibold text-muted-foreground">{t('analytics.tabs.hours')}</h2>
         <WindowSelector value={w} onChange={setW} />
       </div>
+      <p className="text-sm font-medium">{t('analytics.contribution')}</p>
+      <p className="text-sm text-muted-foreground">{t('analytics.contributionHint')}</p>
       <Card>
         <CardContent className="pt-5">
           {isLoading ? (
@@ -299,7 +323,7 @@ function HoursTab() {
                       formatter={(v: number) => formatMoney(Math.round(v * 100), locale)}
                       cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
                     />
-                    <Bar dataKey="net" radius={[8, 8, 0, 0]} fill="hsl(var(--primary))" />
+                    <Bar name={t('analytics.contribution')} dataKey="net" radius={[8, 8, 0, 0]} fill="hsl(var(--primary))" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

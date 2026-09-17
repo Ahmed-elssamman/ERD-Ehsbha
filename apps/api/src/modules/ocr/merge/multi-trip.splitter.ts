@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OcrLine, OcrResult } from '../types';
+import { normalizeNumeric } from '../semantic/digit-normalizer';
 
 // Matches the per-card time stamp on Uber's "ملخص الدخل" summary screen.
 // Real-world Azure output for these times looks like:
@@ -47,7 +48,7 @@ export class MultiTripSplitter {
   split(read: OcrResult): TripSlice[] {
     const timeIdxs: number[] = [];
     for (let i = 0; i < read.lines.length; i++) {
-      if (CARD_TIME_RX.test(read.lines[i].text.trim())) {
+      if (CARD_TIME_RX.test(normalizeNumeric(read.lines[i].text).trim())) {
         timeIdxs.push(i);
       }
     }

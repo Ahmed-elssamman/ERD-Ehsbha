@@ -1,3 +1,9 @@
+import { NotificationKind, VehicleOdometerSource, FuelKind, FuelFillCoverage, FuelView, FuelQuantityUnit, TripRecordSource, TripView, type TripVersionTarget, type FuelSnapshot } from '@ehsbha/shared-types';
+import { tripHistorySchema } from '@ehsbha/api-contracts';
+import { fuelPageSchema, fuelHistorySchema, fuelEfficiencySchema, fuelLinkableExpensesSchema } from '@ehsbha/api-contracts';
+import { MaintenanceStatus, MaintenanceView, type MaintenanceSnapshot, ExpenseCategory, ExpenseView, type ExpenseSnapshot } from '@ehsbha/shared-types';
+export { ExpenseCategory, ExpenseView } from '@ehsbha/shared-types';
+import type { FinancialCoverage, ReportReadyData } from '@ehsbha/api-contracts';
 import axios, { type AxiosResponse } from 'axios';
 import { z } from 'zod';
 import {
@@ -17,7 +23,7 @@ import {
   driverAuthResultSchema,
   driverAuthUserSchema,
   driverCommunityPostSchema,
-  driverExpenseSchema,
+  driverExpenseSchema, expensePageSchema, expenseSummarySchema, expenseHistorySchema, expenseLinkableTripsSchema,
   driverFuelEntrySchema,
   driverGoalSchema,
   driverMeSchema,
@@ -29,7 +35,7 @@ import {
   hourBucketSchema,
   lookupEmailResultSchema,
   maintenanceItemSchema,
-  maintenanceRecordSchema,
+  maintenanceRecordSchema, maintenancePageSchema, maintenanceHistorySchema, maintenanceLinkableExpensesSchema,
   maintenanceRiskSchema,
   monthlyAnalyticsSchema,
   monthlyForecastSchema,
@@ -118,13 +124,13 @@ export const AuthApi = {
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }).then(parseEnvelope(EmptySuccessDataSchema, 'driver.auth.logout')),
   lookupResetEmail: (body: { phone: string }) =>
-    api.post('/auth/password/lookup', body).then(parseEnvelope(lookupEmailResultSchema, 'driver.auth.password-lookup')),
+    api.post('/auth/password/lookup', body).then(parseEnvelope(lookupEmailResultSchema, 'driver.auth.password.lookup')),
   forgotPassword: (body: { phone: string }) =>
-    api.post('/auth/password/forgot', body).then(parseEnvelope(forgotPasswordResultSchema, 'driver.auth.password-forgot')),
+    api.post('/auth/password/forgot', body).then(parseEnvelope(forgotPasswordResultSchema, 'driver.auth.password.forgot')),
   resetPassword: (body: { phone: string; code: string; newPassword: string }) =>
-    api.post('/auth/password/reset', body).then(parseEnvelope(EmptySuccessDataSchema, 'driver.auth.password-reset')),
+    api.post('/auth/password/reset', body).then(parseEnvelope(EmptySuccessDataSchema, 'driver.auth.password.reset')),
   updateMe: (body: { email?: string | null; locale?: 'ar' | 'en'; timezone?: string }) =>
-    api.patch('/me', body).then(parseEnvelope(driverAuthUserSchema, 'driver.users.update-me')),
+    api.patch('/me', body).then(parseEnvelope(driverAuthUserSchema, 'driver.user.update')),
 };
 
 /* -------- Driver -------------------------------------------------------- */
@@ -138,9 +144,9 @@ export interface DriverMe {
 }
 
 export const DriverApi = {
-  me: () => api.get('/drivers/me').then(parseEnvelope(driverMeSchema, 'driver.drivers.get-me')),
+  me: () => api.get('/drivers/me').then(parseEnvelope(driverMeSchema, 'driver.profile.get')),
   update: (body: Partial<{ displayName: string; photoUrl: string | null; baseCity: string | null }>) =>
-    api.patch('/drivers/me', body).then(parseEnvelope(driverMeSchema, 'driver.drivers.update-me')),
+    api.patch('/drivers/me', body).then(parseEnvelope(driverMeSchema, 'driver.profile.update')),
 };
 
 /* -------- Vehicles ------------------------------------------------------ */
@@ -157,7 +163,11 @@ export interface Vehicle {
   fuelType: FuelType;
   tankLiters: number;
   baselineKmPerLiter: number;
-  odometerMeters: number;
+  odometerMeters: number | null;
+  odometerSource: VehicleOdometerSource;
+  odometerSourceId: string | null;
+  odometerAsOf: string | null;
+  odometerVersion: number;
   isActive: boolean;
   // Cost components (nullable)
   fuelTankCostPiastres?: number | null;
@@ -193,7 +203,7 @@ export const VehiclesApi = {
   get: (id: string) => api.get(`/vehicles/${id}`).then(parseEnvelope(driverVehicleSchema, 'driver.vehicles.get')),
   create: (body: Partial<Vehicle> & { type: VehicleType; fuelType: FuelType }) =>
     api.post('/vehicles', body, idempotencyConfig()).then(parseEnvelope(driverVehicleSchema, 'driver.vehicles.create')),
-  update: (id: string, body: Partial<Vehicle>) =>
+  update: (id: string, body: Partial<Vehicle> & { expectedOdometerVersion?: number }) =>
     api.patch(`/vehicles/${id}`, body, idempotencyConfig()).then(parseEnvelope(driverVehicleSchema, 'driver.vehicles.update')),
   updateCosts: (id: string, body: Partial<Vehicle>) =>
     api.patch(`/vehicles/${id}/costs`, body, idempotencyConfig()).then(parseEnvelope(driverVehicleSchema, 'driver.vehicles.update-costs')),
@@ -236,16 +246,16 @@ const coerceDriverApp = (a: DriverApp): DriverApp => ({
 
 export const AppsApi = {
   catalog: () =>
-    api.get('/apps').then(parseEnvelope(driverAppSourceSchema.array(), 'driver.apps.list')).then((items) => items.map(coerceAppSource)),
+    api.get('/apps').then(parseEnvelope(driverAppSourceSchema.array(), 'driver.apps.catalog')).then((items) => items.map(coerceAppSource)),
   mine: () =>
-    api.get('/drivers/me/apps').then(parseEnvelope(driverAppBindingSchema.array(), 'driver.apps.list-mine')).then((items) => items.map(coerceDriverApp)),
+    api.get('/drivers/me/apps').then(parseEnvelope(driverAppBindingSchema.array(), 'driver.apps.mine.list')).then((items) => items.map(coerceDriverApp)),
   add: (body: Partial<DriverApp> & ({ appSourceId: string } | { customName: string })) =>
-    api.post('/drivers/me/apps', body, idempotencyConfig()).then(parseEnvelope(driverAppBindingSchema, 'driver.apps.create')).then(coerceDriverApp),
+    api.post('/drivers/me/apps', body, idempotencyConfig()).then(parseEnvelope(driverAppBindingSchema, 'driver.apps.mine.create')).then(coerceDriverApp),
   update: (id: string, body: Partial<DriverApp>) =>
-    api.patch(`/drivers/me/apps/${id}`, body, idempotencyConfig()).then(parseEnvelope(driverAppBindingSchema, 'driver.apps.update')).then(coerceDriverApp),
+    api.patch(`/drivers/me/apps/${id}`, body, idempotencyConfig()).then(parseEnvelope(driverAppBindingSchema, 'driver.apps.mine.update')).then(coerceDriverApp),
   remove: (id: string) =>
     api.delete(`/drivers/me/apps/${id}`, idempotencyConfig())
-      .then(parseEnvelope(EmptySuccessDataSchema, 'driver.apps.delete')),
+      .then(parseEnvelope(EmptySuccessDataSchema, 'driver.apps.mine.delete')),
 };
 
 /* -------- Areas --------------------------------------------------------- */
@@ -271,14 +281,19 @@ export const AreasApi = {
 
 export interface TripItem {
   id: string;
+  version: number;
+  source: TripRecordSource;
+  deletedAt: string | null;
   vehicleId: string;
   driverAppId: string;
   areaId: string | null;
   startedAt: string;
   endedAt: string;
-  grossPiastres: number;
+  grossPiastres: number | null;
+  earningsPiastres?: number | null;
+  receivedPiastres?: number | null;
   tipPiastres: number;
-  commissionPiastres: number;
+  commissionPiastres: number | null;
   tollPiastres?: number;
   parkingPiastres?: number;
   totalKmMeters: number;
@@ -293,15 +308,20 @@ export interface TripsListResponse {
 }
 
 export interface CreateTripInput {
+  pickup?: string | null;
+  destination?: string | null;
+  paymentMethod?: import('@ehsbha/api-contracts').TripPaymentMethod;
+  waitingFeePiastres?: number | null;
   vehicleId: string;
   driverAppId: string;
   areaId?: string | null;
   startedAt: string;
   endedAt: string;
-  grossPiastres: number;
+  grossPiastres: number | null;
+  earningsPiastres?: number | null;
   receivedPiastres?: number | null;
   tipPiastres?: number;
-  commissionPiastres?: number;
+  commissionPiastres?: number | null;
   tollPiastres?: number;
   parkingPiastres?: number;
   totalKmMeters: number;
@@ -314,6 +334,7 @@ export interface BatchCreateTripsResponse {
   created: TripItem[];
   errors: Array<{ index: number; code: string; message: string }>;
 }
+export interface UpdateTripInput extends Partial<Omit<CreateTripInput, 'clientMutationId'>> { expectedVersion: number }
 export interface BatchDeleteTripsResponse {
   deleted: string[];
   errors: Array<{ id: string; code: string; message: string }>;
@@ -325,6 +346,8 @@ export const TripsApi = {
     to?: string;
     appId?: string;
     areaId?: string;
+    vehicleId?: string;
+    view?: TripView;
     cursor?: string;
     limit?: number;
   }) => api.get('/trips', { params }).then(parseEnvelope(tripsListResponseSchema, 'driver.trips.list')),
@@ -336,83 +359,70 @@ export const TripsApi = {
    * trips; the server returns successes and per-index failures separately. */
   createBatch: (items: CreateTripInput[]) =>
     api.post('/trips/batch', { items }, idempotencyConfig())
-      .then(parseEnvelope(batchCreateTripsResponseSchema, 'driver.trips.batch')),
-  update: (id: string, body: Partial<CreateTripInput>) =>
-    api.patch(`/trips/${id}`, body, idempotencyConfig())
+      .then(parseEnvelope(batchCreateTripsResponseSchema, 'driver.trips.batch-create')),
+  update: (id: string, body: UpdateTripInput, key?: string) =>
+    api.patch(`/trips/${id}`, body, idempotencyConfig(key))
       .then(parseEnvelope(tripItemSchema, 'driver.trips.update')),
-  remove: (id: string) =>
-    api.delete(`/trips/${id}`, idempotencyConfig())
+  remove: (id: string, expectedVersion: number, key?: string) =>
+    api.delete(`/trips/${id}`, { ...idempotencyConfig(key), params: { expectedVersion } })
       .then(parseEnvelope(EmptySuccessDataSchema, 'driver.trips.delete')),
   /** Bulk-delete used by the trip list's multi-select toolbar. */
-  removeBatch: (ids: string[]) =>
-    api.post('/trips/batch-delete', { ids }, idempotencyConfig())
-      .then(parseEnvelope(batchDeleteTripsResponseSchema, 'driver.trips.post-batch-delete')),
+  removeBatch: (items: TripVersionTarget[], key?: string) =>
+    api.post('/trips/batch-delete', { items }, idempotencyConfig(key))
+      .then(parseEnvelope(batchDeleteTripsResponseSchema, 'driver.trips.batch-delete')),
+  history: (id: string, cursor = '') => api.get(`/trips/${id}/history`, { params: cursor ? { cursor } : {} })
+    .then(parseEnvelope(tripHistorySchema, 'driver.trips.history')),
+  restore: (id: string, expectedVersion: number, key?: string) =>
+    api.post(`/trips/${id}/restore`, { expectedVersion }, idempotencyConfig(key))
+      .then(parseEnvelope(tripItemSchema, 'driver.trips.restore')),
 };
 
 /* -------- Expenses ------------------------------------------------------ */
 
-export type ExpenseCategory =
-  | 'RENT'
-  | 'INSURANCE'
-  | 'FINE'
-  | 'TOLL'
-  | 'FOOD'
-  | 'PHONE'
-  | 'WASH'
-  | 'PARKING'
-  | 'OTHER';
-
-export interface Expense {
-  id: string;
-  vehicleId: string | null;
-  category: ExpenseCategory;
-  amountPiastres: number;
-  dateTime: string;
-  isRecurring: boolean;
-  recurrenceRule: string | null;
-  notes: string | null;
-}
-
+export interface LinkedMaintenanceReference { id: string; vehicleId: string }
+export interface Expense extends ExpenseSnapshot { linkedFuel?: LinkedMaintenanceReference[]; linkedMaintenance?: LinkedMaintenanceReference[]; id: string; notes: string | null; clientMutationId?: string | null }
 export interface CreateExpenseInput {
-  vehicleId?: string | null;
-  category: ExpenseCategory;
-  amountPiastres: number;
-  dateTime: string;
-  isRecurring?: boolean;
-  recurrenceRule?: string | null;
-  notes?: string | null;
+  vehicleId?: string | null; category: ExpenseCategory; amountPiastres: number; dateTime: string;
+  linkedTripId?: string | null; isRecurring?: boolean; recurrenceRule?: string | null;
+  notes?: string | null; clientMutationId?: string;
 }
-
+export interface UpdateExpenseInput extends Partial<CreateExpenseInput> { expectedVersion: number }
+export interface ExpenseListInput { from?: string; to?: string; category?: ExpenseCategory; view?: ExpenseView; cursor?: string; limit?: number }
+export interface ExpensePeriodInput { from: string; to: string }
+export interface ExpenseLinkableTripsInput { date: string; category: ExpenseCategory; amountPiastres: number; cursor?: string; limit?: number }
 export const ExpensesApi = {
-  list: (params?: { from?: string; to?: string; category?: ExpenseCategory; limit?: number }) =>
-    api.get('/expenses', { params }).then(parseEnvelope(driverExpenseSchema.array(), 'driver.expenses.list')),
-  create: (body: CreateExpenseInput) =>
-    api.post('/expenses', body, idempotencyConfig()).then(parseEnvelope(driverExpenseSchema, 'driver.expenses.create')),
-  update: (id: string, body: Partial<CreateExpenseInput>) =>
-    api.patch(`/expenses/${id}`, body, idempotencyConfig()).then(parseEnvelope(driverExpenseSchema, 'driver.expenses.update')),
-  remove: (id: string) =>
-    api.delete(`/expenses/${id}`, idempotencyConfig())
-      .then(parseEnvelope(EmptySuccessDataSchema, 'driver.expenses.delete')),
+  list: (params: ExpenseListInput = {}) => api.get('/expenses', { params }).then(parseEnvelope(expensePageSchema, 'driver.expenses.list')),
+  summary: (params: ExpensePeriodInput) => api.get('/expenses/summary', { params }).then(parseEnvelope(expenseSummarySchema, 'driver.expenses.summary')),
+  linkableTrips: (params: ExpenseLinkableTripsInput) => api.get('/expenses/linkable-trips', { params }).then(parseEnvelope(expenseLinkableTripsSchema, 'driver.expenses.linkable-trips')),
+  history: (id: string, cursor = '') => api.get(`/expenses/${id}/history`, { params: cursor ? { cursor } : {} }).then(parseEnvelope(expenseHistorySchema, 'driver.expenses.history')),
+  create: (body: CreateExpenseInput) => api.post('/expenses', body, idempotencyConfig(body.clientMutationId)).then(parseEnvelope(driverExpenseSchema, 'driver.expenses.create')),
+  update: (id: string, body: UpdateExpenseInput, key?: string) => api.patch(`/expenses/${id}`, body, idempotencyConfig(key)).then(parseEnvelope(driverExpenseSchema, 'driver.expenses.update')),
+  remove: (id: string, expectedVersion: number, key?: string) => api.delete(`/expenses/${id}`, { ...idempotencyConfig(key), params: { expectedVersion } })
+    .then(parseEnvelope(EmptySuccessDataSchema, 'driver.expenses.delete')),
+  restore: (id: string, expectedVersion: number, key?: string) => api.post(`/expenses/${id}/restore`, { expectedVersion }, idempotencyConfig(key)).then(parseEnvelope(driverExpenseSchema, 'driver.expenses.restore')),
 };
 
 /* -------- Fuel ---------------------------------------------------------- */
 
-export interface FuelEntry {
-  id: string;
-  vehicleId: string;
-  liters: number;
-  pricePerLiterPiastres: number;
-  totalPiastres: number;
-  odometerMeters: number;
-  isFullTank: boolean;
-  filledAt: string;
+export interface FuelEntry extends FuelSnapshot {
+  id: string; quantityUnit: FuelQuantityUnit | null; notes: string | null; clientMutationId: string | null; createdAt: string; updatedAt: string;
 }
-
+export interface CreateFuelInput {
+  vehicleId: string; dateTime: string; fuelKind: FuelKind | null; quantity: number | null; pricePerUnitPiastres: number | null;
+  totalPiastres: number; odometerMeters: number | null; isFullTank: boolean; fillCoverage: FuelFillCoverage;
+  linkedExpenseId?: string | null; notes?: string | null; clientMutationId?: string;
+}
+export interface FuelListQuery { vehicleId?: string; from?: string; to?: string; view?: FuelView; cursor?: string; limit?: number }
+export interface FuelExpenseQuery { vehicleId: string; date: string; amountPiastres: number; cursor?: string; limit?: number }
 export const FuelApi = {
-  list: (params?: { vehicleId?: string; limit?: number }) =>
-    api.get('/fuel', { params }).then(parseEnvelope(driverFuelEntrySchema.array(), 'driver.fuel.list')),
-  create: (body: Partial<FuelEntry>) =>
-    api.post('/fuel', body, idempotencyConfig()).then(parseEnvelope(driverFuelEntrySchema, 'driver.fuel.create')),
+  list: (params: FuelListQuery) => api.get('/fuel', { params }).then(parseEnvelope(fuelPageSchema, 'driver.fuel.list')),
+  create: (body: CreateFuelInput, key?: string) => api.post('/fuel', body, idempotencyConfig(key)).then(parseEnvelope(driverFuelEntrySchema, 'driver.fuel.create')),
+  update: (id: string, body: Partial<Omit<CreateFuelInput, 'clientMutationId'>> & { expectedVersion: number }, key?: string) => api.patch(`/fuel/${id}`, body, idempotencyConfig(key)).then(parseEnvelope(driverFuelEntrySchema, 'driver.fuel.update')),
+  remove: (id: string, expectedVersion: number, key?: string) => api.delete(`/fuel/${id}`, { ...idempotencyConfig(key), params: { expectedVersion } }).then(parseEnvelope(EmptySuccessDataSchema, 'driver.fuel.delete')),
+  restore: (id: string, expectedVersion: number, key?: string) => api.post(`/fuel/${id}/restore`, { expectedVersion }, idempotencyConfig(key)).then(parseEnvelope(driverFuelEntrySchema, 'driver.fuel.restore')),
+  history: (id: string, cursor = '') => api.get(`/fuel/${id}/history`, { params: cursor ? { cursor } : {} }).then(parseEnvelope(fuelHistorySchema, 'driver.fuel.history')),
+  linkableExpenses: (params: FuelExpenseQuery) => api.get('/fuel/linkable-expenses', { params }).then(parseEnvelope(fuelLinkableExpensesSchema, 'driver.fuel.linkable-expenses')),
+  efficiency: (params: { vehicleId: string; from: string; to: string }) => api.get('/fuel/efficiency', { params }).then(parseEnvelope(fuelEfficiencySchema, 'driver.fuel.efficiency')),
 };
 
 /* -------- Maintenance --------------------------------------------------- */
@@ -429,39 +439,45 @@ export interface MaintenanceItem {
   appliesToBike: boolean;
 }
 
-export interface MaintenanceRecord {
-  id: string;
-  vehicleId: string;
-  maintenanceItemId: string;
-  performedAt: string;
-  odometerMeters: number;
-  costPiastres: number;
-  notes: string | null;
-  maintenanceItem?: MaintenanceItem;
+export interface MaintenanceRecord extends MaintenanceSnapshot {
+  id: string; notes: string | null; maintenanceItem?: MaintenanceItem;
 }
-
-export type MaintenanceStatus = 'GREEN' | 'AMBER' | 'RED' | 'OVERDUE';
+export interface CreateMaintenanceInput {
+  maintenanceItemId: string; performedAt: string; odometerMeters: number; costPiastres: number;
+  notes?: string | null; linkedExpenseId?: string | null; clientMutationId?: string;
+}
+export interface UpdateMaintenanceInput extends Partial<Omit<CreateMaintenanceInput, 'clientMutationId'>> { expectedVersion: number }
+export interface MaintenanceListQuery { view?: MaintenanceView; cursor?: string; limit?: number }
+export interface MaintenanceLinkQuery { date: string; amountPiastres: number; cursor?: string; limit?: number }
 
 export interface MaintenanceRiskRow {
   item: MaintenanceItem;
   status: MaintenanceStatus;
-  risk: number;
-  kmSinceLastMeters: number;
+  risk: number | null;
+  kmSinceLastMeters: number | null;
   daysSinceLast: number | null;
   lastServiceAt: string | null;
 }
 
 export const MaintenanceApi = {
   items: () => api.get('/maintenance/items').then(parseEnvelope(maintenanceItemSchema.array(), 'driver.maintenance.items')),
-  records: (vehicleId: string) =>
-    api.get(`/vehicles/${vehicleId}/maintenance/records`)
-      .then(parseEnvelope(maintenanceRecordSchema.array(), 'driver.vehicles.maintenance-records')),
-  addRecord: (vehicleId: string, body: { maintenanceItemId: string; performedAt: string; odometerMeters: number; costPiastres: number; notes?: string | null }) =>
-    api.post(`/vehicles/${vehicleId}/maintenance/records`, body, idempotencyConfig())
-      .then(parseEnvelope(maintenanceRecordSchema, 'driver.vehicles.create-maintenance-record')),
+  records: (vehicleId: string, params: MaintenanceListQuery = {}) =>
+    api.get(`/vehicles/${vehicleId}/maintenance/records`, { params }).then(parseEnvelope(maintenancePageSchema, 'driver.maintenance.records.list')),
+  addRecord: (vehicleId: string, body: CreateMaintenanceInput, key: string) =>
+    api.post(`/vehicles/${vehicleId}/maintenance/records`, body, idempotencyConfig(key)).then(parseEnvelope(maintenanceRecordSchema, 'driver.maintenance.records.create')),
+  updateRecord: (vehicleId: string, id: string, body: UpdateMaintenanceInput, key: string) =>
+    api.patch(`/vehicles/${vehicleId}/maintenance/records/${id}`, body, idempotencyConfig(key)).then(parseEnvelope(maintenanceRecordSchema, 'driver.maintenance.records.update')),
+  removeRecord: (vehicleId: string, id: string, expectedVersion: number, key: string) =>
+    api.delete(`/vehicles/${vehicleId}/maintenance/records/${id}`, { ...idempotencyConfig(key), params: { expectedVersion } }).then(parseEnvelope(EmptySuccessDataSchema, 'driver.maintenance.records.delete')),
+  restoreRecord: (vehicleId: string, id: string, expectedVersion: number, key: string) =>
+    api.post(`/vehicles/${vehicleId}/maintenance/records/${id}/restore`, { expectedVersion }, idempotencyConfig(key)).then(parseEnvelope(maintenanceRecordSchema, 'driver.maintenance.records.restore')),
+  history: (vehicleId: string, id: string, cursor?: string) =>
+    api.get(`/vehicles/${vehicleId}/maintenance/records/${id}/history`, { params: cursor ? { cursor } : {} }).then(parseEnvelope(maintenanceHistorySchema, 'driver.maintenance.records.history')),
+  linkableExpenses: (vehicleId: string, params: MaintenanceLinkQuery) =>
+    api.get(`/vehicles/${vehicleId}/maintenance/linkable-expenses`, { params }).then(parseEnvelope(maintenanceLinkableExpensesSchema, 'driver.maintenance.linkable-expenses')),
   risk: (vehicleId: string) =>
     api.get(`/vehicles/${vehicleId}/maintenance/risk`)
-      .then(parseEnvelope(maintenanceRiskSchema.array(), 'driver.vehicles.maintenance-risk')),
+      .then(parseEnvelope(maintenanceRiskSchema.array(), 'driver.maintenance.risk')),
 };
 
 /* -------- Goals --------------------------------------------------------- */
@@ -502,23 +518,24 @@ export const GoalsApi = {
 
 /* -------- Analytics ----------------------------------------------------- */
 
-export interface DailyAnalytics {
+export interface DailyAnalytics extends FinancialCoverage {
   date: string | Date;
   tripCount: number;
   totalKmMeters: number;
   paidKmMeters: number;
   emptyKmMeters: number;
   onlineMinutes: number;
-  grossPiastres: number;
+  grossPiastres: number | null;
   fuelPiastres: number;
   expensePiastres: number;
+  maintenancePiastres?: number; retainedMaintenanceEstimatePiastres?: number;
   netProfitPiastres: number;
   profitPerKmPiastres: number;
   profitPerHourPiastres: number;
   emptyRatioBp: number;
 }
 
-export interface WeeklyAnalytics {
+export interface WeeklyAnalytics extends FinancialCoverage {
   isoYear: number;
   isoWeek: number;
   tripCount: number;
@@ -526,16 +543,17 @@ export interface WeeklyAnalytics {
   paidKmMeters?: number;
   emptyKmMeters?: number;
   onlineMinutes?: number;
-  grossPiastres?: number;
+  grossPiastres?: number | null;
   netProfitPiastres: number;
   fuelPiastres?: number;
   expensePiastres?: number;
+  maintenancePiastres?: number; retainedMaintenanceEstimatePiastres?: number;
   profitPerKmPiastres?: number;
   profitPerHourPiastres?: number;
   emptyRatioBp?: number;
 }
 
-export interface MonthlyAnalytics {
+export interface MonthlyAnalytics extends FinancialCoverage {
   year: number;
   month: number;
   tripCount: number;
@@ -543,10 +561,11 @@ export interface MonthlyAnalytics {
   paidKmMeters?: number;
   emptyKmMeters?: number;
   onlineMinutes?: number;
-  grossPiastres?: number;
+  grossPiastres?: number | null;
   netProfitPiastres: number;
   fuelPiastres?: number;
   expensePiastres?: number;
+  maintenancePiastres?: number; retainedMaintenanceEstimatePiastres?: number;
   profitPerKmPiastres?: number;
   profitPerHourPiastres?: number;
   emptyRatioBp?: number;
@@ -558,7 +577,7 @@ export interface AppPerformanceRow {
   color: string | null;
   tripCount: number;
   netProfitPiastres: number;
-  grossPiastres: number;
+  grossPiastres: number | null;
   totalKmMeters: number;
   onlineMinutes: number;
   profitPerKmPiastres: number;
@@ -571,7 +590,7 @@ export interface AreaPerformanceRow {
   color: string | null;
   tripCount: number;
   netProfitPiastres: number;
-  grossPiastres: number;
+  grossPiastres: number | null;
   totalKmMeters: number;
   profitPerKmPiastres: number;
 }
@@ -621,7 +640,7 @@ export const AnalyticsApi = {
       'driver.analytics.hours',
     )),
   forecastMonthly: () =>
-    api.get('/analytics/forecast/monthly').then(parseEnvelope(monthlyForecastSchema, 'driver.analytics.forecast-monthly')),
+    api.get('/analytics/forecast/monthly').then(parseEnvelope(monthlyForecastSchema, 'driver.analytics.forecast.monthly')),
 };
 
 /* -------- Recommendations / Decisions ---------------------------------- */
@@ -653,11 +672,11 @@ export const RecommendationsApi = {
 
 export interface DriverScore {
   date: string;
-  overall: number;
-  efficiency: number;
-  profit: number;
-  safety: number;
-  consistency: number;
+  algorithmVersion: number;
+  overall: number | null;
+  efficiency: number | null;
+  profit: number | null;
+  consistency: number | null;
 }
 
 export const ScoreApi = {
@@ -670,12 +689,13 @@ export const ScoreApi = {
 
 export interface AppNotification {
   id: string;
+  kind: NotificationKind;
   channel: string;
   title: string;
   body: string;
   sentAt: string;
   readAt: string | null;
-  data?: Record<string, unknown> | null;
+  data: DailyDigestData | ReportReadyData | null;
 }
 
 export type DailyDigestData = z.infer<typeof dailyDigestDataSchema>;
@@ -686,12 +706,11 @@ export const NotificationsApi = {
   markRead: (id: string) =>
     api.post(`/notifications/${id}/read`, {}, idempotencyConfig())
       .then(parseEnvelope(appNotificationSchema, 'driver.notifications.mark-read')),
-  /** Dev / onboarding helper: triggers today's digest synchronously and
-   * stores it as an in-app notification. Returns the new id. */
+  /** Captures or returns the driver's existing snapshot for this Cairo day. */
   triggerDailyDigest: () =>
     api.post('/notifications/daily-digest/me', {}, idempotencyConfig()).then(parseEnvelope(
       z.object({ notificationId: z.string() }).passthrough(),
-      'driver.notifications.daily-digest',
+      'driver.notifications.daily-digest.trigger',
     )),
 };
 
@@ -814,12 +833,12 @@ export const ReviewsApi = {
   list: (params?: { cursor?: string; limit?: number; rating?: number }) =>
     api.get('/reviews', { params }).then(parseEnvelope(reviewsListResponseSchema, 'driver.reviews.list')),
   summary: () => api.get('/reviews/summary').then(parseEnvelope(reviewsSummarySchema, 'driver.reviews.summary')),
-  mine: () => api.get('/reviews/me').then(parseEnvelope(myReviewSchema.nullable(), 'driver.reviews.mine')),
+  mine: () => api.get('/reviews/me').then(parseEnvelope(myReviewSchema.nullable(), 'driver.reviews.mine.get')),
   upsert: (body: UpsertReviewInput) =>
-    api.put('/reviews/me', body, idempotencyConfig()).then(parseEnvelope(myReviewSchema, 'driver.reviews.upsert')),
+    api.put('/reviews/me', body, idempotencyConfig()).then(parseEnvelope(myReviewSchema, 'driver.reviews.mine.upsert')),
   remove: () =>
     api.delete('/reviews/me', idempotencyConfig())
-      .then(parseEnvelope(EmptySuccessDataSchema, 'driver.reviews.delete-mine')),
+      .then(parseEnvelope(EmptySuccessDataSchema, 'driver.reviews.mine.delete')),
 };
 
 /** Public testimonial endpoints — used on login/register/marketing surfaces (no auth). */

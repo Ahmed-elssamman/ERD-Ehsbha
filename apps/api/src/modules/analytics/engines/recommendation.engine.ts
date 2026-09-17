@@ -1,5 +1,5 @@
 import { fromBp } from '../../../common/utils/money';
-import { detectEfficiencyDrop } from './fuel.engine';
+import { MAINTENANCE_GUIDANCE_COPY } from './maintenance-guide.control';
 
 export interface RecommendationCandidate {
   type: string;
@@ -14,16 +14,13 @@ export interface RecoContext {
   locale: 'ar' | 'en';
   recent7d: {
     netProfitPiastres: number;
-    grossPiastres: number;
     onlineMinutes: number;
     totalKmMeters: number;
     paidKmMeters: number;
     emptyRatioBp: number;
-    fuelKmPerLiter: number;
   };
   baseline90d: {
     emptyRatioBp: number;
-    fuelKmPerLiter: number;
     profitPerKmPiastres: number;
   };
   appPerformance: Array<{
@@ -32,8 +29,7 @@ export interface RecoContext {
     profitPerHourPiastres: number;
     onlineMinutes: number;
   }>;
-  maintenance: Array<{ code?: string; name: string; status: string; risk: number }>;
-  fatigue: { score: number; level: 'SAFE' | 'TIRED' | 'HIGH' };
+  maintenance: Array<{ code?: string; name: string; status: string; risk: number | null }>;
   monthlyGoal?: {
     targetPiastres: number;
     currentNetPiastres: number;
@@ -106,30 +102,15 @@ export function generateRecommendations(ctx: RecoContext): RecommendationCandida
     });
   }
 
-  // 2. Fuel efficiency drop
-  if (detectEfficiencyDrop(ctx.recent7d.fuelKmPerLiter, ctx.baseline90d.fuelKmPerLiter, 0.1)) {
-    out.push({
-      type: 'fuel_efficiency_drop',
-      title: T(loc, 'استهلاك بنزين زاد', 'Fuel usage went up'),
-      body: T(
-        loc,
-        `بنزينك بقى أقل كفاءة من المعتاد. اتأكد من ضغط الكاوتش وفلتر الهوا.`,
-        `Fuel efficiency dropped vs your baseline. Check tire pressure and air filter.`,
-      ),
-      score: 0.75,
-      ttlMinutes: 60 * 24,
-    });
-  }
-
   // 3. Maintenance imminent
   const redItems = ctx.maintenance.filter((m) => m.status === 'RED' || m.status === 'OVERDUE');
   if (redItems.length > 0) {
-    const top = redItems.sort((a, b) => b.risk - a.risk)[0];
+    const top = redItems.sort((a, b) => (b.risk ?? -1) - (a.risk ?? -1))[0];
     const label = maintenanceLabel(loc, top);
     out.push({
       type: 'maintenance_imminent',
-      title: T(loc, 'صيانة قربت', 'Maintenance due'),
-      body: T(loc, `${label} محتاجة صيانة قريب جداً.`, `${label} needs service soon.`),
+      title: MAINTENANCE_GUIDANCE_COPY[loc].title,
+      body: MAINTENANCE_GUIDANCE_COPY[loc].body.replace('{item}', label),
       score: 0.9,
       payload: { code: top.code ?? null, item: label, status: top.status },
       ttlMinutes: 60 * 48,
@@ -178,17 +159,6 @@ export function generateRecommendations(ctx: RecoContext): RecommendationCandida
     }
   }
 
-  // 6. Fatigue
-  if (ctx.fatigue.level === 'HIGH') {
-    out.push({
-      type: 'fatigue_high',
-      title: T(loc, 'إرهاق عالي', 'High fatigue'),
-      body: T(loc, 'خد ٣٠ دقيقة استراحة قبل ما تكمل.', 'Take a 30-minute break before continuing.'),
-      score: 0.95,
-      ttlMinutes: 60,
-    });
-  }
-
   return out;
 }
 
@@ -203,7 +173,7 @@ export function pickDailyDecisions(
   };
   for (const r of recos) {
     if (r.type === 'best_app_window' || r.type === 'empty_km_high') buckets.earn.push(r);
-    else if (r.type === 'fatigue_high' || r.type === 'maintenance_imminent' || r.type === 'fuel_efficiency_drop') buckets.protect.push(r);
+    else if (r.type === 'maintenance_imminent' || r.type === 'fuel_efficiency_drop') buckets.protect.push(r);
     else if (r.type === 'goal_lag') buckets.goal.push(r);
   }
   const picks: RecommendationCandidate[] = [];

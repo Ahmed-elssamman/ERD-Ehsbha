@@ -6,10 +6,12 @@ extendZodWithOpenApi(z)
 export const openApiRegistry = new OpenAPIRegistry()
 
 export function registerSchema(name: string, schema: z.ZodTypeAny): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   openApiRegistry.register(name, schema as any)
 }
 
 export function registerComponentSchema(name: string, schema: z.ZodTypeAny): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   openApiRegistry.registerComponent('schemas', name, schema as any)
 }
 

@@ -1,3 +1,10 @@
+import { scoreResponse } from '../score/score-response';
+import { WORK_SCORE_VERSION } from '../analytics/engines/score.engine';
+import { vehicleResponse } from '../vehicles/vehicle-response.mapper';
+import { tripEarningsPiastres, businessDate } from '@ehsbha/shared-types';
+import { addDays } from '../../common/utils/date';
+import { AggregatesService } from '../aggregates/aggregates.service';
+import { aggregateCoverage } from '../aggregates/aggregate-coverage';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -19,7 +26,7 @@ interface ListInput {
  */
 @Injectable()
 export class AdminDriversService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private aggregates: AggregatesService) {}
 
   async list(input: ListInput) {
     const where: Prisma.DriverWhereInput = {
@@ -89,37 +96,38 @@ export class AdminDriversService {
       },
     });
     if (!d) throw new NotFoundException({ code: 'DRIVER_NOT_FOUND' });
+    await this.aggregates.ensureCalendar(id);
 
     const [latestScore, last30Days, totalProfit, scoreHistory, areaBreakdown, appBreakdown] = await Promise.all([
-      this.prisma.scoreSnapshot.findFirst({ where: { driverId: id }, orderBy: { date: 'desc' } }),
+      this.prisma.scoreSnapshot.findFirst({ where: { driverId: id, algorithmVersion: WORK_SCORE_VERSION }, orderBy: { date: 'desc' } }),
       this.prisma.dailyAggregate.findMany({
         where: {
           driverId: id,
-          date: { gte: new Date(Date.now() - 30 * 86400_000) },
+          date: { gte: addDays(businessDate(new Date()), -29), lte: businessDate(new Date()) },
         },
         orderBy: { date: 'asc' },
       }),
       this.prisma.dailyAggregate.aggregate({
         where: { driverId: id },
-        _sum: { netProfitPiastres: true, grossPiastres: true, totalKmMeters: true, fuelPiastres: true, expensePiastres: true },
+        _sum: { tripCount: true, grossKnownTripCount: true, commissionKnownTripCount: true, netProfitPiastres: true, grossPiastres: true, totalKmMeters: true, fuelPiastres: true, expensePiastres: true, maintenancePiastres: true, maintAmortPiastres: true },
       }),
       this.prisma.scoreSnapshot.findMany({
-        where: { driverId: id },
+        where: { driverId: id, algorithmVersion: WORK_SCORE_VERSION },
         orderBy: { date: 'desc' },
         take: 30,
       }),
       this.prisma.areaDailyAggregate.groupBy({
         by: ['areaId'],
         where: { driverId: id },
-        _sum: { tripCount: true, grossPiastres: true, netProfitPiastres: true },
-        orderBy: { _sum: { grossPiastres: 'desc' } },
+        _sum: { tripCount: true, grossKnownTripCount: true, commissionKnownTripCount: true, grossPiastres: true, netProfitPiastres: true },
+        orderBy: { _sum: { netProfitPiastres: 'desc' } },
         take: 10,
       }),
       this.prisma.appDailyAggregate.groupBy({
         by: ['driverAppId'],
         where: { driverId: id },
-        _sum: { tripCount: true, grossPiastres: true, netProfitPiastres: true },
-        orderBy: { _sum: { grossPiastres: 'desc' } },
+        _sum: { tripCount: true, grossKnownTripCount: true, commissionKnownTripCount: true, grossPiastres: true, netProfitPiastres: true },
+        orderBy: { _sum: { netProfitPiastres: 'desc' } },
         take: 10,
       }),
     ]);
@@ -137,44 +145,37 @@ export class AdminDriversService {
 
     return {
       ...d,
-      latestScore,
+      vehicles: d.vehicles.map(vehicleResponse),
+      latestScore: latestScore ? scoreResponse(latestScore) : null,
       last30DaysAggregates: last30Days.map((a) => ({
         date: a.date.toISOString().slice(0, 10),
         tripCount: a.tripCount,
-        grossPiastres: Number(a.grossPiastres),
+        ...aggregateCoverage(a),
         netProfitPiastres: Number(a.netProfitPiastres),
         totalKmMeters: Number(a.totalKmMeters),
       })),
-      scoreHistory: scoreHistory
-        .map((s) => ({
-          date: s.date.toISOString().slice(0, 10),
-          overall: s.overall,
-          efficiency: s.efficiency,
-          profit: s.profit,
-          safety: s.safety,
-          consistency: s.consistency,
-        }))
-        .reverse(),
+      scoreHistory: scoreHistory.map(scoreResponse).reverse(),
       areaBreakdown: areaBreakdown.map((a) => ({
         areaId: a.areaId,
         areaName: areaMap.get(a.areaId) ?? 'Unknown',
         tripCount: a._sum.tripCount ?? 0,
-        grossPiastres: Number(a._sum.grossPiastres ?? 0n),
+        ...aggregateCoverage(a._sum),
         netProfitPiastres: Number(a._sum.netProfitPiastres ?? 0n),
       })),
       appBreakdown: appBreakdown.map((a) => ({
         driverAppId: a.driverAppId,
         appName: appMap.get(a.driverAppId) ?? 'Unknown',
         tripCount: a._sum.tripCount ?? 0,
-        grossPiastres: Number(a._sum.grossPiastres ?? 0n),
+        ...aggregateCoverage(a._sum),
         netProfitPiastres: Number(a._sum.netProfitPiastres ?? 0n),
       })),
       totals: {
         netProfitPiastres: Number(totalProfit._sum.netProfitPiastres ?? 0n),
-        grossPiastres: Number(totalProfit._sum.grossPiastres ?? 0n),
+        tripCount: totalProfit._sum.tripCount ?? 0, ...aggregateCoverage(totalProfit._sum),
         totalKmMeters: Number(totalProfit._sum.totalKmMeters ?? 0n),
         fuelPiastres: Number(totalProfit._sum.fuelPiastres ?? 0n),
         expensePiastres: Number(totalProfit._sum.expensePiastres ?? 0n),
+        maintenancePiastres: Number(totalProfit._sum.maintenancePiastres ?? 0n), retainedMaintenanceEstimatePiastres: Number(totalProfit._sum.maintAmortPiastres ?? 0n),
       },
     };
   }
@@ -193,7 +194,7 @@ export class AdminDriversService {
       id: t.id,
       startedAt: t.startedAt.toISOString(),
       endedAt: t.endedAt.toISOString(),
-      grossPiastres: t.grossPiastres,
+      grossPiastres: t.grossPiastres, earningsPiastres: tripEarningsPiastres(t),
       totalKmMeters: t.totalKmMeters,
       emptyKmMeters: t.emptyKmMeters,
       appName: t.driverApp.customName ?? t.driverApp.appSource.name,

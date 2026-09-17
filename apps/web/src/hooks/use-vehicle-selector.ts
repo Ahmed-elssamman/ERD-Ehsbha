@@ -14,17 +14,19 @@ export function useVehicleSelector() {
     }
   }, [q.data, selectedId]);
 
-  const selected: Vehicle | undefined = q.data?.find((v) => v.id === selectedId);
+  const selected: Vehicle | null = q.data?.find((v) => v.id === selectedId) ?? null;
 
   return {
     vehicles: q.data ?? [],
     isLoading: q.isLoading,
+    error: q.error,
+    refetch: q.refetch,
     selectedId,
     selected,
     setSelectedId,
   };
 }
 
-export function vehicleLabel(v: Vehicle): string {
-  return [v.make, v.model, v.year].filter(Boolean).join(' ') || v.type;
+export function vehicleLabel(v: Vehicle, fallback: string = v.type): string {
+  return [v.make, v.model, v.year].filter(Boolean).join(' ') || fallback;
 }

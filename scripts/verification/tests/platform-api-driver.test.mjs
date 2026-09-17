@@ -4,8 +4,6 @@ import { z } from 'zod';
 import {
   normalizeErrorCode,
   getErrorDefinition,
-  GOVERNED_ERROR_REGISTRY,
-  RETRY_POLICIES,
 } from '../../../packages/api-contracts/dist/types/core/errors.js';
 import {
   isSupportedMajorVersion,
@@ -23,7 +21,7 @@ function validMeta() {
     requestId: 'a'.repeat(20),
     serverTime: '2026-06-11T12:00:00.000Z',
     apiVersion: 'v1',
-    contractVersion: '1.0.0',
+    contractVersion: '2.0.0',
   };
 }
 
@@ -94,31 +92,31 @@ describe('driver client - request ID preservation', () => {
 });
 
 describe('driver client - unsupported major version rejection', () => {
-  it('rejects major version 2', () => {
-    assert.equal(isSupportedMajorVersion('2.0.0'), false);
+  it('rejects major version 1', () => {
+    assert.equal(isSupportedMajorVersion('1.0.0'), false);
   });
 
   it('rejects major version 0', () => {
     assert.equal(isSupportedMajorVersion('0.9.0'), false);
   });
 
-  it('accepts major version 1', () => {
-    assert.equal(isSupportedMajorVersion('1.0.0'), true);
-    assert.equal(isSupportedMajorVersion('1.99.99'), true);
+  it('accepts major version 2', () => {
+    assert.equal(isSupportedMajorVersion('2.0.0'), true);
+    assert.equal(isSupportedMajorVersion('2.99.99'), true);
   });
 
   it('returns contract-mismatch for unsupported major version', () => {
     const schema = z.object({ id: z.string() });
     const meta = validMeta();
-    meta.contractVersion = '2.0.0';
+    meta.contractVersion = '1.0.0';
     const result = parseSuccessResponse(schema, {
       data: { id: '123' },
       meta,
     });
     assert.equal(result.kind, 'contract-mismatch');
     if (result.kind === 'contract-mismatch') {
-      assert.equal(result.expectedMajor, 1);
-      assert.equal(result.receivedVersion, '2.0.0');
+      assert.equal(result.expectedMajor, 2);
+      assert.equal(result.receivedVersion, '1.0.0');
     }
   });
 });

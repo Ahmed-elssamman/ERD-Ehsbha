@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { driverLoginSchema, driverRefreshSchema, passwordResetSchema, driverProfileSchema, adminLoginSchema } from './auth-profile'
+import { driverLoginSchema, driverProfileSchema, adminLoginSchema } from './auth-profile'
 
 describe('auth-profile contracts', () => {
   describe('driverLoginSchema', () => {

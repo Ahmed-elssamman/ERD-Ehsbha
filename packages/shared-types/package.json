@@ -9,9 +9,9 @@
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/cjs/index.js"
     }
   },
   "scripts": {
@@ -23,6 +23,6 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "vitest": "^3.0.0"
+    "vitest": "^5.0.1"
   }
 }

@@ -9,8 +9,8 @@ import { parseSuccessResponse, parseFailureResponse } from './parse-response'
 describe('version', () => {
   it('exports expected constants', () => {
     expect(API_VERSION).toBe('v1')
-    expect(CONTRACT_VERSION).toBe('1.0.0')
-    expect(SUPPORTED_MAJOR_VERSION).toBe(1)
+    expect(CONTRACT_VERSION).toBe('2.0.0')
+    expect(SUPPORTED_MAJOR_VERSION).toBe(2)
   })
 
   it('parseSemanticVersion extracts components', () => {
@@ -25,18 +25,19 @@ describe('version', () => {
     expect(() => parseSemanticVersion('1.2')).toThrow()
   })
 
-  it('isSupportedMajorVersion returns true for major 1', () => {
-    expect(isSupportedMajorVersion('1.0.0')).toBe(true)
-    expect(isSupportedMajorVersion('1.99.99')).toBe(true)
+  it('isSupportedMajorVersion returns true for major 2', () => {
+    expect(isSupportedMajorVersion('2.0.0')).toBe(true)
+    expect(isSupportedMajorVersion('2.99.99')).toBe(true)
   })
 
   it('isSupportedMajorVersion returns false for other majors', () => {
-    expect(isSupportedMajorVersion('2.0.0')).toBe(false)
+    expect(isSupportedMajorVersion('1.0.0')).toBe(false)
+    expect(isSupportedMajorVersion('3.0.0')).toBe(false)
     expect(isSupportedMajorVersion('0.9.0')).toBe(false)
   })
 
   it('validates schemas', () => {
-    expect(SemanticVersionSchema.parse('1.0.0')).toBe('1.0.0')
+    expect(SemanticVersionSchema.parse('2.0.0')).toBe('2.0.0')
     expect(() => SemanticVersionSchema.parse('bad')).toThrow()
     expect(ApiVersionSchema.parse('v1')).toBe('v1')
   })
@@ -48,7 +49,7 @@ describe('envelope', () => {
       requestId: 'abc123def456ghi789'.repeat(2),
       serverTime: '2026-06-11T12:00:00.000Z',
       apiVersion: 'v1',
-      contractVersion: '1.0.0',
+      contractVersion: '2.0.0',
     })
     expect(meta.requestId.length).toBeGreaterThanOrEqual(16)
   })
@@ -56,7 +57,7 @@ describe('envelope', () => {
   it('createSuccessMeta generates valid meta', () => {
     const meta = createSuccessMeta('test-request-id-12345')
     expect(meta.apiVersion).toBe('v1')
-    expect(meta.contractVersion).toBe('1.0.0')
+    expect(meta.contractVersion).toBe('2.0.0')
     expect(meta.serverTime).toBeTruthy()
   })
 
@@ -68,7 +69,7 @@ describe('envelope', () => {
         requestId: 'a'.repeat(20),
         serverTime: '2026-06-11T12:00:00.000Z',
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     })
     expect(result.data.name).toBe('test')
@@ -82,7 +83,7 @@ describe('envelope', () => {
         requestId: 'a'.repeat(20),
         serverTime: '2026-06-11T12:00:00.000Z',
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     })
     expect(result.success).toBe(false)
@@ -115,7 +116,7 @@ describe('errors', () => {
         requestId: 'a'.repeat(20),
         serverTime: '2026-06-11T12:00:00.000Z',
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     })
     expect(payload.error.code).toBe('VALIDATION_ERROR')
@@ -193,7 +194,7 @@ describe('parse-response', () => {
         requestId: 'a'.repeat(20),
         serverTime: '2026-06-11T12:00:00.000Z',
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     })
     expect(result.kind).toBe('success')
@@ -210,13 +211,13 @@ describe('parse-response', () => {
         requestId: 'a'.repeat(20),
         serverTime: '2026-06-11T12:00:00.000Z',
         apiVersion: 'v1',
-        contractVersion: '2.0.0',
+        contractVersion: '1.0.0',
       },
     })
     expect(result.kind).toBe('contract-mismatch')
     if (result.kind === 'contract-mismatch') {
-      expect(result.expectedMajor).toBe(1)
-      expect(result.receivedVersion).toBe('2.0.0')
+      expect(result.expectedMajor).toBe(2)
+      expect(result.receivedVersion).toBe('1.0.0')
     }
   })
 
@@ -230,7 +231,7 @@ describe('parse-response', () => {
         requestId: 'a'.repeat(20),
         serverTime: '2026-06-11T12:00:00.000Z',
         apiVersion: 'v1',
-        contractVersion: '1.0.0',
+        contractVersion: '2.0.0',
       },
     })
     expect(result.kind).toBe('failure')

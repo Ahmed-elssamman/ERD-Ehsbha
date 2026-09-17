@@ -1,3 +1,6 @@
+import { tripRecordMetadataShape } from './trip-records';
+import { VehicleOdometerSource } from '@ehsbha/shared-types'
+import { financialCoverageShape } from './financial-coverage'
 import { z } from 'zod'
 import { registerOperation } from '../catalog/registry'
 
@@ -180,11 +183,11 @@ export const adminDriversPageSchema = cursorPageSchema(adminDriverListItemSchema
 
 const adminScoreSchema = z.object({
   date: z.string(),
-  overall: z.number(),
-  efficiency: z.number(),
-  profit: z.number(),
-  safety: z.number(),
-  consistency: z.number(),
+  algorithmVersion: z.literal(2),
+  overall: z.number().int().min(0).max(100).nullable(),
+  efficiency: z.number().int().min(0).max(100).nullable(),
+  profit: z.number().int().min(0).max(100).nullable(),
+  consistency: z.number().int().min(0).max(100).nullable(),
 }).passthrough()
 
 export const adminDriverDetailSchema = z.object({
@@ -205,7 +208,7 @@ export const adminDriverDetailSchema = z.object({
     year: z.number().int().nullable(),
     isActive: z.boolean(),
     fuelType: z.string(),
-    odometerMeters: z.union([z.string(), z.number()]),
+    odometerMeters: z.number().nullable(), odometerSource: z.nativeEnum(VehicleOdometerSource),
   }).passthrough()),
   driverApps: z.array(z.object({
     id: z.string(),
@@ -226,7 +229,8 @@ export const adminDriverDetailSchema = z.object({
   last30DaysAggregates: z.array(z.object({
     date: z.string(),
     tripCount: z.number().int(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
     netProfitPiastres: z.number(),
     totalKmMeters: z.number(),
   }).strict()),
@@ -234,21 +238,26 @@ export const adminDriverDetailSchema = z.object({
     areaId: z.string(),
     areaName: z.string(),
     tripCount: z.number().int(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
     netProfitPiastres: z.number(),
   }).strict()),
   appBreakdown: z.array(z.object({
     driverAppId: z.string(),
     appName: z.string(),
     tripCount: z.number().int(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
     netProfitPiastres: z.number(),
   }).strict()),
   totals: z.object({
+    tripCount: z.number().int().nonnegative().optional(),
     netProfitPiastres: z.number(),
-    grossPiastres: z.number(),
+    ...financialCoverageShape,
+    grossPiastres: z.number().nullable(),
     totalKmMeters: z.number(),
     fuelPiastres: z.number(),
+    maintenancePiastres: z.number().optional(), retainedMaintenanceEstimatePiastres: z.number().optional(),
     expensePiastres: z.number(),
   }).strict(),
 }).passthrough()
@@ -257,7 +266,9 @@ export const adminRecentTripSchema = z.object({
   id: z.string(),
   startedAt: z.string(),
   endedAt: z.string(),
-  grossPiastres: z.number().int(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable(),
+  earningsPiastres: z.number().int().nonnegative().nullable().optional(),
   totalKmMeters: z.number().int(),
   emptyKmMeters: z.number().int(),
   appName: z.string(),
@@ -265,6 +276,7 @@ export const adminRecentTripSchema = z.object({
 }).passthrough()
 
 export const adminTripListItemSchema = z.object({
+  ...tripRecordMetadataShape,
   id: z.string(),
   driverId: z.string(),
   driverPhone: z.string(),
@@ -275,10 +287,12 @@ export const adminTripListItemSchema = z.object({
   areaName: z.string().nullable(),
   startedAt: z.string(),
   endedAt: z.string(),
-  grossPiastres: z.number().int(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable(),
+  earningsPiastres: z.number().int().nonnegative().nullable().optional(),
   receivedPiastres: z.number().int().nullable(),
   tipPiastres: z.number().int(),
-  commissionPiastres: z.number().int(),
+  commissionPiastres: z.number().int().nullable(),
   tollPiastres: z.number().int(),
   parkingPiastres: z.number().int(),
   totalKmMeters: z.number().int(),
@@ -289,13 +303,16 @@ export const adminTripListItemSchema = z.object({
 export const adminTripsPageSchema = cursorPageSchema(adminTripListItemSchema)
 
 export const adminTripDetailSchema = z.object({
+  ...tripRecordMetadataShape,
   id: z.string(),
   startedAt: z.string(),
   endedAt: z.string(),
-  grossPiastres: z.number().int(),
+  ...financialCoverageShape,
+  grossPiastres: z.number().int().nullable(),
+  earningsPiastres: z.number().int().nonnegative().nullable().optional(),
   receivedPiastres: z.number().int().nullable(),
   tipPiastres: z.number().int(),
-  commissionPiastres: z.number().int(),
+  commissionPiastres: z.number().int().nullable(),
   tollPiastres: z.number().int(),
   parkingPiastres: z.number().int(),
   totalKmMeters: z.number().int(),
@@ -329,7 +346,7 @@ export const adminVehicleListItemSchema = z.object({
   year: z.number().int().nullable(),
   fuelType: z.string(),
   isActive: z.boolean(),
-  odometerMeters: z.number(),
+  odometerMeters: z.number().nullable(), odometerSource: z.nativeEnum(VehicleOdometerSource),
   driverId: z.string(),
   driverPhone: z.string(),
   driverDisplayName: z.string(),
@@ -421,7 +438,7 @@ registerOperation({
   successData: 'adminDriverDetailSchema',
   failureCodes: ['UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -493,7 +510,7 @@ registerOperation({
   successData: 'adminTripsPageSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN', 'ADMIN_PERMISSIONS_STALE'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: { mode: 'cursor', defaultSize: 25, maximumSize: 100, stableSort: ['startedAt:desc', 'id:desc'], exceptionOwner: null, exceptionReason: null },
   idempotency: null,
@@ -511,7 +528,7 @@ registerOperation({
   successData: 'adminTripDetailSchema',
   failureCodes: ['UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,
@@ -529,7 +546,7 @@ registerOperation({
   successData: 'adminVehiclesPageSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN', 'ADMIN_PERMISSIONS_STALE'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: { mode: 'cursor', defaultSize: 25, maximumSize: 100, stableSort: ['createdAt:desc', 'id:desc'], exceptionOwner: null, exceptionReason: null },
   idempotency: null,
@@ -547,7 +564,7 @@ registerOperation({
   successData: 'adminVehicleSchema',
   failureCodes: ['UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,

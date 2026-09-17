@@ -8,7 +8,7 @@ const meta = {
   requestId: 'request-id-00000001',
   serverTime: '2026-06-12T00:00:00.000Z',
   apiVersion: 'v1' as const,
-  contractVersion: '1.0.0',
+  contractVersion: '2.0.0',
 }
 
 describe('driver platform API', () => {
@@ -50,10 +50,10 @@ describe('driver platform API', () => {
         phone: '01000000000',
         locale: 'ar',
       },
-      meta: { ...meta, contractVersion: '2.0.0' },
+      meta: { ...meta, contractVersion: '1.0.0' },
     }
     expect(() => parseData(driverProfileSchema, body, 'driver.profile.get'))
-      .toThrowError('Unsupported contract version 2.0.0')
+      .toThrowError('Unsupported contract version 1.0.0')
     expect(shouldRetry(new PlatformError(
       'CONTRACT_VERSION_MISMATCH',
       502,
@@ -95,6 +95,54 @@ describe('driver platform API', () => {
       config: {},
     }
 
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry VALIDATION_ERROR even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 400, headers: {}, data: { error: { code: 'VALIDATION_ERROR', message: 'bad input' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'bad request',
+      config: {},
+    }
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry UNAUTHENTICATED even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 401, headers: {}, data: { error: { code: 'UNAUTHENTICATED', message: 'unauthorized' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'unauthorized',
+      config: {},
+    }
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry CONFLICT even when status is retryable', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 409, headers: {}, data: { error: { code: 'CONFLICT', message: 'duplicate' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'conflict',
+      config: {},
+    }
+    expect(shouldRetry(error, 0)).toBe(false)
+  })
+
+  it('does not retry contract-mismatch at the error level', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 502, headers: {}, data: { error: { code: 'CONTRACT_VERSION_MISMATCH', message: 'bad version' }, meta } },
+      toJSON: () => ({}),
+      name: 'AxiosError',
+      message: 'bad gateway',
+      config: {},
+    }
     expect(shouldRetry(error, 0)).toBe(false)
   })
 })

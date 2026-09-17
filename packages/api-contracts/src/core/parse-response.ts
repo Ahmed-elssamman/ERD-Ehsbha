@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ResponseMetaSchema, SuccessEnvelopeSchema } from './envelope'
 import { FailureEnvelopeSchema, normalizeErrorCode, getErrorDefinition } from './errors'
-import { isSupportedMajorVersion } from './version'
+import { isSupportedMajorVersion, SUPPORTED_MAJOR_VERSION } from './version'
 import type { FieldIssue } from './errors'
 
 export interface ParsedSuccess<T> {
@@ -45,7 +45,7 @@ export function parseSuccessResponse<S extends z.ZodTypeAny>(
       kind: 'contract-mismatch',
       meta: metaResult.success ? metaResult.data : null,
       receivedVersion: contractVersion,
-      expectedMajor: 1,
+      expectedMajor: SUPPORTED_MAJOR_VERSION,
     }
   }
 
@@ -77,7 +77,7 @@ export function parseFailureResponse(body: unknown): ParseResult<never> {
       kind: 'contract-mismatch',
       meta: metaResult.data,
       receivedVersion: metaResult.data.contractVersion,
-      expectedMajor: 1,
+      expectedMajor: SUPPORTED_MAJOR_VERSION,
     }
   }
   const result = FailureEnvelopeSchema.safeParse(body)

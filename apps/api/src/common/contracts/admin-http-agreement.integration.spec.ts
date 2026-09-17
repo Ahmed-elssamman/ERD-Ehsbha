@@ -57,7 +57,12 @@ describe('Admin HTTP Agreement', () => {
     }),
     get: jest.fn((id: string) => {
       if (id === 'explode') {
-        throw new Error('password=secret-token stack=/private/source.ts');
+        throw new Error('password=test-private-token stack=/private/source.ts');
+      }
+      if (id === 'db-down') {
+        throw new Error(
+          "Can't reach database server at `ep-noisy-butterfly-apzsufbp-pooler.c-7.us-east-1.aws.neon.tech:5432`",
+        );
       }
       return { id };
     }),
@@ -80,7 +85,7 @@ describe('Admin HTTP Agreement', () => {
           useValue: {
             list: jest.fn().mockResolvedValue({
               items: [{
-                id: 'trip-1',
+                id: 'trip-1', version: 1, source: 'MANUAL',
                 driverId: 'driver-1',
                 driverPhone: '+201012345678',
                 driverDisplayName: 'Driver',
@@ -239,8 +244,22 @@ describe('Admin HTTP Agreement', () => {
     expect(FailureEnvelopeSchema.safeParse(response.body).success).toBe(true);
     expect(response.body.error.code).toBe('INTERNAL_ERROR');
     expect(serialized).not.toContain('password');
-    expect(serialized).not.toContain('secret-token');
+    expect(serialized).not.toContain('test-private-token');
     expect(serialized).not.toContain('/private/source.ts');
+  });
+
+  it('maps transient database connectivity failures to governed service unavailable errors', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`${API_PREFIX}/admin/users/db-down`)
+      .expect(503);
+    const serialized = JSON.stringify(response.body).toLowerCase();
+
+    expect(FailureEnvelopeSchema.safeParse(response.body).success).toBe(true);
+    expect(response.body.error.code).toBe('SERVICE_UNAVAILABLE');
+    expect(response.body.error.message).toBe('Database temporarily unavailable');
+    expect(response.headers['retry-after']).toBe('2');
+    expect(serialized).not.toContain('ep-noisy-butterfly');
+    expect(serialized).not.toContain('us-east-1');
   });
 
   it('isolates request IDs between real admin and driver controllers', async () => {

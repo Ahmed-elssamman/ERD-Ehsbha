@@ -10,6 +10,7 @@ import { useAdminAuth } from '@/stores/admin-auth.store';
 import { cn } from '@/lib/utils';
 import { parseData } from '@/features/platform-api';
 import { readApiError } from '@/lib/api-error';
+import type { AdminSession } from '@/stores/admin-auth.store';
 
 type Form = AdminAuthContract.AdminLoginRequest;
 
@@ -37,9 +38,9 @@ export function LoginPage() {
     },
     onSuccess: (res) => {
       if (res.mfaRequired) {
-        setMfaChallengeId(res.challengeId);
+        setMfaChallengeId(res.challengeId ?? null);
       } else {
-        setSession(res);
+        setSession(res as AdminSession);
         const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
         navigate(from ?? '/', { replace: true });
       }
@@ -59,12 +60,12 @@ export function LoginPage() {
       return parseData(
         AdminAuthContract.AdminLoginResponseSchema,
         response.data,
-        'admin.auth.mfa-verify',
+        'admin.auth.mfa.verify',
       );
     },
     onSuccess: (res) => {
       if (!res.mfaRequired) {
-        setSession(res);
+        setSession(res as AdminSession);
         navigate('/', { replace: true });
       }
     },

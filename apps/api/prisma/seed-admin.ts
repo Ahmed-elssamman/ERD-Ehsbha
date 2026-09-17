@@ -11,8 +11,10 @@
  */
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { createPrismaClientOptions } from '../src/prisma/client-options';
+import { isPrismaConnectivityError, summarizePrismaConnectivityError } from '../src/prisma/prisma-errors';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(createPrismaClientOptions());
 
 const PERMISSIONS: Array<{ scope: string; action: string; description?: string }> = [
   { scope: 'dashboard', action: 'read' },
@@ -216,7 +218,31 @@ async function main(): Promise<void> {
   console.log('[admin-seed] Done.');
 }
 
-main()
+async function runWithConnectivityRetry<T>(work: () => Promise<T>): Promise<T> {
+  const retryDelays = [1500, 3000, 5000];
+
+  for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+    try {
+      await prisma.$connect();
+      return await work();
+    } catch (error) {
+      if (!isPrismaConnectivityError(error) || attempt === retryDelays.length) {
+        throw error;
+      }
+
+      const delay = retryDelays[attempt];
+      console.warn(
+        `[admin-seed] Prisma connectivity issue (${summarizePrismaConnectivityError(error)}). Retrying in ${delay}ms...`,
+      );
+      await prisma.$disconnect().catch(() => undefined);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw new Error('Admin seed retry unexpectedly exhausted');
+}
+
+runWithConnectivityRetry(main)
   .catch((err) => {
     console.error('[admin-seed] Failed:', err);
     process.exit(1);

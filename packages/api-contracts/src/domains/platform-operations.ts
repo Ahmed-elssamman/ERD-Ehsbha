@@ -12,39 +12,9 @@ export const readinessSchema = z.object({
   checks: z.record(z.boolean()).optional(),
 }).passthrough()
 
-export const PullSchema = z.object({
-  cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
-}).strict()
+export * from './sync-pull'
 
-export const syncMutationSchema = z.object({
-  clientMutationId: z.string().min(8).max(64),
-  kind: z.enum(['trip.create', 'fuel.create', 'expense.create', 'session.start', 'session.end']),
-  payload: z.record(z.unknown()),
-}).strict()
-
-export const PushSchema = z.object({
-  mutations: z.array(syncMutationSchema).min(1).max(50),
-}).strict()
-
-export const syncPullResponseSchema = z.object({
-  cursor: z.string(),
-  entities: z.record(z.unknown()),
-}).passthrough()
-
-export const syncMutationResultSchema = z.object({
-  clientMutationId: z.string(),
-  status: z.enum(['APPLIED', 'VALIDATION_ERROR', 'CONFLICT', 'INTERNAL_ERROR']),
-  data: z.unknown().optional(),
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-  }).passthrough().optional(),
-}).passthrough()
-
-export const syncPushResponseSchema = z.object({
-  results: z.array(syncMutationResultSchema),
-}).passthrough()
+export * from './sync-push'
 
 const producer = [{ application: 'api', role: 'producer', migrationStatus: 'shared', owner: 'platform' }] as const
 
@@ -93,11 +63,11 @@ registerOperation({
   lifecycle: 'active',
   request: { body: 'PullSchema' },
   successData: 'syncPullResponseSchema',
-  failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED'],
+  failureCodes: ['VALIDATION_ERROR', 'INVALID_CURSOR', 'UNAUTHENTICATED'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
-  pagination: null,
+  pagination: { mode: 'cursor', defaultSize: 25, maximumSize: 100, stableSort: ['family', 'id ASC'], filterBinding: true, emptyPageBehavior: 'Continue until nextCursor is null, including empty families', exceptionOwner: null, exceptionReason: null },
   idempotency: null,
   followUp: null,
 })
@@ -113,7 +83,7 @@ registerOperation({
   successData: 'syncPushResponseSchema',
   failureCodes: ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'CONFLICT'],
   consumers: [...producer],
-  compatibility: 'additive-compatible',
+  compatibility: 'incompatible',
   owner: 'platform',
   pagination: null,
   idempotency: null,

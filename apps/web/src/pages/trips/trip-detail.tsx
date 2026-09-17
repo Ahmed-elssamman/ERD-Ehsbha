@@ -1,17 +1,21 @@
+import { tripEarningsPiastres } from '@ehsbha/shared-types';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ConfirmDialog } from '@/components/ui/dialog';
+import { TripStatusDialog } from './trip-status-dialog';
+import { TripHistory } from './trip-history';
 import { PageHeader } from '@/components/ui/page-header';
 import { useI18n } from '@/i18n';
-import { TripsApi } from '@/lib/api/endpoints';
+import { TripsApi, type TripItem } from '@/lib/api/endpoints';
 import { formatDate, formatKm, formatMoney, formatTime } from '@/lib/format';
 import { durationMinutes } from '@/lib/time';
+import { TRIP_QUERY_KEYS } from './trip-draft.control';
 import { TripForm } from './trip-form';
+import { OCR_PAYMENT_OPTIONS } from '@/components/ocr/ocr-review.control';
 
 export function TripDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
@@ -19,24 +23,21 @@ export function TripDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
-  const [confirm, setConfirm] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<TripItem | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  const { data: trip, isLoading } = useQuery({
+  const { data: trip, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['trip', id],
     queryFn: () => TripsApi.get(id),
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
-  const removeMut = useMutation({
-    mutationFn: () => TripsApi.remove(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['trips'] });
-      qc.invalidateQueries({ queryKey: ['analytics'] });
-      qc.invalidateQueries({ queryKey: ['decisions'] });
-      qc.invalidateQueries({ queryKey: ['score'] });
-      navigate('/trips', { replace: true });
-    },
-  });
+  function statusSaved() {
+    setStatusTarget(null);
+    for (const key of TRIP_QUERY_KEYS) void qc.invalidateQueries({ queryKey: [key] });
+  }
 
   if (isLoading) {
     return (
@@ -49,7 +50,8 @@ export function TripDetailPage() {
   if (!trip) {
     return (
       <div className="space-y-4 animate-fade-in">
-        <PageHeader title={t('errors.TRIP_NOT_FOUND')} />
+        <PageHeader title={t(isError ? 'trips.loadFailed' : 'errors.TRIP_NOT_FOUND')} />
+        <Button onClick={() => void refetch()}>{t('common.retry')}</Button>
         <Button onClick={() => navigate('/trips')} className="gap-2">
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
           {t('trips.back')}
@@ -58,8 +60,9 @@ export function TripDetailPage() {
     );
   }
 
-  const net = trip.grossPiastres + trip.tipPiastres - trip.commissionPiastres;
+  const net = tripEarningsPiastres(trip);
   const duration = durationMinutes(trip.startedAt, trip.endedAt);
+  const paymentLabelKey = OCR_PAYMENT_OPTIONS.find((option) => option.value === trip.paymentMethod)?.labelKey ?? 'trips.ocr.paymentUnknown';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -74,21 +77,24 @@ export function TripDetailPage() {
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={() => setEditing(true)} className="gap-2">
+              <Button disabled={isFetching || !!trip.deletedAt} variant="outline" onClick={() => setEditing(true)} className="gap-2">
                 <Edit2 className="h-4 w-4" aria-hidden />
                 {t('common.edit')}
               </Button>
-              <Button variant="destructive" onClick={() => setConfirm(true)} className="gap-2">
+              <Button disabled={isFetching} variant="destructive" onClick={() => setStatusTarget(trip)} className="gap-2">
                 <Trash2 className="h-4 w-4" aria-hidden />
-                {t('common.delete')}
+                {t(trip.deletedAt ? 'trips.restore' : 'common.delete')}
               </Button>
+              <Button variant="outline" onClick={() => setHistoryOpen(true)}>{t('trips.history')}</Button>
             </>
           )
         }
       />
 
+      <p className="text-sm text-muted-foreground">{t(`trips.source.${trip.source}`)} · {t('trips.version')} {trip.version} · {t(trip.deletedAt ? 'trips.view.deleted' : 'trips.view.active')}</p>
       {!editing ? (
         <>
+          {trip.grossPiastres === null ? <p role="status" className="rounded-lg border p-3 text-sm text-muted-foreground">{t('trips.finance.missingDetails')}</p> : null}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label={t('trips.tripGross')} value={formatMoney(trip.grossPiastres, locale)} />
             <Stat label={t('trips.tripCommission')} value={formatMoney(trip.commissionPiastres, locale)} />
@@ -108,6 +114,15 @@ export function TripDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {trip.pickup || trip.destination || trip.paymentMethod || trip.waitingFeePiastres != null ? <Card>
+            <CardContent className="grid gap-3 p-4 sm:grid-cols-2">
+              {trip.pickup ? <KV label={t('trips.ocr.fieldPickup')} value={trip.pickup} /> : null}
+              {trip.destination ? <KV label={t('trips.ocr.fieldDestination')} value={trip.destination} /> : null}
+              <KV label={t('trips.ocr.fieldPayment')} value={t(paymentLabelKey)} />
+              {trip.waitingFeePiastres != null ? <KV label={t('trips.ocr.waitingFee')} value={formatMoney(trip.waitingFeePiastres, locale)} /> : null}
+            </CardContent>
+          </Card> : null}
 
           {trip.notes ? (
             <Card>
@@ -131,22 +146,13 @@ export function TripDetailPage() {
       ) : (
         <Card>
           <CardContent className="p-5 sm:p-6">
-            <TripForm trip={trip} onDone={() => setEditing(false)} />
+            <TripForm trip={trip} onDone={() => setEditing(false)} onClose={() => setEditing(false)} />
           </CardContent>
         </Card>
       )}
 
-      <ConfirmDialog
-        open={confirm}
-        onClose={() => setConfirm(false)}
-        onConfirm={() => removeMut.mutate()}
-        title={t('common.confirmDelete')}
-        body={t('common.confirmDeleteBody')}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        destructive
-        loading={removeMut.isPending}
-      />
+      {statusTarget ? <TripStatusDialog record={statusTarget} onClose={() => setStatusTarget(null)} onSaved={statusSaved} /> : null}
+      {historyOpen ? <TripHistory record={trip} onClose={() => setHistoryOpen(false)} /> : null}
     </div>
   );
 }

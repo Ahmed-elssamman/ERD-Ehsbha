@@ -15,6 +15,15 @@ import { MultiScreenshotMerger } from './merge/multi-screenshot.merger';
 import { MultiTripSplitter } from './merge/multi-trip.splitter';
 import { ConfidenceScorer } from './confidence/scorer';
 import { TripValidator } from './validation/trip-validator';
+import { OcrRecognitionProvider } from './ocr-recognition.provider';
+import { OcrWorkLimiter } from './ocr-work-limiter';
+import { OcrAdmissionGuard } from './ocr-admission.guard';
+import { OcrImportController } from './imports/ocr-import.controller';
+import { OcrImportStore } from './imports/ocr-import-store.service';
+import { OcrImportWorker } from './imports/ocr-import.worker';
+import { OcrImportUploadGuard } from './imports/ocr-import-upload.guard';
+import { OcrConfirmationService } from './imports/ocr-confirmation.service';
+import { TripsModule } from '../trips/trips.module';
 
 /**
  * OCR feature module — Azure AI Vision-backed pipeline.
@@ -33,13 +42,21 @@ import { TripValidator } from './validation/trip-validator';
  *   - TripValidator:                  sanity-check parsed values
  */
 @Module({
-  controllers: [OcrController],
+  imports: [TripsModule],
+  controllers: [OcrController, OcrImportController],
   providers: [
     OcrService,
+    OcrImportStore,
+    OcrConfirmationService,
+    OcrImportWorker,
+    OcrImportUploadGuard,
     SharpProcessor,
     AzureVisionClient,
     AzureDocumentIntelligenceClient,
     AzureVisionProvider,
+    { provide: OcrRecognitionProvider, useExisting: AzureVisionProvider },
+    OcrWorkLimiter,
+    OcrAdmissionGuard,
     PlatformDetector,
     SemanticNormalizer,
     UberParser,

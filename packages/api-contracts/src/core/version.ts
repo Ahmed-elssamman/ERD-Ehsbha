@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 export const API_VERSION = 'v1' as const
-export const CONTRACT_VERSION = '1.0.0' as const
-export const SUPPORTED_MAJOR_VERSION = 1
+export const CONTRACT_VERSION = '2.0.0' as const
+export const SUPPORTED_MAJOR_VERSION = 2
 
 const SEMVER_REGEX = /^(\d+)\.(\d+)\.(\d+)$/
 

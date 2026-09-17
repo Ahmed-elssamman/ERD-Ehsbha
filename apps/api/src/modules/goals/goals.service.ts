@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
 import { startOfUtcDay } from '../../common/utils/date';
+import { businessDate } from '@ehsbha/shared-types';
+import { AggregatesService } from '../aggregates/aggregates.service';
 // Shared goal schemas available via @ehsbha/api-contracts (goalSchema)
 
 const PeriodEnum = z.enum(['DAILY', 'WEEKLY', 'MONTHLY']);
@@ -21,7 +23,7 @@ export type UpdateGoalDto = z.infer<typeof UpdateGoalSchema>;
 
 @Injectable()
 export class GoalsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private aggregates: AggregatesService) {}
 
   list(driverId: string) {
     return this.prisma.goal.findMany({
@@ -55,6 +57,7 @@ export class GoalsService {
   }
 
   async progress(driverId: string, id: string) {
+    await this.aggregates.ensureCalendar(driverId);
     const goal = await this.prisma.goal.findFirst({ where: { id, driverId } });
     if (!goal) throw new NotFoundException({ code: 'GOAL_NOT_FOUND' });
 
@@ -65,7 +68,7 @@ export class GoalsService {
       orderBy: { date: 'asc' },
     });
     const totalNet = rows.reduce((s, r) => s + Number(r.netProfitPiastres), 0);
-    const today = startOfUtcDay(new Date());
+    const today = businessDate(new Date());
     const elapsedDays = Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86_400_000) + 1);
     const totalDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1);
     const forecast = Math.round((totalNet * totalDays) / elapsedDays);

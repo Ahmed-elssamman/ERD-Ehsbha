@@ -1,43 +1,48 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../../app.module';
+import { HealthController } from './health.controller';
 import { PrismaService } from '../../prisma/prisma.service';
 import request from 'supertest';
 
 const API_PREFIX = '/api/v1';
 const { checkEnvironment } = require('../../../../../scripts/verification/lib/environment-safety.cjs') as {
-  checkEnvironment: (env: Record<string, string | undefined>) => { safe: boolean };
+  checkEnvironment: (env: NodeJS.ProcessEnv) => { safe: boolean };
 };
 
-describe('Health Integration (database safety)', () => {
+describe('Health HTTP boundary and database safety', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  const database = { $queryRaw: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      controllers: [HealthController],
+      providers: [{ provide: PrismaService, useValue: database }],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix(API_PREFIX);
     await app.init();
-    prisma = app.get(PrismaService);
   });
 
   afterAll(async () => {
     await app.close();
   });
 
+  beforeEach(() => {
+    database.$queryRaw.mockReset();
+    database.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+  });
+
   it('rejects unsafe database names via shared safety guard', async () => {
     const safe1 = checkEnvironment({
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://user:pass@localhost:5432/ehsbha_test_valid',
+      DATABASE_URL: 'postgresql://user:pass@ep-health-safe-pooler.c-7.us-east-1.aws.neon.tech/ehsbha_test_valid?sslmode=require',
     });
     expect(safe1.safe).toBe(true);
 
     const safe2 = checkEnvironment({
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://user:pass@localhost:5432/production_db',
+      DATABASE_URL: 'postgresql://user:pass@ep-health-safe-pooler.c-7.us-east-1.aws.neon.tech/production_db?sslmode=require',
     });
     expect(safe2.safe).toBe(false);
   });
@@ -51,7 +56,7 @@ describe('Health Integration (database safety)', () => {
 
     const safe3 = checkEnvironment({
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://user:pass@localhost:5432/ehsbha_test_valid',
+      DATABASE_URL: 'postgresql://user:pass@ep-health-safe-pooler.c-7.us-east-1.aws.neon.tech/ehsbha_test_valid?sslmode=require',
     });
     expect(safe3.safe).toBe(true);
   });
@@ -75,7 +80,7 @@ describe('Health Integration (database safety)', () => {
   });
 
   it('GET /api/v1/ready returns not-ready when database is down', async () => {
-    jest.spyOn(prisma, '$queryRaw').mockRejectedValueOnce(new Error('DB down'));
+    database.$queryRaw.mockRejectedValueOnce(new Error('DB down'));
 
     const res = await request(app.getHttpServer())
       .get(`${API_PREFIX}/ready`)

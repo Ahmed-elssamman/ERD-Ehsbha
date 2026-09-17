@@ -412,20 +412,28 @@ npm ci
 # 2. configure API env (DO NOT overwrite an existing .env)
 cd apps/api
 [ -f .env ] || cp .env.example .env
-# Then open apps/api/.env and set DATABASE_URL + JWT_ACCESS_SECRET + JWT_REFRESH_SECRET.
-# For Neon: console.neon.tech → project → "Connection string" → "psql" tab.
+# Local development uses Neon directly. No Docker PostgreSQL container is required.
+# Then open apps/api/.env and set:
+#   - DATABASE_URL  = Neon pooled connection (-pooler host) for runtime, tests, and seeds
+#   - DIRECT_URL    = Neon direct connection (non-pooler host) for Prisma CLI
+#   - JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
+#   - ADMIN_JWT_ACCESS_SECRET / ADMIN_JWT_REFRESH_SECRET
+# For Neon: console.neon.tech → project → "Connection string" tab.
+# Add connect_timeout=15 to both URLs to reduce cold-start P1001 failures.
+# The API and seed scripts use the official Neon Prisma adapter against DATABASE_URL.
+# Prisma CLI tools (migrate / Studio) keep using DIRECT_URL.
 # For OCR: set AZURE_VISION_ENDPOINT + AZURE_VISION_KEY (multi-service AI resource).
 
 # 3. Prisma client (required on first install and after schema changes)
 cd ../..
-npm run api:prisma:generate
+npm run prisma:generate
 
 # 4. (fresh database only) migrate + seed
 cd apps/api
 npx prisma migrate status        # if "up to date" → skip the next line
+cd ../..
 npm run prisma:migrate
 npm run seed                     # creates demo driver + 30 days of data (idempotent)
-cd ../..
 ```
 
 ### Run
@@ -614,8 +622,8 @@ A smoke script (`apps/api/scripts/smoke.ts`) exercises every endpoint plus auth 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Site loads but login fails (DevTools: `ERR_CONNECTION_REFUSED localhost:4000`) | API isn't running | `npm run api:dev` |
-| `Prisma` errors on API start | Generated client missing | `npm run api:prisma:generate` |
-| `P1000` / "trying localhost:5432" | `DATABASE_URL` is the placeholder | Set the real Postgres URL in `apps/api/.env` |
+| `Prisma` errors on API start | Generated client missing | `npm run prisma:generate` |
+| `P1000` / `P1001` during Prisma commands | `DATABASE_URL` / `DIRECT_URL` still point at placeholders, or Neon is cold | Set the real Neon pooled/direct URLs in `apps/api/.env`; keep `connect_timeout=15` |
 | First login is slow (~5 s) | Neon free-tier DB sleeping | One-time wake-up; later requests are fast |
 | `OCR_AUTH` on extract | `AZURE_VISION_KEY` is missing or rotated | Update `apps/api/.env`, restart API |
 | `OCR_NO_PLATFORM` error in the upload dialog | The driver hasn't picked an app | Pick Uber / inDrive / DiDi / Careem; the Extract button enables |
