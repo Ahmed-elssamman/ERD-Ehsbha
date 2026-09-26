@@ -19,7 +19,7 @@ export class ChartErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // eslint-disable-next-line no-console
+
     console.error('[chart-error]', error, info.componentStack);
   }
 

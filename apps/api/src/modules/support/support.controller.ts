@@ -15,6 +15,10 @@ import {
 export class SupportController {
   constructor(private readonly svc: SupportService) {}
 
+  /**
+   * Paginated list of the current user's support tickets.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get()
   list(
     @CurrentUser() user: AuthUser,

@@ -2,7 +2,7 @@
 
 **Ehsbha Admin Platform — Official Architectural Blueprint**
 
-> Status: Blueprint (not yet implemented). This document is the single source of truth for building a SaaS-grade admin platform on top of the existing Ehsbha driver platform. No code or schema changes have been made to the existing system; everything below is a forward-looking design.
+> Status: Implemented (Phase 0). Major capabilities are labeled `Implemented`, `Partial`, or `Planned` based on current source evidence. The monorepo structure (`apps/{web,admin,api}` + `packages/*`) is in place.
 
 > **Binding architectural decision (recorded 2026-05-29):** The Admin Dashboard is a **completely separate frontend application** from the user-facing web app. It is **not** a route-isolated section of the existing `web/` app. The monorepo is reorganized to `/apps/{web,admin,api}` with shared code lifted into `/packages/*`. See "Monorepo Architecture" section below for the locked-in structure.
 
@@ -128,7 +128,7 @@ This blueprint extends the existing platform; understanding the current state ma
 - **Web**: React 19 + Vite + TypeScript + Tailwind + Radix UI + React Query + Zustand + React Router 7 + Recharts. Currently a **driver-facing** PWA. There is no admin web app yet.
 - **Mobile**: Not present in this repo at the time of writing; future scope.
 - **Auth**: JWT (access + refresh) via passport-jwt. JWT payload carries `{ sub, phone, driverId }` — **no `role` field exists**.
-- **OCR**: Azure AI Vision (Computer Vision Read 4.0). Per [memory/azure-ocr-resource.md], Document Intelligence is disabled. OCR runs synchronously per request; no per-request persistence today.
+- **OCR**: Google Gemini structured extraction behind the recognition provider interface. Driver-owned import jobs persist recovery and confirmation evidence; see `docs/product/ocr-import-recovery.md`.
 
 **Existing Prisma models (driver-facing)**
 - Identity: `User`, `RefreshToken`, `DeviceToken`, `PasswordResetToken`
@@ -667,7 +667,7 @@ A new `AdminAlert` table (Step 15) captures platform events that need admin awar
 | Code | Trigger | Severity |
 |---|---|---|
 | `OCR_ACCURACY_DROP` | OCR success rate over last 1h < threshold (e.g., 85%). | High |
-| `OCR_AZURE_ERROR_SPIKE` | Azure error rate > 5% in 15m. | High |
+| `OCR_PROVIDER_ERROR_SPIKE` | OCR provider error rate > 5% in 15m. | High |
 | `USER_GROWTH_SPIKE` | New signups in last 1h > 3× moving avg. | Info |
 | `USER_DROPOFF` | DAU drops >20% week-over-week. | High |
 | `UNUSUAL_USER_ACTIVITY` | Single user > N trips/min OR > N logins/min. | Medium |
@@ -829,7 +829,7 @@ A real-time monitoring view scoped to **what the admin can act on**, distinct fr
 - Index hit rate (cache).
 
 #### OCR Service Health
-- Azure Vision availability (last 100 calls).
+- Gemini availability (last 100 calls).
 - Per-platform parser success rates.
 - Mean/median confidence.
 - Image processing latency (`sharp` step).
@@ -844,7 +844,7 @@ A real-time monitoring view scoped to **what the admin can act on**, distinct fr
 - Backup status (last backup timestamp + size).
 
 ### Data Source
-- Backend exports a `/admin/health/snapshot` endpoint that aggregates from: Prisma metrics, NestJS instrumentation, Azure Vision client telemetry, scheduled job heartbeat table (new — Step 15).
+- Backend exports a `/admin/health/snapshot` endpoint that aggregates from: Prisma metrics, NestJS instrumentation, Gemini client telemetry, scheduled job heartbeat table (new — Step 15).
 - Refresh: 30s polling (or SSE in Phase 3).
 
 ### Alerting
@@ -1002,7 +1002,7 @@ ocr_extraction_log
   status             text   // 'success' | 'partial' | 'failure'
   failure_reason     text nullable
   duration_ms        int
-  azure_duration_ms  int nullable
+  provider_duration_ms  int nullable
   user_accepted      boolean nullable   // updated post-acceptance
   created_at         timestamptz default now()
 ```
@@ -1288,7 +1288,7 @@ All require `roles.manage`.
 ### Table Systems
 - **Single primary table component** with: cursor pagination, server-side sort, server-side filter, column visibility toggle, sticky header, density toggle (comfy / compact), row click → detail, bulk select (where allowed), CSV export button.
 - **Empty state**: clear copy + a primary action (e.g., "No tickets in this view — change the filter").
-- **Loading state**: skeleton rows (reuse `web/components/ui/skeleton`).
+- **Loading state**: skeleton rows (reuse from `apps/web/src/components/ui/skeleton`).
 - **Error state**: inline retry + link to status page.
 
 ### Filter Systems

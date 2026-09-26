@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
@@ -37,6 +37,10 @@ export class ReviewsController {
     return this.svc.summary();
   }
 
+  /**
+   * Paginated list of platform reviews.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get()
   list(@Query(new ZodValidationPipe(ListReviewsSchema)) q: ListReviewsDto) {
     return this.svc.list(q);

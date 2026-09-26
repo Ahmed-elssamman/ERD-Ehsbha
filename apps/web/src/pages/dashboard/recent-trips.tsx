@@ -1,3 +1,4 @@
+import { tripEarningsPiastres } from '@ehsbha/shared-types';
 import { Link } from 'react-router-dom';
 import { Route, ChevronRight, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -13,7 +14,7 @@ interface Props {
 }
 
 function tripNet(t: TripItem): number {
-  return t.grossPiastres + t.tipPiastres - t.commissionPiastres;
+  return tripEarningsPiastres(t);
 }
 
 export function RecentTrips({ items, loading }: Props) {

@@ -61,7 +61,7 @@ export class AdminMiscController {
     return {
       checks: {
         database: { ok: true, message: 'Postgres reachable' },
-        ocr: { ok: true, message: 'Azure Vision configured (see /admin/ocr/overview)' },
+        ocr: { ok: Boolean(process.env.GEMINI_API_KEY?.trim()), message: 'Gemini configuration presence only; provider availability is not probed' },
       },
       counts: {
         users,

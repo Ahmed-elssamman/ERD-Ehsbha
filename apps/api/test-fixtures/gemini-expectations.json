@@ -1,0 +1,366 @@
+{
+  "description": "Visible platform, trip count, passenger fare, driver income and collected cash, transcribed from the images. DiDi electronic payments are not cash. Null values are intentionally absent. Original parser goldens are retained separately.",
+  "images": [
+    {
+      "file": "didi/didi-AR-1.1.jpeg",
+      "platform": "didi",
+      "tripCount": 1,
+      "totalFares": [
+        24.4
+      ],
+      "netEarnings": [
+        20.96
+      ],
+      "cashCollected": [
+        20
+      ],
+      "representative": true,
+      "coverage": "DiDi cash receipt: top half with distance and driver income"
+    },
+    {
+      "file": "didi/didi-AR-1.jpeg",
+      "platform": "didi",
+      "tripCount": 1,
+      "totalFares": [
+        24.4
+      ],
+      "netEarnings": [
+        20.96
+      ],
+      "cashCollected": [
+        20
+      ],
+      "representative": true,
+      "coverage": "DiDi cash receipt: bottom half with commission, date and route"
+    },
+    {
+      "file": "didi/didi-AR-2.1.jpeg",
+      "platform": "didi",
+      "tripCount": 1,
+      "totalFares": [
+        23.82
+      ],
+      "netEarnings": [
+        20.51
+      ],
+      "cashCollected": [
+        null
+      ],
+      "representative": true,
+      "coverage": "DiDi electronic payment: passenger payment must not become cash"
+    },
+    {
+      "file": "didi/didi-AR-2.jpeg",
+      "platform": "didi",
+      "tripCount": 1,
+      "totalFares": [
+        23.82
+      ],
+      "netEarnings": [
+        null
+      ],
+      "cashCollected": [
+        null
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "didi/didi-AR-3.1.jpeg",
+      "platform": "didi",
+      "tripCount": 1,
+      "totalFares": [
+        34.72
+      ],
+      "netEarnings": [
+        29.87
+      ],
+      "cashCollected": [
+        35
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "didi/didi-AR-3.jpeg",
+      "platform": "didi",
+      "tripCount": 1,
+      "totalFares": [
+        34.72
+      ],
+      "netEarnings": [
+        29.87
+      ],
+      "cashCollected": [
+        35
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "didi/didi-AR-4.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        20
+      ],
+      "netEarnings": [
+        17
+      ],
+      "cashCollected": [
+        18
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "didi/didi-AR-5.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        37.85
+      ],
+      "netEarnings": [
+        32.17
+      ],
+      "cashCollected": [
+        34
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "didi/didi-AR-7.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        42.98
+      ],
+      "netEarnings": [
+        36.53
+      ],
+      "cashCollected": [
+        15
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "indrive/indervier-AR-1.jpeg",
+      "platform": "indrive",
+      "tripCount": 1,
+      "totalFares": [
+        65
+      ],
+      "netEarnings": [
+        56.97
+      ],
+      "cashCollected": [
+        65
+      ],
+      "representative": true,
+      "coverage": "InDrive Arabic digits, service fee plus VAT, and collected cash"
+    },
+    {
+      "file": "indrive/indervier-AR-2.jpeg",
+      "platform": "indrive",
+      "tripCount": 1,
+      "totalFares": [
+        35
+      ],
+      "netEarnings": [
+        30.68
+      ],
+      "cashCollected": [
+        35
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "indrive/indervier-AR-3.jpeg",
+      "platform": "indrive",
+      "tripCount": 1,
+      "totalFares": [
+        104
+      ],
+      "netEarnings": [
+        91.16
+      ],
+      "cashCollected": [
+        104
+      ],
+      "representative": true,
+      "coverage": "InDrive longer trip and larger fare"
+    },
+    {
+      "file": "indrive/indervier-AR-4.jpeg",
+      "platform": "indrive",
+      "tripCount": 1,
+      "totalFares": [
+        104
+      ],
+      "netEarnings": [
+        91.16
+      ],
+      "cashCollected": [
+        104
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "uber/uber-1Trip-AR-1.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        20
+      ],
+      "netEarnings": [
+        17
+      ],
+      "cashCollected": [
+        18
+      ],
+      "representative": true,
+      "coverage": "Uber complete fare, income, commission and differing cash collection"
+    },
+    {
+      "file": "uber/uber-1Trip-AR-2.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        37.85
+      ],
+      "netEarnings": [
+        32.17
+      ],
+      "cashCollected": [
+        34
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "uber/uber-1Trip-AR-3.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        42.98
+      ],
+      "netEarnings": [
+        36.53
+      ],
+      "cashCollected": [
+        15
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "uber/uber-1Trip-AR-4.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        42.98
+      ],
+      "netEarnings": [
+        36.53
+      ],
+      "cashCollected": [
+        15
+      ],
+      "representative": true,
+      "coverage": "Uber scrolled partial receipt with missing distance and duration"
+    },
+    {
+      "file": "uber/uber-1Trip-AR-5.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        31.81
+      ],
+      "netEarnings": [
+        27.04
+      ],
+      "cashCollected": [
+        28
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "uber/uber-1Trip-AR-6.jpeg",
+      "platform": "uber",
+      "tripCount": 1,
+      "totalFares": [
+        32.38
+      ],
+      "netEarnings": [
+        27.52
+      ],
+      "cashCollected": [
+        28
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "uber/uber-2-Trip-AR-1.jpeg",
+      "platform": "uber",
+      "tripCount": 2,
+      "totalFares": [
+        null,
+        null
+      ],
+      "netEarnings": [
+        19.7,
+        36.53
+      ],
+      "cashCollected": [
+        20,
+        15
+      ],
+      "representative": true,
+      "coverage": "Uber two-trip earnings summary with no visible year or gross fare"
+    },
+    {
+      "file": "uber/uber-2-Trip-AR-2.jpeg",
+      "platform": "uber",
+      "tripCount": 2,
+      "totalFares": [
+        null,
+        null
+      ],
+      "netEarnings": [
+        18.3,
+        18.27
+      ],
+      "cashCollected": [
+        22,
+        19
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    },
+    {
+      "file": "uber/uber-2-Trip-AR-3.jpeg",
+      "platform": "uber",
+      "tripCount": 2,
+      "totalFares": [
+        null,
+        null
+      ],
+      "netEarnings": [
+        27.04,
+        27.52
+      ],
+      "cashCollected": [
+        28,
+        28
+      ],
+      "representative": false,
+      "coverage": "Additional full-suite regression fixture"
+    }
+  ]
+}

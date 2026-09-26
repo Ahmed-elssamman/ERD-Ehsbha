@@ -17,7 +17,7 @@ export class SemanticNormalizer {
     s = s.replace(/ؤ/g, 'و');
     s = s.replace(/ئ/g, 'ي');
     // Fold Persian letter variants (different codepoints but identical glyphs)
-    // — Azure occasionally emits ک (U+06A9) / ی (U+06CC) for Arabic ك / ي.
+    // — text recognition occasionally emits ک (U+06A9) / ی (U+06CC) for Arabic ك / ي.
     s = s.replace(/ک/g, 'ك');
     s = s.replace(/ی/g, 'ي');
     s = s.toLowerCase();

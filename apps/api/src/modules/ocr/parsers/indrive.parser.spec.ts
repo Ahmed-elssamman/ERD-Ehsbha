@@ -11,9 +11,10 @@ describe('IndriveParser', () => {
     expect(r.fields.grossEgp).toBeCloseTo(45.0, 2);
   });
 
-  it('defaults commission to 0 with warning (ar)', () => {
+  it('leaves a missing commission empty and requests review (ar)', () => {
     const r = parser.parse(AR, []);
-    expect(r.fields.commissionEgp).toBe(0);
+    expect(r.fields.commissionEgp).toBeFalsy();
+    expect(r.fields).not.toHaveProperty('commissionEgp');
     expect(r.warnings).toContain('OCR_INDRIVE_NO_COMMISSION_LINE');
   });
 

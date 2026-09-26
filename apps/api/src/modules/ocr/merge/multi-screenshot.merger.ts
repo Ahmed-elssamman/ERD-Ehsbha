@@ -3,7 +3,7 @@ import { EMPTY_PARSED, OcrParsedTripDto, OcrPaymentMethod } from '../dto/ocr.dto
 import { RawParsed } from '../parsers/base.parser';
 
 const NUMERIC_FIELDS: Array<keyof OcrParsedTripDto> = [
-  'grossEgp', 'receivedEgp', 'tipEgp', 'commissionEgp', 'tollEgp', 'parkingEgp', 'waitingFeeEgp',
+  'grossEgp', 'earningsEgp', 'receivedEgp', 'tipEgp', 'commissionEgp', 'tollEgp', 'parkingEgp', 'waitingFeeEgp',
   'totalKm', 'paidKm', 'durationSec',
 ];
 

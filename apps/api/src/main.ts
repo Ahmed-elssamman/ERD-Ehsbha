@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { loadEnv } from './config/env';
 import { GlobalExceptionFilter } from './common/filters/exception.filter';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 
 (BigInt.prototype as unknown as { toJSON: () => number }).toJSON = function (this: bigint) {
   return Number(this);
@@ -31,15 +32,20 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
+  // Bootstrap order: request-context middleware (via AppModule.configure) →
+  // global prefix → body limits → CORS → exception filter → response interceptor
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.useGlobalInterceptors(new TransformResponseInterceptor());
+  app.useGlobalInterceptors(
+    new TransformResponseInterceptor(),
+    app.get(IdempotencyInterceptor),
+  );
 
   await app.listen(env.PORT);
   new Logger('Bootstrap').log(`Ehsbha API listening on http://localhost:${env.PORT}/api/v1`);
 }
 
 bootstrap().catch((err) => {
-  // eslint-disable-next-line no-console
+
   console.error('Fatal bootstrap error:', err);
   process.exit(1);
 });

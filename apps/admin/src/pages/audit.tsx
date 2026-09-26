@@ -14,7 +14,7 @@ interface Row {
   actorRole: string;
   action: string;
   targetType: string;
-  targetId: string;
+  targetId: string | null;
   reason: string | null;
   ip: string | null;
   occurredAt: string;
@@ -27,7 +27,7 @@ export function AuditPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'audit', { action }],
-    queryFn: () => auditApi.list({ action, limit: 100 }) as Promise<{ items: Row[] }>,
+    queryFn: () => auditApi.list({ action, limit: 100 }),
   });
 
   const columns: Column<Row>[] = [
@@ -44,7 +44,16 @@ export function AuditPage() {
       sortValue: (r) => r.actorEmail,
     },
     { key: 'action', header: t('audit.action'), cell: (r) => <Badge variant="default">{r.action}</Badge>, sortValue: (r) => r.action },
-    { key: 'target', header: t('audit.target'), cell: (r) => <span className="font-mono text-xs">{r.targetType}#{r.targetId.slice(-8)}</span>, sortValue: (r) => r.targetType },
+    {
+      key: 'target',
+      header: t('audit.target'),
+      cell: (r) => (
+        <span className="font-mono text-xs">
+          {r.targetType}{r.targetId ? `#${r.targetId.slice(-8)}` : ''}
+        </span>
+      ),
+      sortValue: (r) => r.targetType,
+    },
     { key: 'reason', header: t('common.reason'), cell: (r) => <span className="line-clamp-1 max-w-xs text-xs text-muted-foreground">{r.reason ?? '—'}</span> },
     { key: 'ip', header: t('audit.ip'), cell: (r) => <span className="font-mono text-xs text-muted-foreground">{r.ip ?? '—'}</span> },
   ];

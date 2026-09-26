@@ -38,9 +38,11 @@ import { AdminSettingsController } from './admin-settings.controller';
 import { AdminSettingsService } from './admin-settings.service';
 import { AdminBulkController } from './admin-bulk.controller';
 import { AdminBulkService } from './admin-bulk.service';
+import { AggregatesModule } from '../aggregates/aggregates.module';
 
 @Module({
   imports: [
+    AggregatesModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => {

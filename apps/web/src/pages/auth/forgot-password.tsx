@@ -67,11 +67,7 @@ export function ForgotPasswordPage() {
     setServerError(null);
     setSending(true);
     try {
-      const res = await AuthApi.forgotPassword({ phone: confirmedPhone });
-      if (res.devCode) {
-        // eslint-disable-next-line no-console
-        console.info(`[dev] reset code: ${res.devCode}`);
-      }
+      await AuthApi.forgotPassword({ phone: confirmedPhone });
       setInfo(t('auth.forgot.sent'));
       const params = new URLSearchParams({ phone: confirmedPhone });
       setTimeout(() => navigate(`/reset-password?${params.toString()}`, { replace: false }), 600);

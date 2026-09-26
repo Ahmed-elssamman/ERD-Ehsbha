@@ -4,19 +4,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 import { AnalyticsService } from './analytics.service';
-
-const DateSchema = z.object({ date: z.coerce.date().optional() });
-const WeekSchema = z.object({
-  isoYear: z.coerce.number().int(),
-  isoWeek: z.coerce.number().int().min(1).max(53),
-});
-const MonthSchema = z.object({
-  year: z.coerce.number().int(),
-  month: z.coerce.number().int().min(1).max(12),
-});
-const WindowSchema = z.object({
-  window: z.string().regex(/^\d+d$/).default('7d'),
-});
+import { businessDate, calendarDateValue } from '@ehsbha/shared-types';
+import { DateSchema, WeekSchema, MonthSchema, WindowSchema } from '@ehsbha/api-contracts';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
@@ -33,7 +22,7 @@ export class AnalyticsController {
     @CurrentDriverId() driverId: string,
     @Query(new ZodValidationPipe(DateSchema)) q: z.infer<typeof DateSchema>,
   ) {
-    return this.svc.daily(driverId, q.date ?? new Date());
+    return this.svc.daily(driverId, q.date ? calendarDateValue(q.date) : businessDate(new Date()));
   }
 
   @Get('weekly')

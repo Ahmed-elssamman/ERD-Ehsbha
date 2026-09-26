@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 import { VehiclesService } from './vehicles.service';
+import { vehicleResponse } from './vehicle-response.mapper';
 import {
   CreateVehicleDto,
   CreateVehicleSchema,
@@ -18,39 +19,39 @@ export class VehiclesController {
   constructor(private readonly svc: VehiclesService) {}
 
   @Get()
-  list(@CurrentDriverId() driverId: string) {
-    return this.svc.list(driverId);
+  async list(@CurrentDriverId() driverId: string) {
+    return (await this.svc.list(driverId)).map(vehicleResponse);
   }
 
   @Post()
-  create(
+  async create(
     @CurrentDriverId() driverId: string,
     @Body(new ZodValidationPipe(CreateVehicleSchema)) dto: CreateVehicleDto,
   ) {
-    return this.svc.create(driverId, dto);
+    return vehicleResponse(await this.svc.create(driverId, dto));
   }
 
   @Get(':id')
-  get(@CurrentDriverId() driverId: string, @Param('id') id: string) {
-    return this.svc.get(driverId, id);
+  async get(@CurrentDriverId() driverId: string, @Param('id') id: string) {
+    return vehicleResponse(await this.svc.get(driverId, id));
   }
 
   @Patch(':id')
-  update(
+  async update(
     @CurrentDriverId() driverId: string,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateVehicleSchema)) dto: UpdateVehicleDto,
   ) {
-    return this.svc.update(driverId, id, dto);
+    return vehicleResponse(await this.svc.update(driverId, id, dto));
   }
 
   @Patch(':id/costs')
-  updateCosts(
+  async updateCosts(
     @CurrentDriverId() driverId: string,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateVehicleCostsSchema)) dto: UpdateVehicleCostsDto,
   ) {
-    return this.svc.updateCosts(driverId, id, dto);
+    return vehicleResponse(await this.svc.updateCosts(driverId, id, dto));
   }
 
   @Get(':id/cost-summary')

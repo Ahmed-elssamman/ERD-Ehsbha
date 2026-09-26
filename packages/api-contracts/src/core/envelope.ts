@@ -1,0 +1,38 @@
+import { z } from 'zod'
+import { API_VERSION, CONTRACT_VERSION } from './version'
+
+export const ResponseMetaSchema = z.object({
+  requestId: z.string().min(16).max(128),
+  serverTime: z.string().datetime({ offset: true }),
+  apiVersion: z.literal('v1'),
+  contractVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+}).passthrough()
+
+export type ResponseMeta = z.infer<typeof ResponseMetaSchema>
+
+export function createSuccessMeta(requestId: string): ResponseMeta {
+  return {
+    requestId,
+    serverTime: new Date().toISOString(),
+    apiVersion: API_VERSION,
+    contractVersion: CONTRACT_VERSION,
+  }
+}
+
+export const SuccessEnvelopeSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
+  z.object({
+    data: dataSchema,
+    meta: ResponseMetaSchema,
+  }).passthrough()
+
+export const EmptySuccessDataSchema = z.object({
+  ok: z.literal(true),
+}).passthrough()
+
+export type EmptySuccessData = z.infer<typeof EmptySuccessDataSchema>
+
+export const RESPONSE_HEADERS = {
+  REQUEST_ID: 'X-Request-Id',
+  API_VERSION: 'X-Api-Version',
+  CONTRACT_VERSION: 'X-Contract-Version',
+} as const

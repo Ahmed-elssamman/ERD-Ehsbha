@@ -6,7 +6,9 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminReviewsService } from './admin-reviews.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin review schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
+/** @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit). Supports sort by createdAt desc and filter by isApproved, isFeatured. */
 const ListQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -21,6 +23,11 @@ const ReasonBodySchema = z.object({ reason: z.string().min(3).max(500) });
 export class AdminReviewsController {
   constructor(private readonly svc: AdminReviewsService) {}
 
+  /**
+   * Paginated list of platform reviews.
+   * @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit).
+   * Filters: isApproved, isFeatured. Default sort: createdAt desc.
+   */
   @Get()
   @RequirePermissions('reviews.read')
   list(@Query(new ZodValidationPipe(ListQuerySchema)) q: z.infer<typeof ListQuerySchema>) {

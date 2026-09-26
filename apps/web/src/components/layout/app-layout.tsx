@@ -1,3 +1,4 @@
+import { WellnessReminder } from '@/components/wellness/wellness-reminder';
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -10,10 +11,11 @@ import { Sidebar } from './sidebar';
 import { useAuth } from '@/stores/auth.store';
 import { AuthApi } from '@/lib/api/endpoints';
 import { useI18n, useT } from '@/i18n';
-import { queryClient } from '@/providers/query-provider';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
 export function AppLayout() {
+  const queryClient = useQueryClient();
   const t = useT();
   const { dir } = useI18n();
   const navigate = useNavigate();
@@ -129,6 +131,7 @@ export function AppLayout() {
             tabIndex={-1}
             className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none focus-visible:ring-0 sm:px-6 lg:px-8 lg:py-8"
           >
+            <WellnessReminder />
             <Outlet />
           </main>
         </div>

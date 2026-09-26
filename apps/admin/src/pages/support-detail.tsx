@@ -68,17 +68,7 @@ export function SupportDetailPage() {
     );
   }
 
-  const ticket = data as {
-    id: string;
-    subject: string;
-    body: string;
-    category: string;
-    status: TicketStatus;
-    adminNote: string | null;
-    createdAt: string;
-    updatedAt: string;
-    user: { id: string; phone: string; email: string | null; status: string };
-  };
+  const ticket = data;
 
   return (
     <div className="mx-auto max-w-4xl">

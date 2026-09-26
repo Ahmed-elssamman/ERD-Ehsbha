@@ -1,27 +1,29 @@
 import { z } from 'zod';
 
+export const TokenDurationSchema = z.string().trim().regex(/^[1-9]\d*\s*[smhd]$/, 'Use a positive duration in s, m, h or d');
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
 
   DATABASE_URL: z.string().min(10),
+  DIRECT_URL: z.string().min(10).optional(),
 
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_ACCESS_TTL: z.string().default('15m'),
-  JWT_REFRESH_TTL: z.string().default('30d'),
+  JWT_ACCESS_TTL: TokenDurationSchema.default('15m'),
+  JWT_REFRESH_TTL: TokenDurationSchema.default('30d'),
 
   // Admin platform JWT realm (completely separate from driver auth above).
   // Must be different secrets — token-confusion impossibility relies on this.
   ADMIN_JWT_ACCESS_SECRET: z.string().min(32),
   ADMIN_JWT_REFRESH_SECRET: z.string().min(32),
-  ADMIN_JWT_ACCESS_TTL: z.string().default('15m'),
-  ADMIN_JWT_REFRESH_TTL: z.string().default('8h'),
+  ADMIN_JWT_ACCESS_TTL: TokenDurationSchema.default('15m'),
+  ADMIN_JWT_REFRESH_TTL: TokenDurationSchema.default('8h'),
 
   CORS_ORIGINS: z.string().default('*'),
 
-  // SMTP — leave empty in dev to log the code to the console instead of
-  // actually sending an email.
+  // SMTP is required for password recovery outside isolated tests.
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_SECURE: z
@@ -36,22 +38,9 @@ const EnvSchema = z.object({
   APP_PUBLIC_NAME: z.string().default('Ehsbha'),
   APP_PUBLIC_URL: z.string().default('https://ehsebha.modev.me'),
 
-  // Azure AI Vision (OCR). Required.
-  AZURE_VISION_ENDPOINT: z.string().url(),
-  AZURE_VISION_KEY: z.string().min(20),
-  AZURE_VISION_REGION: z.string().default('eastus'),
-
-  // Document Intelligence is OPTIONAL. A single-service "Computer Vision"
-  // resource does NOT include Document Intelligence — calls would 401.
-  // To enable: either (a) provision a separate "Document Intelligence" resource
-  // and set the endpoint/key explicitly below, or (b) re-create the AI resource
-  // as a multi-service "Azure AI services" SKU and reuse AZURE_VISION_*.
-  AZURE_DOC_INTELLIGENCE_ENABLED: z
-    .union([z.boolean(), z.string()])
-    .default(false)
-    .transform((v) => (typeof v === 'string' ? v.toLowerCase() === 'true' : v)),
-  AZURE_DOC_INTELLIGENCE_ENDPOINT: z.string().url().optional(),
-  AZURE_DOC_INTELLIGENCE_KEY: z.string().min(20).optional(),
+  // Optional at startup; extraction fails with OCR_AUTH until configured.
+  GEMINI_API_KEY: z.string().trim().optional(),
+  GEMINI_MODEL: z.string().trim().min(1).default('gemini-3.5-flash'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

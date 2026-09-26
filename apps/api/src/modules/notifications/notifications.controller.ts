@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { UpdateNotificationPreferencesSchema, type UpdateNotificationPreferences } from '@ehsbha/api-contracts';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentDriverId, CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
@@ -10,15 +11,30 @@ import {
   RegisterDeviceSchema,
 } from './notifications.service';
 import { DailyDigestService } from './daily-digest.service';
+import { NotificationPreferencesService } from './notification-preferences.service';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(
-    private readonly svc: NotificationsService,
-    private readonly digest: DailyDigestService,
+    private svc: NotificationsService,
+    private digest: DailyDigestService,
+    private preferences: NotificationPreferencesService,
   ) {}
 
+  @Get('preferences')
+  getPreferences(@CurrentDriverId() driverId: string) { return this.preferences.get(driverId); }
+
+  @Patch('preferences')
+  updatePreferences(@CurrentDriverId() driverId: string,
+    @Body(new ZodValidationPipe(UpdateNotificationPreferencesSchema)) dto: UpdateNotificationPreferences) {
+    return this.preferences.update(driverId, dto);
+  }
+
+  /**
+   * Paginated list of notifications for the current driver.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get()
   list(
     @CurrentDriverId() driverId: string,
@@ -40,13 +56,7 @@ export class NotificationsController {
     return this.svc.registerDevice(user.userId, dto);
   }
 
-  /**
-   * Generates today's personalised digest for the current driver and stores
-   * it as an in-app notification. Useful for first-time onboarding ("see
-   * what tomorrow morning will look like") and for QA — the production
-   * cron fires once at 06:30 UTC and a tester shouldn't have to wait for
-   * the next day to verify a change.
-   */
+  /** Explicit on-demand capture; retries return the existing Cairo-day snapshot. */
   @Post('daily-digest/me')
   @HttpCode(HttpStatus.CREATED)
   async triggerDailyDigest(@CurrentDriverId() driverId: string) {
@@ -54,7 +64,6 @@ export class NotificationsController {
     if (!id) {
       throw new NotFoundException({
         code: 'DIGEST_INSUFFICIENT_DATA',
-        message: 'Not enough trip history or goals to build a digest yet.',
       });
     }
     return { notificationId: id };

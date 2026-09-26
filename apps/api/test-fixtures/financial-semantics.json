@@ -1,0 +1,158 @@
+[
+  {
+    "fixtureId": "uber-single-1",
+    "family": "uber",
+    "sourceFile": "apps/api/test-fixtures/uber/golden/uber-single-1.json",
+    "expected": {
+      "gross": 2000,
+      "commission": 300,
+      "tips": null,
+      "adjustments": null,
+      "received": 1700,
+      "net": 1700,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": "grossEgp",
+      "commission": "commissionEgp",
+      "tips": "tipEgp",
+      "received": "receivedEgp",
+      "net": "receivedEgp"
+    }
+  },
+  {
+    "fixtureId": "uber-single-2",
+    "family": "uber",
+    "sourceFile": "apps/api/test-fixtures/uber/golden/uber-single-2.json",
+    "expected": {
+      "gross": 3785,
+      "commission": 568,
+      "tips": null,
+      "adjustments": null,
+      "received": 3217,
+      "net": 3217,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": "grossEgp",
+      "commission": "commissionEgp",
+      "tips": "tipEgp",
+      "received": "receivedEgp",
+      "net": "receivedEgp"
+    }
+  },
+  {
+    "fixtureId": "uber-multi-1",
+    "family": "uber-multi",
+    "sourceFile": "apps/api/test-fixtures/uber/golden/uber-multi-1.json",
+    "expected": {
+      "gross": null,
+      "commission": null,
+      "tips": null,
+      "adjustments": null,
+      "received": 5623,
+      "net": 5623,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": null,
+      "commission": null,
+      "tips": null,
+      "received": "trips[].receivedEgp",
+      "net": "trips[].receivedEgp"
+    }
+  },
+  {
+    "fixtureId": "didi-1-merged",
+    "family": "didi",
+    "sourceFile": "apps/api/test-fixtures/didi/golden/didi-1-merged.json",
+    "expected": {
+      "gross": 2440,
+      "commission": 344,
+      "tips": null,
+      "adjustments": -440,
+      "received": 2000,
+      "net": 2096,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": "grossEgp",
+      "commission": "commissionEgp",
+      "tips": "tipEgp",
+      "adjustments": "$notes.discountRider",
+      "received": "receivedEgp",
+      "net": "$notes.earningsLine"
+    }
+  },
+  {
+    "fixtureId": "didi-2-merged",
+    "family": "didi",
+    "sourceFile": "apps/api/test-fixtures/didi/golden/didi-2-merged.json",
+    "expected": {
+      "gross": 2382,
+      "commission": 331,
+      "tips": null,
+      "adjustments": -32,
+      "received": 2350,
+      "net": 2051,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": "grossEgp",
+      "commission": "commissionEgp",
+      "tips": "tipEgp",
+      "adjustments": "$notes.discountRider",
+      "received": "receivedEgp",
+      "net": "$notes.earningsLine"
+    }
+  },
+  {
+    "fixtureId": "indrive-1",
+    "family": "indrive",
+    "sourceFile": "apps/api/test-fixtures/indrive/golden/indrive-1.json",
+    "expected": {
+      "gross": 6500,
+      "commission": 803,
+      "tips": null,
+      "adjustments": null,
+      "received": 6500,
+      "net": 5797,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": "grossEgp",
+      "commission": "commissionEgp",
+      "tips": "tipEgp",
+      "received": "receivedEgp",
+      "net": "$notes.incomeLine"
+    }
+  },
+  {
+    "fixtureId": "indrive-2",
+    "family": "indrive",
+    "sourceFile": "apps/api/test-fixtures/indrive/golden/indrive-2.json",
+    "expected": {
+      "gross": 3500,
+      "commission": 432,
+      "tips": null,
+      "adjustments": null,
+      "received": 3500,
+      "net": 3068,
+      "currency": "EGP",
+      "unit": "piastres"
+    },
+    "sources": {
+      "gross": "grossEgp",
+      "commission": "commissionEgp",
+      "tips": "tipEgp",
+      "received": "receivedEgp",
+      "net": "$notes.incomeLine"
+    }
+  }
+]

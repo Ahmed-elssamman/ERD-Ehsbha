@@ -18,25 +18,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/i18n/provider';
-import { formatNumber, formatPiastres } from '@/lib/utils';
-
-interface Overview {
-  since: string;
-  tripsByApp: Array<{ driverAppId: string; appName: string; tripCount: number; grossPiastres: number }>;
-  tripsByDay: Array<{ day: string; trips: number; gross: number }>;
-  tripsByArea: Array<{ areaId: string | null; areaName: string; tripCount: number; grossPiastres: number }>;
-  topDriversByProfit: Array<{ driverId: string; year: number; month: number; netProfitPiastres: number; phone: string; displayName: string }>;
-  topPosts: Array<{ id: string; title: string; category: string; likeCount: number; driverId: string; driverDisplayName: string }>;
-  topTicketSubjects: Array<{ category: string; status: string; count: number }>;
-  totals: { grossPiastres: number; netProfitPiastres: number; totalKmMeters: number; fuelPiastres: number };
-}
+import { formatNumber, formatPiastres, formatBusinessDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { readApiError } from '@/lib/api-error';
+import { FinancialCoverageNotice } from '@/components/financial-coverage-notice';
 
 export function AnalyticsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin', 'analytics', 'overview'],
-    queryFn: () => analyticsApi.overview() as Promise<Overview>,
+    queryFn: () => analyticsApi.overview(),
   });
 
   if (isLoading) {
@@ -50,13 +42,18 @@ export function AnalyticsPage() {
     );
   }
   if (error || !data) {
-    return <div className="rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger">{t('common.error')}</div>;
+    const key = error && readApiError(error).code === 'REPORTING_PROJECTION_PENDING' ? 'time.projectionPending' : error && readApiError(error).code === 'REPORTING_CALENDAR_PENDING' ? 'time.calendarPending' : 'time.reportFailed';
+    return <div role="alert" className="space-y-3 rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+      <p>{t(key)}</p><Button variant="outline" onClick={() => { void refetch(); }}>{t('time.retry')}</Button>
+    </div>;
   }
 
   return (
     <div className="mx-auto max-w-7xl">
-      <PageHeader title={t('analytics.title')} description={t('analytics.subtitleFmt', { date: new Date(data.since).toLocaleDateString() })} />
+      <PageHeader title={t('analytics.title')} description={t('analytics.subtitleFmt', { date: formatBusinessDate(data.since, locale) })} />
+      <p className="mb-4 text-sm text-muted-foreground">{t('time.reportBasis')}</p>
 
+      <FinancialCoverageNotice {...data.totals} />
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label={t('analytics.grossPiastres')} value={formatPiastres(data.totals.grossPiastres)} />
         <Stat label={t('analytics.netProfit')} value={formatPiastres(data.totals.netProfitPiastres)} />

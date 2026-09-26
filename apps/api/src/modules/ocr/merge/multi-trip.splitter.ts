@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OcrLine, OcrResult } from '../types';
+import { normalizeNumeric } from '../semantic/digit-normalizer';
 
 // Matches the per-card time stamp on Uber's "ملخص الدخل" summary screen.
-// Real-world Azure output for these times looks like:
+// Real-world text recognition output for these times looks like:
 //   - "₱ 5:32"   ← OCR's interpretation of the "الإيصال" pin icon + time
 //   - "~ 5:49"   ← different pin glyph, same idea
 //   - "5:32 م"   ← rare clean variant when the icon doesn't render
 //   - "10:46 PM" ← English-language device locale
 // We accept any of: required AM/PM/م/ص suffix OR a 1-3 non-digit non-space
 // glyph prefix. That ordering guards against matching the status-bar clock
-// "11:16" (no prefix, no suffix) — even though chrome-filter already drops
+// "11:16" (no prefix, no suffix) — even when the recognition adapter excludes
 // it, defense in depth.
 const CARD_TIME_RX =
   /^(?:[^\d\s]{1,3}\s+\d{1,2}:\d{2}(?:\s*(?:م|ص|AM|PM|am|pm))?|\d{1,2}:\d{2}\s*(?:م|ص|AM|PM|am|pm))\s*$/;
@@ -47,7 +48,7 @@ export class MultiTripSplitter {
   split(read: OcrResult): TripSlice[] {
     const timeIdxs: number[] = [];
     for (let i = 0; i < read.lines.length; i++) {
-      if (CARD_TIME_RX.test(read.lines[i].text.trim())) {
+      if (CARD_TIME_RX.test(normalizeNumeric(read.lines[i].text).trim())) {
         timeIdxs.push(i);
       }
     }

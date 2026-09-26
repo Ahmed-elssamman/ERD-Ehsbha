@@ -26,14 +26,6 @@ interface Review {
   createdAt: string;
 }
 
-interface Summary {
-  total: number;
-  approved: number;
-  featured: number;
-  pending: number;
-  avgRating: number;
-}
-
 function StarsBar({ rating }: { rating: number }) {
   return (
     <div className="inline-flex gap-0.5">
@@ -55,11 +47,11 @@ export function ReviewsPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'reviews', { filter }],
-    queryFn: () => reviewsApi.list({ isApproved, isFeatured, limit: 100 }) as Promise<{ items: Review[] }>,
+    queryFn: () => reviewsApi.list({ isApproved, isFeatured, limit: 100 }),
   });
   const { data: summary } = useQuery({
     queryKey: ['admin', 'reviews', 'summary'],
-    queryFn: () => reviewsApi.summary() as Promise<Summary>,
+    queryFn: () => reviewsApi.summary(),
   });
 
   const onErr = (e: unknown) => { const er = readApiError(e); toast.error(er.code, er.message); };

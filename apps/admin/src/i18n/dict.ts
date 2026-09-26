@@ -1,9 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type Locale = 'en' | 'ar';
 
 // Dictionary lives in one file. Keys grouped by feature for maintainability.
 // Arabic translations are written carefully — formal MSA, precise terminology.
 export const DICT = {
+  time: {
+    projectionPending: { en: 'Reports are being rebuilt from recorded costs. Retry shortly.', ar: 'جارٍ إعادة حساب التقارير من التكاليف المسجّلة. أعد المحاولة بعد قليل.' },
+    reportBasis: { en: 'Dates and times use Cairo time, including daylight saving changes.', ar: 'التواريخ والأوقات بتوقيت القاهرة، مع مراعاة التوقيت الصيفي.' },
+    reportFailed: { en: 'The report could not load. Check your connection and retry.', ar: 'تعذر تحميل التقرير. تحقق من الاتصال ثم أعد المحاولة.' },
+    calendarPending: { en: 'Reports are being rebuilt for Cairo dates. Retry after the reporting repair completes.', ar: 'جارٍ إعادة حساب التقارير وفق تواريخ القاهرة. أعد المحاولة بعد اكتمال تحديث التقارير.' },
+    retry: { en: 'Retry', ar: 'إعادة المحاولة' },
+  },
   // Common
   common: {
     cancel: { en: 'Cancel', ar: 'إلغاء' },
@@ -157,12 +163,13 @@ export const DICT = {
     distance: { en: 'Distance', ar: 'المسافة' },
     fuelLogs: { en: 'Fuel logs', ar: 'سجلات الوقود' },
     maintenance: { en: 'Maintenance', ar: 'الصيانة' },
-    latestScore: { en: 'Latest score', ar: 'آخر تقييم' },
+    latestScore: { en: 'Latest work indicators', ar: 'آخر مؤشرات للشغل' },
+    workScoreMissing: { en: 'Not available', ar: 'غير متاح' },
+    workScoreMeaning: { en: 'Version 2 describes recorded business results. It does not assess driving safety or health. Missing values mean insufficient observations.', ar: 'الإصدار ٢ بيصف نتائج الشغل المسجّلة، ومش بيقيّم أمان السواقة أو الصحة. القيم غير المتاحة معناها إن البيانات مش كافية.' },
     overall: { en: 'Overall', ar: 'الإجمالي' },
     efficiency: { en: 'Efficiency', ar: 'الكفاءة' },
     profit: { en: 'Profit', ar: 'الربح' },
-    safety: { en: 'Safety', ar: 'الأمان' },
-    consistency: { en: 'Consistency', ar: 'الانتظام' },
+    consistency: { en: 'Work-time variation', ar: 'تفاوت وقت الشغل' },
     asOf: { en: 'As of', ar: 'حتى تاريخ' },
     noSnapshot: { en: 'No score snapshot yet.', ar: 'لا توجد لقطة تقييم بعد.' },
     connectedApps: { en: 'Connected apps', ar: 'التطبيقات المتصلة' },
@@ -197,6 +204,14 @@ export const DICT = {
 
   // Vehicles
   vehicles: {
+    mileageUnknown: { en: 'No usable reading', ar: 'لا توجد قراءة مؤكدة' },
+    mileageSource: {
+      UNKNOWN: { en: 'Unknown', ar: 'غير معروفة' },
+      LEGACY: { en: 'Source unconfirmed', ar: 'المصدر غير مؤكد' },
+      MANUAL: { en: 'Driver confirmed', ar: 'أكدها السائق' },
+      FUEL: { en: 'Fuel record', ar: 'سجل الوقود' },
+      AMBIGUOUS: { en: 'Conflicting readings', ar: 'قراءات متعارضة' },
+    },
     title: { en: 'Vehicles', ar: 'المركبات' },
     subtitle: { en: 'All registered driver vehicles.', ar: 'جميع مركبات السائقين المسجّلة.' },
     type: { en: 'Type', ar: 'النوع' },
@@ -356,6 +371,47 @@ export const DICT = {
     notSet: { en: 'Not set', ar: 'غير مُعَيَّن' },
     saved: { en: 'Setting saved', ar: 'تم حفظ الإعداد' },
   },
+
+  errors: {
+    REPORT_PERIOD_NOT_COMPLETE: {"en":"This period is still in progress in Cairo. Choose a completed week or month.","ar":"الفترة دي لسه ما انتهتش بتوقيت القاهرة. اختار أسبوع أو شهر مكتمل."},
+    REPORT_VERSION_CONFLICT: {"en":"A newer report version exists. Open it and discard the old revision draft before saving another version.","ar":"في نسخة أحدث للتقرير. افتحها واحذف مسودة النسخة القديمة قبل حفظ نسخة جديدة."},
+    REPORT_PREFERENCES_CONFLICT: {"en":"Report delivery settings changed elsewhere. Review the saved settings and discard this old draft before changing them.","ar":"إعدادات وصول التقارير اتغيّرت من مكان تاني. راجع الإعدادات المحفوظة واحذف المسودة القديمة قبل تعديلها."},
+    NOTIFICATION_PREFERENCES_CONFLICT: {"en":"Delivery settings changed elsewhere. Review the saved settings and discard this old draft before making a new change.","ar":"إعدادات الوصول اتغيّرت من مكان تاني. راجع الإعدادات المحفوظة واحذف المسودة القديمة قبل تعديل جديد."},
+    DIGEST_INSUFFICIENT_DATA: {"en":"There is not enough recorded history or an active monthly goal for a digest yet. Add records or a goal, then retry.","ar":"لسه مفيش سجلات كفاية أو هدف شهري نشط للملخص. ضيف سجلات أو هدف وحاول تاني."},
+    SESSION_VERSION_CONFLICT: { en: 'This work session changed. Review its current version before retrying.', ar: 'تغيّرت فترة العمل. راجع نسختها الحالية قبل المحاولة مجددًا.' },
+    SESSION_STATE_CONFLICT: { en: 'Review the current session state before choosing this action.', ar: 'راجع حالة فترة العمل الحالية قبل اختيار هذا الإجراء.' },
+    SESSION_ALREADY_OPEN: { en: 'A work session is already open. Review it before starting another.', ar: 'توجد فترة عمل مفتوحة. راجعها قبل بدء فترة جديدة.' },
+    SESSION_ALREADY_ENDED: { en: 'This work session has already ended. Refresh to review its end time.', ar: 'تم إنهاء فترة العمل بالفعل. حدّث البيانات لمراجعة وقت انتهائها.' },
+    TRIP_VERSION_CONFLICT: { en: 'A selected trip changed. Reload and select the current versions before trying again.', ar: 'تغيّرت إحدى الرحلات المحددة. أعد التحميل وحدد النسخ الحالية ثم حاول مرة أخرى.' },
+    EXPENSE_LINK_CONFLICT: {
+      en: 'This trip fee is linked to an expense. Unlink the expense before changing the fee or vehicle.',
+      ar: 'رسوم الرحلة مرتبطة بمصروف. ألغِ ربط المصروف قبل تغيير الرسوم أو المركبة.',
+    },
+    TRIP_FINANCIAL_EVIDENCE_INVALID: {"en":"Enter take-home income, or enough fare and commission details to calculate it. Check that the amounts and tips agree.","ar":"أدخل الدخل بعد خصم المنصة، أو تفاصيل كافية عن الأجرة والعمولة لحسابه. تأكد من توافق المبالغ والإكراميات."},
+    DAILY_DISTANCE_CONFLICT: {
+      en: 'The recorded daily distance is less than the trips’ paid distance. Correct the daily distance or trip distances, then retry.',
+      ar: 'إجمالي مسافة اليوم المسجّل أقل من مسافة الرحلات المدفوعة. صحّح مسافة اليوم أو مسافات الرحلات، ثم حاول مرة أخرى.',
+    },
+  },
+
+  finance: {
+  "partial": {
+    "en": "Gross fare is available for {known} of {total} trips. Income includes all saved trips.",
+    "ar": "الأجرة قبل الخصم متاحة لـ {known} من أصل {total} رحلة. الدخل يشمل كل الرحلات المحفوظة."
+  },
+  "partialUnknown": {
+    "en": "Gross fare is incomplete because some trips contain take-home income only.",
+    "ar": "إجمالي الأجرة قبل الخصم غير مكتمل لأن بعض الرحلات تتضمن الدخل بعد الخصم فقط."
+  },
+  "missingDetails": {
+    "en": "Gross fare and commission were not supplied. The recorded take-home income includes tips.",
+    "ar": "لم تُسجّل الأجرة قبل الخصم أو العمولة. الدخل المسجّل بعد خصم المنصة يشمل الإكراميات."
+  },
+  "earnings": {
+    "en": "Take-home income (EGP, includes tips)",
+    "ar": "الدخل بعد خصم المنصة (جنيه، شامل الإكراميات)"
+  }
+},
 
   // Analytics
   analytics: {

@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '@ehsbha/api-contracts';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
+// Shared review schemas available via @ehsbha/api-contracts (review schemas in communications.ts)
 
 export const UpsertReviewSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),
@@ -10,13 +12,20 @@ export const UpsertReviewSchema = z.object({
 });
 export type UpsertReviewDto = z.infer<typeof UpsertReviewSchema>;
 
+/** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListReviewsSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   rating: z.coerce.number().int().min(1).max(5).optional(),
 });
 export type ListReviewsDto = z.infer<typeof ListReviewsSchema>;
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a review is not found for the driver
+ * - {@link GOVERNED_ERROR_REGISTRY.CONFLICT} - when a race condition (P2002) occurs during upsert
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when input data fails Zod validation
+ */
 @Injectable()
 export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}

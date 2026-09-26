@@ -22,6 +22,10 @@ export class CommunityController {
     return this.svc.listCategories();
   }
 
+  /**
+   * Paginated list of community posts.
+   * @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit).
+   */
   @Get('posts')
   list(
     @CurrentDriverId() driverId: string,

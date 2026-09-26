@@ -8,6 +8,9 @@ import * as AdminAuthContract from '@/lib/contracts/admin-auth';
 import { adminApi } from '@/lib/api/admin-client';
 import { useAdminAuth } from '@/stores/admin-auth.store';
 import { cn } from '@/lib/utils';
+import { parseData } from '@/features/platform-api';
+import { readApiError } from '@/lib/api-error';
+import type { AdminSession } from '@/stores/admin-auth.store';
 
 type Form = AdminAuthContract.AdminLoginRequest;
 
@@ -26,46 +29,48 @@ export function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: Form) => {
-      const { data: res } = await adminApi.post('/admin/auth/login', data);
-      return AdminAuthContract.AdminLoginResponseSchema.parse(res);
+      const response = await adminApi.post('/admin/auth/login', data);
+      return parseData(
+        AdminAuthContract.AdminLoginResponseSchema,
+        response.data,
+        'admin.auth.login',
+      );
     },
     onSuccess: (res) => {
       if (res.mfaRequired) {
-        setMfaChallengeId(res.challengeId);
+        setMfaChallengeId(res.challengeId ?? null);
       } else {
-        setSession(res);
+        setSession(res as AdminSession);
         const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
         navigate(from ?? '/', { replace: true });
       }
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Login failed. Check your credentials.';
-      setServerError(msg);
+      setServerError(readApiError(err, 'Login failed. Check your credentials.').message);
     },
   });
 
   const mfaMutation = useMutation({
     mutationFn: async () => {
       if (!mfaChallengeId) throw new Error('No MFA challenge');
-      const { data: res } = await adminApi.post('/admin/auth/mfa/verify', {
+      const response = await adminApi.post('/admin/auth/mfa/verify', {
         challengeId: mfaChallengeId,
         code: mfaCode,
       });
-      return AdminAuthContract.AdminLoginResponseSchema.parse(res);
+      return parseData(
+        AdminAuthContract.AdminLoginResponseSchema,
+        response.data,
+        'admin.auth.mfa.verify',
+      );
     },
     onSuccess: (res) => {
       if (!res.mfaRequired) {
-        setSession(res);
+        setSession(res as AdminSession);
         navigate('/', { replace: true });
       }
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Invalid MFA code.';
-      setServerError(msg);
+      setServerError(readApiError(err, 'Invalid MFA code.').message);
     },
   });
 

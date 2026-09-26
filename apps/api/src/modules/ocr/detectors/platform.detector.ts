@@ -83,18 +83,20 @@ export class PlatformDetector {
   constructor(private readonly normalizer: SemanticNormalizer) {}
 
   detect(texts: string[]): { platform: OcrPlatform | null; confidence: number; scores: Record<OcrPlatform, number> } {
-    const haystack = texts.map((t) => this.normalizer.normalizeText(t)).join(' \n ');
+    const haystack = texts.flatMap((t) => t.split(/\r?\n/))
+      .map((line) => this.normalizer.normalizeText(line)).join('\n');
     const scores: Record<OcrPlatform, number> = { UBER: 0, INDRIVE: 0, DIDI: 0, CAREEM: 0 };
     for (const sig of SIGNALS) {
       for (const re of sig.patterns) {
-        const m = haystack.match(new RegExp(re.source, 'gi'));
+        const m = haystack.match(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`));
         if (m) scores[sig.platform] += m.length;
       }
     }
     const total = Object.values(scores).reduce((a, b) => a + b, 0);
     if (total === 0) return { platform: null, confidence: 0, scores };
-    const [topPlatform, topScore] = (Object.entries(scores) as Array<[OcrPlatform, number]>)
-      .sort((a, b) => b[1] - a[1])[0];
+    const ranked = (Object.entries(scores) as Array<[OcrPlatform, number]>).sort((a, b) => b[1] - a[1]);
+    const [topPlatform, topScore] = ranked[0];
+    if (ranked[1][1] === topScore) return { platform: null, confidence: 0, scores };
     if (topScore < 1) return { platform: null, confidence: 0, scores };
     const confidence = Math.min(1, topScore / Math.max(total, 1));
     return { platform: topPlatform, confidence, scores };

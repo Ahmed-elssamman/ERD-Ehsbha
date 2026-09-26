@@ -1,11 +1,11 @@
 # Ehsbha — Project Architecture
 
-**Version 3.0 · Web-First PWA · Status: Approved**
-Date: 2026-05-17
+**Version 3.1 · PWA + Admin · Status: Approved**
+Date: 2026-06-07
 
-> **What changed in v3.0:** Ehsbha is now a **web-only platform** delivered as an installable PWA. The native React Native / Expo client has been retired. The product principles below are unchanged — only the delivery surface (web instead of mobile-native) and the frontend tech stack have changed. The backend, database schema, business logic, calculations, and analytics engines are preserved as-is.
->
-> Concrete details about the current web implementation (routes, pages, design system, PWA configuration, build commands) live in [`README.md`](./README.md) and [`web/README.md`](./web/README.md). The remainder of this document is preserved for historical reference and for the parts that remain valid (backend, schema, business rules).
+> **Updated in v3.1:** Repository now uses npm workspaces (`apps/*` + `packages/*`) with three independent applications: `apps/api` (NestJS), `apps/web` (driver-facing React PWA), and `apps/admin` (separate admin dashboard). The Phase 0 verification entry point is `npm run verify` from the repository root. Shared code lives in `packages/`. Architecture decision records live in `docs/adr/`.
+
+> Concrete details about the current implementation live in [`README.md`](./README.md), [`ADMIN_ARCHITECTURE.md`](./ADMIN_ARCHITECTURE.md), and baseline evidence under [`docs/baseline/`](./docs/baseline/).
 
 ---
 
@@ -138,10 +138,10 @@ No layers, no use-case classes, no orchestrators, no ports/adapters. Controllers
 | `health` | `/health` + `/ready` |
 | `common` | Pipes, filters, decorators, zod validation pipe |
 
-### 4.3 Backend Folder Structure
+### 4.3 API Folder Structure
 
 ```
-backend/
+apps/api/
 ├── src/
 │   ├── main.ts
 │   ├── app.module.ts

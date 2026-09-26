@@ -6,7 +6,9 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminSupportService } from './admin-support.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin support schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
+/** @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit). Supports sort by createdAt desc and filter by status, category. */
 const ListQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -28,6 +30,11 @@ const NoteSchema = z.object({
 export class AdminSupportController {
   constructor(private readonly svc: AdminSupportService) {}
 
+  /**
+   * Paginated list of support tickets.
+   * @see {@link OffsetQuerySchema} from `@ehsbha/api-contracts` for pagination shape (offset, limit).
+   * Filters: status, category. Default sort: createdAt desc.
+   */
   @Get('tickets')
   @RequirePermissions('support.read')
   list(@Query(new ZodValidationPipe(ListQuerySchema)) q: z.infer<typeof ListQuerySchema>) {

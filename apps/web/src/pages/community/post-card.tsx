@@ -54,7 +54,7 @@ export function CommunityPostCard({ post, index = 0 }: Props) {
   });
 
   const deleteMut = useMutation({
-    mutationFn: () => CommunityApi.remove(post.id) as Promise<unknown>,
+    mutationFn: () => CommunityApi.remove(post.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['community-posts'] });
     },

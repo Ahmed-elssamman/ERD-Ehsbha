@@ -1,9 +1,11 @@
 import type { Locale } from '@/i18n';
+import { DRIVER_TIME_ZONE } from '@ehsbha/shared-types';
 
 const NBSP = ' ';
 
 /** piastres → "EGP 12.34" with locale-aware digits */
-export function formatMoney(piastres: number, locale: Locale = 'ar'): string {
+export function formatMoney(piastres: number | null, locale: Locale = 'ar'): string {
+  if (piastres === null) return '—';
   const amount = (piastres ?? 0) / 100;
   const nf = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
     style: 'currency',
@@ -15,7 +17,8 @@ export function formatMoney(piastres: number, locale: Locale = 'ar'): string {
 }
 
 /** piastres → "12.34" (no currency) */
-export function formatPiastres(piastres: number, locale: Locale = 'ar'): string {
+export function formatPiastres(piastres: number | null, locale: Locale = 'ar'): string {
+  if (piastres === null) return '—';
   const amount = (piastres ?? 0) / 100;
   const nf = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
     minimumFractionDigits: 2,
@@ -65,16 +68,17 @@ export function formatPercent(bp: number, locale: Locale = 'ar', digits = 0): st
 
 export function formatDate(iso: string | Date, locale: Locale = 'ar', opts?: Intl.DateTimeFormatOptions): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG' : 'en-US', opts ?? {
+  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG' : 'en-US', { ...(opts ?? {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  }).format(d);
+  }), timeZone: DRIVER_TIME_ZONE }).format(d);
 }
 
 export function formatTime(iso: string | Date, locale: Locale = 'ar'): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
+    timeZone: DRIVER_TIME_ZONE,
     hour: '2-digit',
     minute: '2-digit',
   }).format(d);

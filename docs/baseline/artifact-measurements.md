@@ -1,0 +1,77 @@
+# Artifact Measurements
+
+Generated from the current successful production builds.
+
+| Application | Artifact | Type | Category | Raw bytes | Gzip bytes | Budget bytes | Status |
+|---|---|---|---|---:|---:|---:|---|
+| web | .vite/manifest.json | manifest | asset | 17909 | 2029 | 512000 | within |
+| web | assets/activity-YsfL_o5H.js | javascript | entry-js | 404 | 302 | 256000 | within |
+| web | assets/analytics-BLETQTKt.js | javascript | route-js | 19189 | 2953 | 153600 | within |
+| web | assets/badge-BgCAwnF3.js | javascript | entry-js | 872 | 460 | 256000 | within |
+| web | assets/best-hours-Bumt6yqJ.js | javascript | route-js | 7430 | 1775 | 153600 | within |
+| web | assets/car-CwzcKGx7.js | javascript | entry-js | 577 | 392 | 256000 | within |
+| web | assets/chart-error-boundary-B_Z4dCJK.js | javascript | entry-js | 1260 | 534 | 256000 | within |
+| web | assets/charts-DC9d2qtY.js | javascript | entry-js | 435607 | 118377 | 256000 | within |
+| web | assets/community-c309iGwm.js | javascript | route-js | 24999 | 5213 | 153600 | within |
+| web | assets/decisions-BvB7imui.js | javascript | route-js | 5435 | 1420 | 153600 | within |
+| web | assets/dialog-BsMh3LkF.js | javascript | entry-js | 5526 | 1788 | 256000 | within |
+| web | assets/driver-score-Cg23zpa6.js | javascript | route-js | 34978 | 5997 | 153600 | within |
+| web | assets/empty-state-Tr9oXt5P.js | javascript | entry-js | 1533 | 558 | 256000 | within |
+| web | assets/expenses-CYZirHsG.js | javascript | route-js | 16853 | 3238 | 153600 | within |
+| web | assets/eye-off-DhtED5Mp.js | javascript | entry-js | 599 | 378 | 256000 | within |
+| web | assets/eye-YQiiCJEY.js | javascript | entry-js | 426 | 305 | 256000 | within |
+| web | assets/forgot-password-Di22K1jb.js | javascript | route-js | 9222 | 2190 | 153600 | within |
+| web | assets/forms-DUn43k21.js | javascript | entry-js | 79799 | 21894 | 256000 | within |
+| web | assets/guide-DeeByEE1.js | javascript | route-js | 25232 | 4366 | 153600 | within |
+| web | assets/index-0OVoOJES.css | stylesheet | css | 48084 | 8801 | 76800 | within |
+| web | assets/index-lqx9KTJ3.js | javascript | entry-js | 659211 | 192508 | 256000 | within |
+| web | assets/label-DiuqbREI.js | javascript | entry-js | 1792 | 919 | 256000 | within |
+| web | assets/login-BJq93svL.js | javascript | route-js | 7309 | 1913 | 153600 | within |
+| web | assets/maintenance-Rh4duv_c.js | javascript | route-js | 15339 | 2937 | 153600 | within |
+| web | assets/motion-Cq4mCdAY.js | javascript | entry-js | 116364 | 38712 | 256000 | within |
+| web | assets/notifications-C1uVtyUm.js | javascript | route-js | 13128 | 2767 | 153600 | within |
+| web | assets/page-header-C0W7LyRF.js | javascript | entry-js | 1245 | 472 | 256000 | within |
+| web | assets/phone-Czvk1C1J.js | javascript | entry-js | 6950 | 1872 | 256000 | within |
+| web | assets/planner-Cu8dDc8n.js | javascript | route-js | 11308 | 2026 | 153600 | within |
+| web | assets/query-R_V2PTYo.js | javascript | entry-js | 47102 | 14766 | 256000 | within |
+| web | assets/react-CkFy7lO0.js | javascript | entry-js | 121555 | 40095 | 256000 | within |
+| web | assets/register-18f12KGN.js | javascript | route-js | 10908 | 2201 | 153600 | within |
+| web | assets/reset-password-i9kXFItN.js | javascript | route-js | 8913 | 2034 | 153600 | within |
+| web | assets/reviews-nZoBfa70.js | javascript | route-js | 20332 | 3969 | 153600 | within |
+| web | assets/select-bs1diNYX.js | javascript | entry-js | 1402 | 720 | 256000 | within |
+| web | assets/settings-CkZpU_kR.js | javascript | route-js | 57922 | 7516 | 153600 | within |
+| web | assets/simulator-Bw59dWyi.js | javascript | route-js | 11901 | 2500 | 153600 | within |
+| web | assets/support-C77vcFsB.js | javascript | route-js | 18332 | 3898 | 153600 | within |
+| web | assets/tabs-Dg3pwFdF.js | javascript | entry-js | 1428 | 666 | 256000 | within |
+| web | assets/target-CReY1fha.js | javascript | entry-js | 396 | 267 | 256000 | within |
+| web | assets/textarea-D9Pt2FIz.js | javascript | entry-js | 745 | 476 | 256000 | within |
+| web | assets/time-Cbl108tv.js | javascript | entry-js | 690 | 323 | 256000 | within |
+| web | assets/trash-2-DWB140xN.js | javascript | entry-js | 527 | 353 | 256000 | within |
+| web | assets/trip-detail-f8v4rpcJ.js | javascript | route-js | 10987 | 2226 | 153600 | within |
+| web | assets/trip-form-ftw305El.js | javascript | entry-js | 24274 | 5271 | 256000 | within |
+| web | assets/trip-new-CcHxJTNO.js | javascript | route-js | 50147 | 9112 | 153600 | within |
+| web | assets/trips-list-BJU5kN-g.js | javascript | route-js | 14101 | 3443 | 153600 | within |
+| web | assets/use-vehicle-selector-B_EBbL02.js | javascript | entry-js | 541 | 370 | 256000 | within |
+| web | assets/vehicle-health-BnTCe7JI.js | javascript | route-js | 23540 | 4182 | 153600 | within |
+| web | assets/workbox-window.prod.es5-BBnX5xw4.js | javascript | route-js | 5748 | 2357 | 153600 | within |
+| web | assets/zod-BtkEYJaF.js | javascript | entry-js | 1049 | 550 | 256000 | within |
+| web | favicon.svg | image | asset | 501 | 312 | 512000 | within |
+| web | icon-192.svg | image | asset | 512 | 316 | 512000 | within |
+| web | icon-512.svg | image | asset | 518 | 321 | 512000 | within |
+| web | index.html | document | asset | 5901 | 2090 | 512000 | within |
+| web | manifest.webmanifest | manifest | pwa | 629 | 342 | 153600 | within |
+| web | offline.html | document | asset | 3526 | 1607 | 512000 | within |
+| web | robots.txt | metadata | asset | 371 | 194 | 512000 | within |
+| web | sitemap.xml | metadata | asset | 422 | 197 | 512000 | within |
+| web | sw.js | javascript | pwa | 8096 | 2694 | 153600 | within |
+| web | workbox-dab1d896.js | javascript | pwa | 182154 | 38759 | 153600 | within |
+| admin | .vite/manifest.json | manifest | asset | 1043 | 301 | 512000 | within |
+| admin | admin-icon.svg | image | asset | 558 | 345 | 512000 | within |
+| admin | assets/charts-CcJVydts.js | javascript | entry-js | 418720 | 114609 | 256000 | within |
+| admin | assets/forms-CnGXd-Oz.js | javascript | entry-js | 79513 | 21804 | 256000 | within |
+| admin | assets/index-BwqiKJL1.css | stylesheet | css | 23073 | 5251 | 76800 | within |
+| admin | assets/index-RfVDuZh3.js | javascript | entry-js | 769395 | 193813 | 256000 | within |
+| admin | assets/motion-DwflQkkw.js | javascript | entry-js | 116183 | 38684 | 256000 | within |
+| admin | assets/query-C1lbcptw.js | javascript | entry-js | 43043 | 13518 | 256000 | within |
+| admin | assets/react-B8fvbjlW.js | javascript | entry-js | 120707 | 39763 | 256000 | within |
+| admin | index.html | document | asset | 901 | 404 | 512000 | within |

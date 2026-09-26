@@ -1,0 +1,13 @@
+{
+  "operationId": "test.additive.change",
+  "transport": "http",
+  "method": "GET",
+  "path": "/api/v1/test/additive",
+  "realm": "driver",
+  "lifecycle": "active",
+  "successData": "testSchema",
+  "failureCodes": ["VALIDATION_ERROR"],
+  "consumers": [{ "application": "api", "role": "producer", "migrationStatus": "shared", "owner": "test" }],
+  "compatibility": "additive-compatible",
+  "owner": "test"
+}

@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
 
+// Local update schema — not yet in shared contracts (no driver profile update contract exists)
 const UpdateUserSchema = z.object({
   locale: z.enum(['ar', 'en']).optional(),
   timezone: z.string().optional(),

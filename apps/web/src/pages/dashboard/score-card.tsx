@@ -1,3 +1,4 @@
+import { SCORE_FACTORS } from '@/pages/driver-score/driver-score.control';
 import { Link } from 'react-router-dom';
 import { Gauge, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -20,7 +21,7 @@ function scoreColor(score: number): string {
 }
 
 interface Props {
-  data: DriverScore | null | undefined;
+  data?: DriverScore | null;
   loading: boolean;
 }
 
@@ -37,7 +38,7 @@ export function ScoreCard({ data, loading }: Props) {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
             <CardTitle className="flex items-center gap-2 text-base">
               <Gauge className="h-4 w-4 text-primary" aria-hidden />
-              {t('dashboard.score')}
+              {t('workScore.title')}
             </CardTitle>
             <ArrowRight
               className="h-4 w-4 text-muted-foreground/60 transition-all group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
@@ -49,8 +50,8 @@ export function ScoreCard({ data, loading }: Props) {
               <div className="grid place-items-center py-2">
                 <Skeleton className="h-32 w-32 rounded-full" />
               </div>
-            ) : !data ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">{t('dashboard.scoreEmpty')}</p>
+            ) : !data || data.overall === null ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">{t('workScore.insufficient')}</p>
             ) : (
               <div className="grid place-items-center gap-3">
                 <div className="relative" style={{ width: SIZE, height: SIZE }}>
@@ -89,20 +90,20 @@ export function ScoreCard({ data, loading }: Props) {
                     </div>
                   </div>
                 </div>
-                <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-                  {(['efficiency', 'profit', 'safety', 'consistency'] as const).map((k) => (
+                <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
+                  {SCORE_FACTORS.map(({ key: k, label }) => (
                     <div
                       key={k}
                       className="rounded-md border border-border/60 bg-card/50 px-2 py-1.5 text-center"
                     >
                       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {t(`score.${k}`)}
+                        {t(label)}
                       </p>
                       <p
                         className="num-tabular text-sm font-semibold"
-                        style={{ color: scoreColor(data[k] ?? 0) }}
+                        style={{ color: data[k] === null ? 'hsl(var(--muted-foreground))' : scoreColor(data[k]) }}
                       >
-                        {formatNumber(data[k] ?? 0, locale)}
+                        {data[k] === null ? t('workScore.unavailable') : formatNumber(data[k], locale)}
                       </p>
                     </div>
                   ))}

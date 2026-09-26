@@ -1,3 +1,5 @@
+import { useBusinessDate } from '@/hooks/use-business-date';
+import { ReportLoadError } from '@/components/report-load-error';
 import { useQuery } from '@tanstack/react-query';
 import {
   Coins,
@@ -41,6 +43,7 @@ import { GrowingBanner } from '@/components/trust/growing-banner';
 export function DashboardPage() {
   const { t, locale } = useI18n();
   const user = useAuth((s) => s.user);
+  const calendarDate = useBusinessDate();
 
   const driverQuery = useQuery<DriverMe>({
     queryKey: ['driver', 'me'],
@@ -50,25 +53,25 @@ export function DashboardPage() {
   });
 
   const todayQuery = useQuery<DailyAnalytics>({
-    queryKey: ['analytics', 'today'],
+    queryKey: ['analytics', 'today', calendarDate],
     queryFn: AnalyticsApi.today,
     staleTime: 30_000,
   });
 
   const forecastQuery = useQuery<MonthlyForecast>({
-    queryKey: ['analytics', 'forecast', 'monthly'],
+    queryKey: ['analytics', 'forecast', 'monthly', calendarDate],
     queryFn: AnalyticsApi.forecastMonthly,
     staleTime: 60_000,
   });
 
   const decisionsQuery = useQuery<DecisionCard[]>({
-    queryKey: ['decisions', 'today'],
+    queryKey: ['decisions', 'today', calendarDate],
     queryFn: RecommendationsApi.todaysDecisions,
     staleTime: 60_000,
   });
 
   const scoreQuery = useQuery<DriverScore | null>({
-    queryKey: ['score', 'today'],
+    queryKey: ['score', 'today', calendarDate],
     queryFn: ScoreApi.today,
     staleTime: 60_000,
   });
@@ -78,6 +81,8 @@ export function DashboardPage() {
     queryFn: () => TripsApi.list({ limit: 5 }),
     staleTime: 30_000,
   });
+
+  if (todayQuery.error) return <ReportLoadError error={todayQuery.error} retry={() => { void todayQuery.refetch(); }} />;
 
   const today = todayQuery.data;
   const todayLoading = todayQuery.isLoading;
@@ -187,7 +192,7 @@ export function DashboardPage() {
               ? `${formatMoney(today.profitPerHourPiastres, locale)} ${t('common.perHour')}`
               : undefined
           }
-          to="/best-hours"
+          to="/work-sessions"
           linkLabel={`${t('dashboard.hours')} — ${t('dashboard.viewDetails')}`}
         />
       </section>

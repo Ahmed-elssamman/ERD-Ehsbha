@@ -1,3 +1,5 @@
+import { TripBulkActionSchema } from '@ehsbha/api-contracts';
+import { IdempotentOperation } from '../../common/decorators/idempotent-operation.decorator';
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod.pipe';
@@ -6,6 +8,7 @@ import { AdminPermissionsGuard, RequirePermissions } from './permissions.decorat
 import { CurrentAdmin } from './current-admin.decorator';
 import { AdminBulkService } from './admin-bulk.service';
 import type { AuthenticatedAdmin } from './admin.types';
+// Shared admin bulk schemas available via @ehsbha/api-contracts (admin schemas in admin-operations.ts)
 
 const BulkBody = z.object({
   ids: z.array(z.string().min(1)).min(1).max(200),
@@ -40,21 +43,23 @@ export class AdminBulkController {
   }
 
   @Post('trips/bulk/delete')
+  @IdempotentOperation({ operationId: 'admin.bulk.trips.delete', realm: 'admin', requestSchema: TripBulkActionSchema })
   @RequirePermissions('trips.delete')
   bulkDeleteTrips(
     @CurrentAdmin() admin: AuthenticatedAdmin,
-    @Body(new ZodValidationPipe(BulkBody)) dto: z.infer<typeof BulkBody>,
+    @Body(new ZodValidationPipe(TripBulkActionSchema)) dto: z.infer<typeof TripBulkActionSchema>,
   ) {
-    return this.svc.softDeleteTrips(admin, dto.ids, dto.reason);
+    return this.svc.softDeleteTrips(admin, dto.items, dto.reason);
   }
 
   @Post('trips/bulk/restore')
+  @IdempotentOperation({ operationId: 'admin.bulk.trips.restore', realm: 'admin', requestSchema: TripBulkActionSchema })
   @RequirePermissions('trips.restore')
   bulkRestoreTrips(
     @CurrentAdmin() admin: AuthenticatedAdmin,
-    @Body(new ZodValidationPipe(BulkBody)) dto: z.infer<typeof BulkBody>,
+    @Body(new ZodValidationPipe(TripBulkActionSchema)) dto: z.infer<typeof TripBulkActionSchema>,
   ) {
-    return this.svc.restoreTrips(admin, dto.ids, dto.reason);
+    return this.svc.restoreTrips(admin, dto.items, dto.reason);
   }
 
   @Post('community/posts/bulk/delete')

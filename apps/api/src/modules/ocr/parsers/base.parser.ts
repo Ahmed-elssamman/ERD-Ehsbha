@@ -3,6 +3,7 @@ import { OcrLine, OcrWord, ParseContext } from '../types';
 import { normalizeNumeric, parseAmount, stripBidi } from '../semantic/digit-normalizer';
 import { SemanticNormalizer } from '../semantic/normalizer';
 import { findFieldsOnLine } from '../semantic/dictionary';
+import { localDateTimeToUtc } from '@ehsbha/shared-types';
 
 export interface RawParsed {
   fields: Partial<OcrParsedTripDto>;
@@ -55,7 +56,10 @@ export abstract class BaseParser {
     this.extractAmounts(lines, normalizedLines, fields, perField);
     this.extractDistance(lines, normalizedLines, fields, perField);
     this.extractDuration(fullyNormLines, normalizedLines, fields, perField, warnings);
-    const dt = this.extractDateTime(fullyNormLines, normalizedLines);
+    const dateLines = ctx?.dateText
+      ? [normalizeNumeric(this.normalizer.normalizeText(ctx.dateText)), ...fullyNormLines]
+      : fullyNormLines;
+    const dt = this.extractDateTime(dateLines, normalizedLines);
     if (dt.startedAtIso) { fields.startedAt = dt.startedAtIso; perField.startedAt = dt.confidence; }
     if (dt.endedAtIso) { fields.endedAt = dt.endedAtIso; perField.endedAt = dt.confidence; }
     if (dt.ambiguous) warnings.push('OCR_TIME_AMBIGUOUS');
@@ -73,7 +77,7 @@ export abstract class BaseParser {
       const end = new Date(start.getTime() + fields.durationSec * 1000);
       fields.endedAt = end.toISOString();
       perField.endedAt = Math.min(perField.startedAt ?? 0.6, 0.7);
-      warnings.push('OCR_DURATION_FROM_TIMESTAMPS');
+      warnings.push('OCR_END_FROM_DURATION');
     }
 
     if (ctx?.receipt) {
@@ -84,13 +88,8 @@ export abstract class BaseParser {
   }
 
   /**
-   * Cross-checks parsed regex output against Azure Document Intelligence's
-   * prebuilt-receipt fields. DI gives high-precision values for the total /
-   * subtotal / transaction-date — when DI's confidence beats the regex
-   * parser's confidence for that field, prefer the DI value.
-   *
-   * DI returns ride-receipt "Total" as what the customer paid → grossEgp.
-   * Subtotal (when present) maps to receivedEgp on apps that show both.
+   * Receipt totals corroborate an already identified fare. A generic receipt
+   * subtotal does not establish driver earnings or platform commission.
    */
   protected applyReceiptHints(
     fields: Partial<OcrParsedTripDto>,
@@ -103,29 +102,19 @@ export abstract class BaseParser {
     const beats = (existing: number | undefined, threshold: number): boolean =>
       diConf > (existing ?? 0) + 0.05 && diConf >= threshold;
 
-    if (receipt.total != null && beats(perField.grossEgp, 0.6)) {
-      fields.grossEgp = receipt.total;
+    if (receipt.total != null && fields.grossEgp === receipt.total && beats(perField.grossEgp, 0.6)) {
       perField.grossEgp = Math.max(perField.grossEgp ?? 0, diConf);
-    }
-    if (receipt.subtotal != null && beats(perField.receivedEgp, 0.6)) {
-      fields.receivedEgp = receipt.subtotal;
-      perField.receivedEgp = Math.max(perField.receivedEgp ?? 0, diConf);
     }
     if (receipt.tip != null && fields.tipEgp == null) {
       fields.tipEgp = receipt.tip;
       perField.tipEgp = diConf * 0.9;
     }
     if (receipt.transactionDate && receipt.transactionTime && fields.startedAt == null) {
-      const iso = `${receipt.transactionDate}T${receipt.transactionTime}.000Z`;
-      const d = new Date(iso);
-      if (!Number.isNaN(d.getTime())) {
-        fields.startedAt = d.toISOString();
+      const iso = localDateTimeToUtc(`${receipt.transactionDate}T${receipt.transactionTime}`);
+      if (iso) {
+        fields.startedAt = iso;
         perField.startedAt = diConf * 0.85;
       }
-    } else if (receipt.transactionDate && fields.startedAt == null) {
-      const iso = `${receipt.transactionDate}T00:00:00.000Z`;
-      fields.startedAt = iso;
-      perField.startedAt = diConf * 0.7;
     }
   }
 
@@ -388,7 +377,7 @@ export abstract class BaseParser {
 
       if (!timePart) {
         // Suffix variant: "10:46 م" / "08:45 PM" / "08:43 ص" — and also the
-        // RTL-scrambled order Azure occasionally returns ("08:09.2026/05/16 م"
+        // RTL-scrambled order text recognition occasionally returns ("08:09.2026/05/16 م"
         // when the source was "2026/05/16، 08:09 م"). The non-capturing group
         // between the time and the suffix absorbs digits, dots, slashes,
         // commas, hyphens, and Arabic commas, so the suffix is still
@@ -401,7 +390,8 @@ export abstract class BaseParser {
           const suffix = (mT[3] ?? '').toLowerCase();
           if (suffix === 'م' || suffix === 'pm') isPm = true;
           else if (suffix === 'ص' || suffix === 'am') isPm = false;
-          else ambiguous = true;
+          else ambiguous = h > 0 && h <= 12;
+          if (isPm != null && (h < 1 || h > 12)) ambiguous = true;
           if (h <= 23 && m <= 59) {
             timePart = { h, m, isPm };
             timeConfidence = isPm == null ? 0.55 : 0.9;
@@ -410,19 +400,22 @@ export abstract class BaseParser {
       }
     }
 
-    if (!datePart) return { startedAtIso: null, endedAtIso: null, confidence: 0, ambiguous };
+    if (!datePart || !timePart || ambiguous) {
+      return { startedAtIso: null, endedAtIso: null, confidence: 0, ambiguous: true };
+    }
 
-    let hour = timePart?.h ?? 0;
-    const minute = timePart?.m ?? 0;
+    let hour = timePart.h;
+    const minute = timePart.m;
     if (timePart?.isPm === true && hour < 12) hour += 12;
     if (timePart?.isPm === false && hour === 12) hour = 0;
 
-    const iso = `${datePart.y.toString().padStart(4, '0')}-${String(datePart.m).padStart(2, '0')}-${String(datePart.d).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000Z`;
+    const local = `${datePart.y.toString().padStart(4, '0')}-${String(datePart.m).padStart(2, '0')}-${String(datePart.d).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    const iso = localDateTimeToUtc(local);
     return {
       startedAtIso: iso,
       endedAtIso: null,
-      confidence: Math.min(dateConfidence, timeConfidence > 0 ? timeConfidence : dateConfidence),
-      ambiguous,
+      confidence: iso ? Math.min(dateConfidence, timeConfidence) : 0,
+      ambiguous: iso == null,
     };
   }
 
@@ -436,6 +429,7 @@ export abstract class BaseParser {
     for (const line of normalizedLines) {
       const hits = findFieldsOnLine(line);
       for (const h of hits) {
+        if (h.platforms && !h.platforms.includes(this.platform)) continue;
         if (h.field === 'paymentCash' && conf < h.weight) { pm = 'cash'; conf = h.weight; }
         else if (h.field === 'paymentCard' && conf < h.weight) { pm = 'card'; conf = h.weight; }
         else if (h.field === 'paymentWallet' && conf < h.weight) { pm = 'wallet'; conf = h.weight; }
@@ -484,7 +478,7 @@ export abstract class BaseParser {
   ): void {
     // Uber's pickup/destination lines reliably contain the Egypt country
     // code "EG" (from the embedded Google address). The script + arrangement
-    // varies a lot — Azure may emit any of:
+    // varies a lot — text recognition may emit any of:
     //   - Latin-only:           "Nasr City 4455020 EG"
     //   - Arabic-then-EG:       "مدينة نصر عبد المنعم رياض EG"
     //   - RTL-scrambled:        "4442441 EG مدينة نصر محور المشير محمد علي"

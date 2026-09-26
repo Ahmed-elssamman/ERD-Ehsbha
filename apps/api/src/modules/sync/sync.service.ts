@@ -1,137 +1,63 @@
+import { SyncMutationKind, TripRecordSource } from '@ehsbha/shared-types';
+import { PushSchema, type PullDto, type PushDto, type SyncMutation, type SyncMutationResult, type SyncPushResponse } from '@ehsbha/api-contracts';
 import { Injectable, Logger } from '@nestjs/common';
-import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { lockDriverWrites } from '../../common/authorization/driver-write-lock';
+import { findMutationReceipt, mutationFingerprint, saveMutationReceipt } from '../../common/operations/mutation-receipt';
 import { TripsService } from '../trips/trips.service';
-import { FuelService, CreateFuelSchema } from '../fuel/fuel.service';
-import { ExpensesService, CreateExpenseSchema } from '../expenses/expenses.service';
-import { SessionsService, StartSessionSchema, EndSessionSchema } from '../sessions/sessions.service';
-import { CreateTripSchema } from '../trips/dto/trips.dto';
+import { FuelService } from '../fuel/fuel.service';
+import { ExpensesService } from '../expenses/expenses.service';
+import { SessionsService } from '../sessions/sessions.service';
+import { AGGREGATE_TRANSACTION_TIMEOUT_MS } from '../aggregates/aggregate.control';
+import { pullSync } from './sync-pull';
+import { syncAppliedResult } from './sync-results';
+import { syncFailure } from './sync-errors';
 
-export const PullSchema = z.object({
-  cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
-});
-export type PullDto = z.infer<typeof PullSchema>;
-
-const MutationKind = z.enum([
-  'trip.create',
-  'fuel.create',
-  'expense.create',
-  'session.start',
-  'session.end',
-]);
-
-export const PushSchema = z.object({
-  mutations: z
-    .array(
-      z.object({
-        clientMutationId: z.string().min(8).max(64),
-        kind: MutationKind,
-        payload: z.record(z.unknown()),
-      }),
-    )
-    .min(1)
-    .max(50),
-});
-export type PushDto = z.infer<typeof PushSchema>;
-
-interface MutationResult {
-  clientMutationId: string;
-  status: 'APPLIED' | 'VALIDATION_ERROR' | 'CONFLICT' | 'INTERNAL_ERROR';
-  data?: unknown;
-  error?: { code: string; message: string };
-}
+export { PullSchema, PushSchema, type PullDto, type PushDto } from '@ehsbha/api-contracts';
 
 @Injectable()
 export class SyncService {
-  private readonly logger = new Logger(SyncService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly trips: TripsService,
-    private readonly fuel: FuelService,
-    private readonly expenses: ExpensesService,
-    private readonly sessions: SessionsService,
-  ) {}
+  private logger = new Logger(SyncService.name);
+  constructor(private prisma: PrismaService, private trips: TripsService, private fuel: FuelService,
+    private expenses: ExpensesService, private sessions: SessionsService) {}
 
-  async pull(driverId: string, dto: PullDto) {
-    const since = dto.cursor ? new Date(dto.cursor) : new Date(0);
-    const [trips, fuels, expenses, sessions, vehicles, areas, driverApps, goals, recommendations] = await Promise.all([
-      this.prisma.trip.findMany({
-        where: { driverId, updatedAt: { gt: since } },
-        orderBy: { updatedAt: 'asc' },
-        take: dto.limit,
-      }),
-      this.prisma.fuelLog.findMany({
-        where: { driverId, updatedAt: { gt: since } },
-        orderBy: { updatedAt: 'asc' },
-        take: dto.limit,
-      }),
-      this.prisma.expense.findMany({
-        where: { driverId, updatedAt: { gt: since } },
-        orderBy: { updatedAt: 'asc' },
-        take: dto.limit,
-      }),
-      this.prisma.session.findMany({
-        where: { driverId, updatedAt: { gt: since } },
-        orderBy: { updatedAt: 'asc' },
-        take: dto.limit,
-      }),
-      this.prisma.vehicle.findMany({ where: { driverId, updatedAt: { gt: since } } }),
-      this.prisma.area.findMany({ where: { driverId } }),
-      this.prisma.driverApp.findMany({ where: { driverId }, include: { appSource: true } }),
-      this.prisma.goal.findMany({ where: { driverId, updatedAt: { gt: since } } }),
-      this.prisma.recommendation.findMany({
-        where: { driverId, generatedAt: { gt: since }, dismissedAt: null, expiresAt: { gt: new Date() } },
-        orderBy: { generatedAt: 'desc' },
-        take: 30,
-      }),
-    ]);
+  pull(driverId: string, dto: PullDto) { return pullSync(this.prisma, driverId, dto); }
 
-    const newCursor = new Date().toISOString();
-    return {
-      cursor: newCursor,
-      entities: { trips, fuels, expenses, sessions, vehicles, areas, driverApps, goals, recommendations },
-    };
-  }
-
-  async push(driverId: string, dto: PushDto): Promise<{ results: MutationResult[] }> {
-    const results: MutationResult[] = [];
-    for (const m of dto.mutations) {
+  async push(driverId: string, dto: PushDto): Promise<SyncPushResponse> {
+    const parsed = PushSchema.parse(dto), results: SyncMutationResult[] = [];
+    for (const mutation of parsed.mutations) {
       try {
-        const data = await this.applyOne(driverId, m.kind, { ...m.payload, clientMutationId: m.clientMutationId });
-        results.push({ clientMutationId: m.clientMutationId, status: 'APPLIED', data });
-      } catch (err: any) {
-        this.logger.warn(`sync.push ${m.kind} for ${driverId} failed: ${err?.message}`);
-        const code = err?.response?.code ?? err?.code ?? 'INTERNAL_ERROR';
-        results.push({
-          clientMutationId: m.clientMutationId,
-          status: code === 'CONFLICT' ? 'CONFLICT' : 'VALIDATION_ERROR',
-          error: { code, message: err?.message ?? 'Mutation failed' },
-        });
+        results.push(await this.prisma.$transaction(async (tx) => {
+          await lockDriverWrites(tx, driverId);
+          const requestHash = mutationFingerprint(mutation.kind, mutation.payload);
+          const receipt = await findMutationReceipt(tx, driverId, mutation.clientMutationId, requestHash);
+          if (receipt) return syncAppliedResult(tx, mutation.kind, receipt, true);
+          const record = await this.applyOne(tx, driverId, mutation);
+          const saved = await saveMutationReceipt(tx, driverId, mutation.clientMutationId, requestHash, record.id);
+          return syncAppliedResult(tx, mutation.kind, saved, false);
+        }, { timeout: AGGREGATE_TRANSACTION_TIMEOUT_MS }));
+      } catch (error) {
+        const failure = syncFailure(mutation, error instanceof Error ? error : new Error());
+        this.logger.warn(`sync.push ${mutation.kind} ${failure.error.code}`);
+        results.push(failure);
       }
     }
     return { results };
   }
 
-  private async applyOne(driverId: string, kind: string, payload: any) {
-    switch (kind) {
-      case 'trip.create':
-        return this.trips.create(driverId, CreateTripSchema.parse(payload));
-      case 'fuel.create':
-        return this.fuel.create(driverId, CreateFuelSchema.parse(payload));
-      case 'expense.create':
-        return this.expenses.create(driverId, CreateExpenseSchema.parse(payload));
-      case 'session.start':
-        return this.sessions.start(driverId, StartSessionSchema.parse(payload));
-      case 'session.end': {
-        const parsed = z.object({
-          id: z.string().min(1),
-          endedAt: z.coerce.date().optional(),
-        }).parse(payload);
-        return this.sessions.end(driverId, parsed.id, EndSessionSchema.parse({ endedAt: parsed.endedAt }));
-      }
-      default:
-        throw new Error(`Unknown mutation kind: ${kind}`);
+  private applyOne(tx: Prisma.TransactionClient, driverId: string, mutation: SyncMutation) {
+    switch (mutation.kind) {
+      case SyncMutationKind.TripCreate:
+        return this.trips.createInTransaction(tx, driverId, { ...mutation.payload, clientMutationId: mutation.clientMutationId }, TripRecordSource.Sync);
+      case SyncMutationKind.FuelCreate:
+        return this.fuel.createInTransaction(tx, driverId, { ...mutation.payload, clientMutationId: mutation.clientMutationId });
+      case SyncMutationKind.ExpenseCreate:
+        return this.expenses.createInTransaction(tx, driverId, { ...mutation.payload, clientMutationId: mutation.clientMutationId });
+      case SyncMutationKind.SessionStart:
+        return this.sessions.startInTransaction(tx, driverId, { ...mutation.payload, clientMutationId: mutation.clientMutationId });
+      case SyncMutationKind.SessionEnd:
+        return this.sessions.endInTransaction(tx, driverId, mutation.payload.id, mutation.payload);
     }
   }
 }

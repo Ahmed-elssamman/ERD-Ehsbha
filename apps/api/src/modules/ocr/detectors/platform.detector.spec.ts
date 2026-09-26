@@ -11,6 +11,15 @@ import { FIXTURE as CAREEM_EN } from '../__fixtures__/careem-en.txt';
 describe('PlatformDetector', () => {
   const detector = new PlatformDetector(new SemanticNormalizer());
 
+  it('leaves a tie unresolved', () => {
+    expect(detector.detect(['Uber\nCareem']).platform).toBeNull();
+  });
+
+  it('preserves standalone Arabic labels inside multiline text', () => {
+    expect(detector.detect(['100.00 EGP\nأرباحك\nالدعم']).platform).toBe('DIDI');
+    expect(detector.detect(['100.00 EGP\nدخلي\nالدعم']).platform).toBe('INDRIVE');
+  });
+
   it('detects Uber from Arabic fixture', () => {
     const r = detector.detect([UBER_AR]);
     expect(r.platform).toBe('UBER');

@@ -1,113 +1,49 @@
-import { useRef, useState, type DragEvent, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type ChangeEvent } from 'react';
+import { OCR_ALLOWED_MIME, OCR_MAX_BATCH_BYTES, OCR_MAX_IMAGE_BYTES, OCR_MAX_IMAGES } from '@ehsbha/api-contracts';
 import { ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n';
 
-const MAX_FILES = 5;
-const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MIME = /^image\/(png|jpe?g|webp|heic|heif)$/i;
-
-interface Props {
-  files: File[];
-  onChange: (files: File[]) => void;
-  disabled?: boolean;
-}
+interface Props { files: File[]; onChange: (files: File[]) => void; disabled?: boolean }
+interface Preview { file: File; url: string }
 
 export function OcrDropzone({ files, onChange, disabled }: Props) {
   const { t } = useI18n();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isOver, setIsOver] = useState(false);
-
-  const addFiles = (incoming: File[]) => {
-    const valid = incoming.filter((f) => ALLOWED_MIME.test(f.type) && f.size <= MAX_BYTES);
-    const merged = [...files, ...valid].slice(0, MAX_FILES);
-    onChange(merged);
+  const input = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const [error, setError] = useState('');
+  const [previews, setPreviews] = useState<Preview[]>([]);
+  useEffect(() => {
+    const next = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setPreviews(next);
+    return () => { for (const preview of next) URL.revokeObjectURL(preview.url); };
+  }, [files]);
+  const add = (incoming: File[]) => {
+    const merged = [...files, ...incoming];
+    let code = '';
+    if (merged.length > OCR_MAX_IMAGES) code = 'OCR_TOO_MANY_IMAGES';
+    else if (incoming.some((file) => !OCR_ALLOWED_MIME.test(file.type))) code = 'OCR_UNSUPPORTED_MIME';
+    else if (incoming.some((file) => file.size > OCR_MAX_IMAGE_BYTES)) code = 'OCR_IMAGE_TOO_LARGE';
+    else if (merged.reduce((sum, file) => sum + file.size, 0) > OCR_MAX_BATCH_BYTES) code = 'OCR_BATCH_TOO_LARGE';
+    setError(code);
+    if (!code) onChange(merged);
   };
-
-  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    addFiles(Array.from(e.target.files));
-    e.target.value = '';
+  const pick = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) add(Array.from(event.target.files));
+    event.target.value = '';
   };
-
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsOver(false);
-    if (disabled) return;
-    if (e.dataTransfer.files) addFiles(Array.from(e.dataTransfer.files));
+  const drop = (event: DragEvent<HTMLButtonElement>) => {
+    event.preventDefault(); setOver(false);
+    if (!disabled) add(Array.from(event.dataTransfer.files));
   };
-
-  const remove = (i: number) => onChange(files.filter((_, idx) => idx !== i));
-
-  return (
-    <div className="space-y-3">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={t('trips.ocr.drop')}
-        onClick={() => !disabled && inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (!disabled && (e.key === 'Enter' || e.key === ' ')) inputRef.current?.click();
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (!disabled) setIsOver(true);
-        }}
-        onDragLeave={() => setIsOver(false)}
-        onDrop={onDrop}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
-          isOver ? 'border-primary bg-primary/5' : 'border-border bg-muted/30'
-        } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
-      >
-        <ImagePlus className="h-8 w-8 text-primary" aria-hidden />
-        <p className="text-sm font-medium">{t('trips.ocr.drop')}</p>
-        <p className="text-xs text-muted-foreground">{t('trips.ocr.dropHint')}</p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={onPick}
-        />
-      </div>
-
-      {files.length > 0 ? (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {files.map((f, i) => {
-            const url = URL.createObjectURL(f);
-            return (
-              <li key={`${f.name}-${i}`} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
-                <img
-                  src={url}
-                  alt={f.name}
-                  className="h-full w-full object-cover"
-                  onLoad={() => URL.revokeObjectURL(url)}
-                />
-                {!disabled ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="remove"
-                    className="absolute right-1 top-1 h-6 w-6 rounded-full bg-black/60 text-white hover:bg-black/80"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      remove(i);
-                    }}
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden />
-                  </Button>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-
-      {files.length > 0 ? (
-        <p className="text-xs text-muted-foreground">{t('trips.ocr.selectedCount', { n: files.length })}</p>
-      ) : null}
-    </div>
-  );
+  return <div className="space-y-3">
+    <button type="button" onClick={() => input.current?.click()} disabled={disabled} onDragOver={(event) => { event.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={drop}
+      className={`flex min-h-36 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 ${over ? 'border-primary bg-primary/5' : 'border-border bg-muted/30'}`}>
+      <ImagePlus className="size-8 text-primary" aria-hidden /><span className="text-sm font-medium">{t('trips.ocr.drop')}</span><span className="text-xs text-muted-foreground">{t('trips.ocr.dropHint')}</span>
+    </button>
+    <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" multiple className="hidden" onChange={pick} disabled={disabled} aria-label={t('trips.ocr.drop')} />
+    {error ? <p role="alert" className="text-sm text-destructive">{t(`trips.ocr.error.${error}`)}</p> : null}
+    {previews.length ? <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">{previews.map(({ file, url }, index) => <li key={url} className="relative aspect-square overflow-hidden rounded-lg border bg-muted"><img src={url} alt={t('trips.ocr.imageNumber', { n: index + 1 })} className="h-full w-full object-cover" /><Button type="button" variant="ghost" aria-label={t('trips.ocr.removeImage', { name: file.name })} disabled={disabled} className="absolute end-0 top-0 size-11 rounded-lg bg-black/70 p-0 text-white hover:bg-black/90" onClick={() => { setError(''); onChange(files.filter((_, fileIndex) => fileIndex !== index)); }}><X className="size-5" aria-hidden /></Button></li>)}</ul> : null}
+    {files.length ? <p className="text-xs text-muted-foreground" role="status">{t('trips.ocr.selectedCount', { n: files.length })}</p> : null}
+  </div>;
 }

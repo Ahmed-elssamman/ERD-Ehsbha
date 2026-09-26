@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useId, useRef } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { Button } from './button';
@@ -53,8 +53,13 @@ export function Dialog({
   size = 'md',
 }: DialogProps) {
   const t = useT();
+  const reduceMotion = useReducedMotion();
   const panelRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -65,6 +70,8 @@ export function Dialog({
     const focusTimer = window.setTimeout(() => {
       const panel = panelRef.current;
       if (!panel) return;
+      // A driver may already be typing before deferred initial focus runs.
+      if (panel.contains(document.activeElement)) return;
       const focusables = getFocusable(panel);
       // Prefer first non-close-button focusable so screen-reader users land
       // on the dialog's primary content rather than the dismiss button.
@@ -76,7 +83,7 @@ export function Dialog({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        closeRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -114,7 +121,7 @@ export function Dialog({
         opener.focus({ preventScroll: true });
       }
     };
-  }, [open, onClose, t]);
+  }, [open, t]);
 
   return (
     <AnimatePresence>
@@ -125,10 +132,10 @@ export function Dialog({
         // `safe-area-inset-bottom` reserves the iOS home-indicator gutter.
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={reduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: reduceMotion ? 0 : 0.15 }}
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
             aria-hidden
@@ -137,12 +144,13 @@ export function Dialog({
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? 'dialog-title' : undefined}
+            aria-labelledby={title ? titleId : undefined}
+            aria-describedby={description ? descriptionId : undefined}
             tabIndex={-1}
-            initial={{ y: 24, opacity: 0, scale: 0.98 }}
+            initial={reduceMotion ? false : { y: 24, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 24, opacity: 0, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            exit={reduceMotion ? { opacity: 0 } : { y: 24, opacity: 0, scale: 0.98 }}
+            transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 30 }}
             // Three-row grid: header (auto) / body (1fr scroll) / footer (auto).
             // `max-h-[100dvh]` on mobile makes the sheet sit flush at the
             // bottom while body content scrolls inside; `sm:max-h-[calc(100dvh-2rem)]`
@@ -159,12 +167,12 @@ export function Dialog({
               <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/60 p-5">
                 <div className="min-w-0">
                   {title ? (
-                    <h2 id="dialog-title" className="text-base font-semibold">
+                    <h2 id={titleId} className="text-base font-semibold">
                       {title}
                     </h2>
                   ) : null}
                   {description ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+                    <p id={descriptionId} className="mt-1 text-sm text-muted-foreground">{description}</p>
                   ) : null}
                 </div>
                 <Button variant="ghost" size="icon" aria-label={t('common.close')} onClick={onClose}>

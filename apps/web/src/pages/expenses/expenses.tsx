@@ -1,325 +1,108 @@
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Receipt, Trash2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { motion } from 'framer-motion';
+import { RecordDraftList } from '@/components/record-drafts/record-draft-list';
+import { RecordDraftKind } from '@/lib/record-drafts/record-draft.model';
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, Receipt } from 'lucide-react';
+import { ExpenseView } from '@ehsbha/shared-types';
+import { useI18n } from '@/i18n';
+import { ExpensesApi, type Expense } from '@/lib/api/endpoints';
+import { formatDate, formatMoney } from '@/lib/format';
+import { useBusinessDate } from '@/hooks/use-business-date';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Dialog, ConfirmDialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { useI18n } from '@/i18n';
-import { ExpensesApi, VehiclesApi, type ExpenseCategory } from '@/lib/api/endpoints';
-import { formatDate, formatMoney } from '@/lib/format';
-import { toDatetimeLocalValue } from '@/lib/time';
-
-const CATEGORIES: ExpenseCategory[] = ['RENT', 'INSURANCE', 'FINE', 'TOLL', 'FOOD', 'PHONE', 'WASH', 'PARKING', 'OTHER'];
-
-const schema = z.object({
-  category: z.enum(['RENT', 'INSURANCE', 'FINE', 'TOLL', 'FOOD', 'PHONE', 'WASH', 'PARKING', 'OTHER']),
-  amountEgp: z.coerce.number().min(0.01),
-  dateTime: z.string().min(1),
-  vehicleId: z.string().optional(),
-  isRecurring: z.boolean().default(false),
-  notes: z.string().max(500).optional(),
-});
-type FormValues = z.input<typeof schema>;
+import { ExpenseDialog, ResumeExpenseDraft } from './expense-dialog';
+import { ExpenseHistory } from './expense-history';
+import { ExpenseStatusDialog } from './expense-status-dialog';
+import { EXPENSE_VIEWS, EXPENSE_INVALIDATIONS, EXPENSE_DATE_FORMAT, expenseMonthRange } from './expenses.control';
 
 export function ExpensesPage() {
   const { t, locale } = useI18n();
-  const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-
-  const since = useMemo(() => {
-    const d = new Date();
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, []);
-
-  const { data: items, isLoading } = useQuery({
-    queryKey: ['expenses', { since }],
-    queryFn: () => ExpensesApi.list({ from: since, limit: 50 }),
-    staleTime: 30_000,
-  });
-
-  const vehiclesQ = useQuery({ queryKey: ['vehicles'], queryFn: VehiclesApi.list });
-
-  const monthTotal = (items ?? []).reduce((s, e) => s + e.amountPiastres, 0);
-  const byCategory = useMemo(() => {
-    const map = new Map<ExpenseCategory, number>();
-    for (const e of items ?? []) {
-      map.set(e.category, (map.get(e.category) ?? 0) + e.amountPiastres);
-    }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [items]);
-
-  const removeMut = useMutation({
-    mutationFn: (id: string) => ExpensesApi.remove(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['expenses'] });
-      qc.invalidateQueries({ queryKey: ['analytics'] });
-      setConfirmId(null);
-    },
-  });
-
-  return (
-    <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title={t('expenses.title')}
-        subtitle={t('expenses.subtitle')}
-        actions={
-          <Button onClick={() => setOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" aria-hidden /> {t('expenses.add')}
-          </Button>
-        }
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('expenses.totalMonth')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <p className="num-tabular text-3xl font-bold tracking-tight">{formatMoney(monthTotal, locale)}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('expenses.byCategory')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-12 w-full" />
-            ) : byCategory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('common.noData')}</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {byCategory.slice(0, 5).map(([cat, amt]) => {
-                  const pct = monthTotal > 0 ? (amt / monthTotal) * 100 : 0;
-                  return (
-                    <li key={cat}>
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{t(`expenses.category.${cat}`)}</span>
-                        <span className="num-tabular text-muted-foreground">{formatMoney(amt, locale)}</span>
-                      </div>
-                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                        <motion.div
-                          className="h-full rounded-full bg-primary/70"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.4 }}
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <ul className="divide-y divide-border/60">
-              {[0, 1, 2].map((i) => (
-                <li key={i} className="px-5 py-4">
-                  <Skeleton className="h-12 w-full" />
-                </li>
-              ))}
-            </ul>
-          ) : !items || items.length === 0 ? (
-            <EmptyState
-              Icon={Receipt}
-              title={t('expenses.empty')}
-              body={t('expenses.emptyBody')}
-              action={
-                <Button onClick={() => setOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" /> {t('expenses.add')}
-                </Button>
-              }
-            />
-          ) : (
-            <ul className="divide-y divide-border/60">
-              {items.map((e) => (
-                <motion.li
-                  key={e.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.16 }}
-                  className="flex items-center justify-between gap-3 px-5 py-4"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{t(`expenses.category.${e.category}`)}</span>
-                      {e.isRecurring ? <Badge variant="muted">{t('expenses.field.recurring')}</Badge> : null}
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatDate(e.dateTime, locale, { day: 'numeric', month: 'short', year: 'numeric' })}
-                      {e.notes ? ` · ${e.notes}` : ''}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="num-tabular font-semibold">{formatMoney(e.amountPiastres, locale)}</span>
-                    <Button variant="ghost" size="icon" onClick={() => setConfirmId(e.id)} aria-label={t('common.delete')}>
-                      <Trash2 className="h-4 w-4 text-destructive" aria-hidden />
-                    </Button>
-                  </div>
-                </motion.li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      <ExpenseDialog open={open} onClose={() => setOpen(false)} vehicleOptions={vehiclesQ.data ?? []} />
-
-      <ConfirmDialog
-        open={!!confirmId}
-        onClose={() => setConfirmId(null)}
-        onConfirm={() => confirmId && removeMut.mutate(confirmId)}
-        title={t('common.confirmDelete')}
-        body={t('common.confirmDeleteBody')}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        destructive
-        loading={removeMut.isPending}
-      />
+  const queryClient = useQueryClient();
+  const today = useBusinessDate();
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const month = selectedMonth || today.slice(0, 7);
+  const [view, setView] = useState(ExpenseView.Active);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Expense | null>(null);
+  const [statusExpense, setStatusExpense] = useState<Expense | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const range = expenseMonthRange(month);
+  const summary = useQuery({ queryKey: ['expenses', 'summary', month], enabled: range !== null,
+    queryFn: () => ExpensesApi.summary({ from: range?.from ?? today, to: range?.to ?? today }), staleTime: 30_000 });
+  const list = useInfiniteQuery({ queryKey: ['expenses', 'list', month, view], enabled: range !== null, initialPageParam: '',
+    queryFn: ({ pageParam }) => ExpensesApi.list({ from: range?.since, to: range?.until, view, ...(pageParam ? { cursor: pageParam } : {}) }),
+    getNextPageParam: (page) => page.nextCursor, staleTime: 30_000 });
+  const items = list.data?.pages.flatMap((page) => page.items) ?? [];
+  function changeMonth(value: string) { if (expenseMonthRange(value)) { setSelectedMonth(value); setSaved(false); } }
+  function openCreate() { setCreating(true); setSaved(false); }
+  function refresh() { void summary.refetch(); void list.refetch(); }
+  function closeEditor() { setCreating(false); setEditing(null); }
+  function onSaved() {
+    for (const key of EXPENSE_INVALIDATIONS) void queryClient.invalidateQueries({ queryKey: [key] });
+    closeEditor(); setStatusExpense(null); setSaved(true);
+  }
+  return <div className="space-y-6 animate-fade-in">
+    <PageHeader title={t('expenses.title')} subtitle={t('expenses.subtitle')}
+      actions={<Button className="min-h-11 gap-2" onClick={openCreate}><Plus className="h-4 w-4" aria-hidden />{t('expenses.add')}</Button>} />
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="max-w-xs space-y-1.5"><Label htmlFor="expense-month">{t('expenses.month')}</Label>
+        <Input id="expense-month" className="min-h-11" type="month" min="1900-01" max="9998-12" value={month} onChange={(event) => changeMonth(event.target.value)} /></div>
+      <Button className="min-h-11" variant="outline" onClick={refresh} loading={summary.isFetching || list.isFetching}>{t('expenses.refresh')}</Button>
     </div>
-  );
-}
-
-function ExpenseDialog({
-  open,
-  onClose,
-  vehicleOptions,
-}: {
-  open: boolean;
-  onClose: () => void;
-  vehicleOptions: Array<{ id: string; make?: string | null; model?: string | null; type: string }>;
-}) {
-  const { t } = useI18n();
-  const qc = useQueryClient();
-
-  const defaults: FormValues = {
-    category: 'FOOD',
-    amountEgp: 0,
-    dateTime: toDatetimeLocalValue(new Date()),
-    vehicleId: '',
-    isRecurring: false,
-    notes: '',
-  };
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults });
-
-  const createMut = useMutation({
-    mutationFn: ExpensesApi.create,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['expenses'] });
-      qc.invalidateQueries({ queryKey: ['analytics'] });
-      reset(defaults);
-      onClose();
-    },
-  });
-
-  const submit = handleSubmit((v) =>
-    createMut.mutateAsync({
-      category: v.category,
-      amountPiastres: Math.round(Number(v.amountEgp) * 100),
-      dateTime: new Date(v.dateTime).toISOString(),
-      vehicleId: v.vehicleId || null,
-      isRecurring: v.isRecurring,
-      notes: v.notes?.trim() || null,
-    }),
-  );
-
-  return (
-    <Dialog
-      open={open}
-      onClose={() => {
-        reset(defaults);
-        onClose();
-      }}
-      title={t('expenses.add')}
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={submit} loading={isSubmitting || createMut.isPending}>
-            {t('common.save')}
-          </Button>
-        </>
-      }
-    >
-      <form onSubmit={submit} className="space-y-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="category">{t('expenses.field.category')}</Label>
-            <Select id="category" {...register('category')}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {t(`expenses.category.${c}`)}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="amountEgp">{t('expenses.field.amount')}</Label>
-            <Input
-              id="amountEgp"
-              type="number"
-              step="0.01"
-              min={0.01}
-              dir="ltr"
-              invalid={!!errors.amountEgp}
-              {...register('amountEgp')}
-            />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="dateTime">{t('expenses.field.dateTime')}</Label>
-            <Input id="dateTime" type="datetime-local" {...register('dateTime')} />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="vehicleId">{t('expenses.field.vehicle')}</Label>
-            <Select id="vehicleId" {...register('vehicleId')}>
-              <option value="">—</option>
-              {vehicleOptions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {[v.make, v.model].filter(Boolean).join(' ') || v.type}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" {...register('isRecurring')} className="h-4 w-4 accent-primary" />
-            <span>{t('expenses.field.recurring')}</span>
-          </label>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="notes">{t('expenses.field.notes')}</Label>
-            <Textarea id="notes" rows={2} {...register('notes')} />
-          </div>
+    {!creating && !editing ? <RecordDraftList kind={RecordDraftKind.Expense} render={(draft, close) => <ResumeExpenseDraft draft={draft} onClose={close} onSaved={() => { close(); onSaved(); }} />} /> : null}
+    {saved ? <p role="status" className="text-sm text-primary">{t('expenses.saved')}</p> : null}
+    <Card><CardHeader><CardTitle className="text-base">{t('expenses.totalMonth')}</CardTitle></CardHeader><CardContent className="space-y-4">
+      {summary.isLoading ? <Skeleton className="h-10 w-40" /> : null}
+      {summary.isError ? <div role="alert" className="space-y-2"><p>{t('expenses.summaryFailed')}</p><Button variant="outline" className="min-h-11" onClick={() => void summary.refetch()}>{t('common.retry')}</Button></div> : null}
+      {summary.data && !summary.isError ? <>
+        <p className="num-tabular text-3xl font-bold tracking-tight" data-testid="expense-month-total">{formatMoney(summary.data.totalPiastres, locale)}</p>
+        <p className="text-sm">{t('expenses.summaryCount', { count: summary.data.recordCount, linked: summary.data.linkedCount })}</p>
+        <div><h2 className="mb-2 text-sm font-semibold">{t('expenses.byCategory')}</h2>
+          <ul className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">{summary.data.byCategory.map((row) => <li key={row.category} className="flex justify-between gap-2">
+            <span>{t(`expenses.category.${row.category}`)}</span><span className="num-tabular">{formatMoney(row.amountPiastres, locale)}</span>
+          </li>)}</ul>
         </div>
-      </form>
-    </Dialog>
-  );
+      </> : null}
+      <p className="text-sm text-muted-foreground">{t('expenses.summaryHint')}</p>
+    </CardContent></Card>
+    <div role="group" aria-label={t('expenses.view.label')} className="flex flex-wrap gap-2">
+      {EXPENSE_VIEWS.map((option) => <Button key={option} className="min-h-11" variant={option === view ? 'default' : 'outline'} aria-pressed={option === view} onClick={() => setView(option)}>{t(`expenses.view.${option}`)}</Button>)}
+    </div>
+    <Card><CardContent className="p-0">
+      {list.isLoading ? <div className="p-5"><Skeleton className="h-24 w-full" /></div> : null}
+      {list.isError ? <div role="alert" className="space-y-3 p-5"><p>{t('expenses.listFailed')}</p><Button variant="outline" className="min-h-11" onClick={() => void list.refetch()}>{t('common.retry')}</Button></div> : null}
+      {list.isSuccess && items.length === 0 ? <EmptyState Icon={Receipt} title={t(view === ExpenseView.Deleted ? 'expenses.deletedEmpty' : 'expenses.empty')}
+        body={t(view === ExpenseView.Deleted ? 'expenses.deletedEmptyBody' : 'expenses.emptyBody')}
+        action={view === ExpenseView.Active ? <Button className="min-h-11" onClick={openCreate}>{t('expenses.add')}</Button> : null} /> : null}
+      <ul className="divide-y divide-border/60">{items.map((expense) => <li key={expense.id} className="space-y-2 px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-start justify-between gap-2"><span className="font-semibold">{t(`expenses.category.${expense.category}`)}</span>
+          <span className="num-tabular font-semibold">{formatMoney(expense.amountPiastres, locale)}</span></div>
+        <p className="text-sm text-muted-foreground">{formatDate(expense.dateTime, locale, EXPENSE_DATE_FORMAT)}</p>
+        {expense.notes ? <p className="break-words text-sm">{expense.notes}</p> : null}
+        <div className="flex flex-wrap gap-2">
+          {expense.isRecurring ? <Badge variant="muted">{t('expenses.field.recurring')}</Badge> : null}
+          {expense.linkedFuel?.length ? <Button asChild variant="link"><Link to="/fuel">{t('fuel.link.linked')}</Link></Button> : null}
+          {expense.linkedMaintenance?.length ? <Button asChild variant="link"><Link to="/maintenance">{t('maintenance.link.linked')}</Link></Button> : null}
+          {expense.linkedTripId ? <Badge variant="muted">{t('expenses.link.badge')}</Badge> : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {view === ExpenseView.Active ? <Button className="min-h-11" variant="outline" onClick={() => setEditing(expense)}>{t('common.edit')}</Button> : null}
+          <Button className="min-h-11" variant="ghost" onClick={() => setHistoryId(expense.id)}>{t('expenses.history.title')}</Button>
+          <Button className="min-h-11" variant="ghost" onClick={() => setStatusExpense(expense)}>{t(view === ExpenseView.Deleted ? 'expenses.restore' : 'common.delete')}</Button>
+        </div>
+      </li>)}</ul>
+      {list.hasNextPage ? <div className="p-4"><Button className="min-h-11 w-full" variant="outline" loading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>{t('common.loadMore')}</Button></div> : null}
+    </CardContent></Card>
+    {creating || editing ? <ExpenseDialog expense={editing} onClose={closeEditor} onSaved={onSaved} /> : null}
+    {statusExpense ? <ExpenseStatusDialog expense={statusExpense} onClose={() => setStatusExpense(null)} onSaved={onSaved} /> : null}
+    {historyId ? <ExpenseHistory expenseId={historyId} onClose={() => setHistoryId(null)} /> : null}
+  </div>;
 }

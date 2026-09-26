@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { VEHICLE_FUEL_TYPES, vehicleSchema, valuesFor, type VehicleForm } from './vehicle-form.control';
+import { businessDate } from '@ehsbha/shared-types';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -39,7 +41,6 @@ import {
 } from '@/lib/api/endpoints';
 import { formatDate, formatMoney } from '@/lib/format';
 import { useAuth } from '@/stores/auth.store';
-import { queryClient } from '@/providers/query-provider';
 import { toDateInputValue } from '@/lib/time';
 import { vehicleLabel } from '@/hooks/use-vehicle-selector';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,7 @@ import { readApiError } from '@/lib/api/client';
 import { openInstallDialog } from '@/components/pwa/update-prompt';
 
 export function SettingsPage() {
+  const queryClient = useQueryClient();
   const { t, locale, toggleLocale } = useI18n();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -206,17 +208,7 @@ function ProfileSection() {
 
 /* -------- Vehicles ------------------------------------------------------ */
 
-const vehicleSchema = z.object({
-  type: z.enum(['CAR', 'BIKE']),
-  make: z.string().max(60).optional(),
-  model: z.string().max(60).optional(),
-  year: z.coerce.number().int().min(1980).max(2100).optional(),
-  fuelType: z.enum(['PETROL_80', 'PETROL_92', 'PETROL_95', 'DIESEL', 'CNG', 'ELECTRIC']),
-  tankLiters: z.coerce.number().int().min(1).max(500).default(45),
-  baselineKmPerLiter: z.coerce.number().min(1).max(100).default(12),
-  odometerKm: z.coerce.number().int().min(0).default(0),
-});
-type VehicleForm = z.input<typeof vehicleSchema>;
+
 
 function VehiclesSection() {
   const { t } = useI18n();
@@ -312,30 +304,9 @@ function VehicleDialog({
   const { t } = useI18n();
   const qc = useQueryClient();
 
-  const blankVehicle: VehicleForm = {
-    type: 'CAR',
-    make: '',
-    model: '',
-    year: new Date().getFullYear(),
-    fuelType: 'PETROL_92',
-    tankLiters: 45,
-    baselineKmPerLiter: 12,
-    odometerKm: 0,
-  };
-
-  const valuesFor = (v: Vehicle | null): VehicleForm =>
-    v
-      ? {
-          type: v.type,
-          make: v.make ?? '',
-          model: v.model ?? '',
-          year: v.year ?? new Date().getFullYear(),
-          fuelType: v.fuelType,
-          tankLiters: v.tankLiters,
-          baselineKmPerLiter: v.baselineKmPerLiter,
-          odometerKm: Math.floor(v.odometerMeters / 1000),
-        }
-      : blankVehicle;
+  const [saveError, setSaveError] = useState('');
+  const mileageVersion = useRef(vehicle?.odometerVersion ?? 1);
+  const blankVehicle = valuesFor(null);
 
   const {
     register,
@@ -349,7 +320,8 @@ function VehicleDialog({
   useEffect(() => {
     if (!open) return;
     reset(valuesFor(vehicle));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    mileageVersion.current = vehicle?.odometerVersion ?? 1;
+    setSaveError('');
   }, [open, vehicle?.id]);
 
   const createMut = useMutation({
@@ -361,7 +333,7 @@ function VehicleDialog({
     },
   });
   const updateMut = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Vehicle> }) => VehiclesApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: Partial<Vehicle> & { expectedOdometerVersion?: number } }) => VehiclesApi.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vehicles'] });
       reset(blankVehicle);
@@ -369,7 +341,7 @@ function VehicleDialog({
     },
   });
 
-  const submit = handleSubmit((v) => {
+  const submit = handleSubmit(async (v) => {
     const body = {
       type: v.type,
       make: v.make?.trim() || undefined,
@@ -378,10 +350,17 @@ function VehicleDialog({
       fuelType: v.fuelType,
       tankLiters: Number(v.tankLiters),
       baselineKmPerLiter: Number(v.baselineKmPerLiter),
-      odometerMeters: Math.round(Number(v.odometerKm) * 1000),
+      ...(v.odometerKm !== '' ? { odometerMeters: Math.round(Number(v.odometerKm) * 1000), ...(vehicle ? { expectedOdometerVersion: mileageVersion.current } : {}) } : {}),
     };
-    if (vehicle) return updateMut.mutateAsync({ id: vehicle.id, body });
-    return createMut.mutateAsync(body);
+    setSaveError('');
+    try {
+      if (vehicle) await updateMut.mutateAsync({ id: vehicle.id, body });
+      else await createMut.mutateAsync(body);
+      void qc.invalidateQueries({ queryKey: ['maintenance'] });
+      void qc.invalidateQueries({ queryKey: ['decisions'] });
+    } catch (error) {
+      setSaveError(error instanceof Error && readApiError(error).code === 'VEHICLE_ODOMETER_CONFLICT' ? 'errors.VEHICLE_ODOMETER_CONFLICT' : 'settings.vehicleSaveFailed');
+    }
   });
 
   return (
@@ -412,7 +391,7 @@ function VehicleDialog({
         <div className="space-y-1.5">
           <Label htmlFor="fuelType">{t('settings.vehicleFields.fuelType')}</Label>
           <Select id="fuelType" {...register('fuelType')}>
-            {(['PETROL_80', 'PETROL_92', 'PETROL_95', 'DIESEL', 'CNG', 'ELECTRIC'] as const).map((f) => (
+            {VEHICLE_FUEL_TYPES.map((f) => (
               <option key={f} value={f}>{t(`settings.fuelTypes.${f}`)}</option>
             ))}
           </Select>
@@ -439,8 +418,12 @@ function VehicleDialog({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="odometerKm">{t('settings.vehicleFields.odometer')}</Label>
-          <Input id="odometerKm" type="number" dir="ltr" {...register('odometerKm')} />
+          <Input id="odometerKm" type="number" step="0.001" min="0" inputMode="decimal" dir="ltr" aria-describedby="vehicle-mileage-help" invalid={!!errors.odometerKm} {...register('odometerKm')} />
+          <p id="vehicle-mileage-help" className="text-xs text-muted-foreground">{t('settings.mileageHelp')}</p>
+          {vehicle ? <p className="text-sm">{t(`settings.mileageSource.${vehicle.odometerSource}`)}{vehicle.odometerMeters === null ? '' : `: ${vehicle.odometerMeters / 1000} ${t('units.km')}`}</p> : null}
+          {errors.odometerKm ? <p role="alert" className="text-sm text-destructive">{t('settings.mileageInvalid')}</p> : null}
         </div>
+        {saveError ? <p role="alert" className="text-sm text-destructive sm:col-span-2">{t(saveError)}</p> : null}
       </form>
     </Dialog>
   );
@@ -577,7 +560,7 @@ function AddAppDialog({
     setCommissionPct(first ? String(Number(first.defaultCommissionPct ?? 20)) : '20');
     setColor('#34D399');
     setError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [open, availableCatalog.length]);
 
   const pickSource = (id: string) => {
@@ -794,7 +777,7 @@ function EditAppDialog({
   useEffect(() => {
     if (!open) return;
     reset(valuesFor(app));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [open, app?.id]);
 
   const updateMut = useMutation({
@@ -968,7 +951,7 @@ function AreaDialog({ open, onClose, area }: { open: boolean; onClose: () => voi
   useEffect(() => {
     if (!open) return;
     reset(valuesFor(area));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [open, area?.id]);
 
   const createMut = useMutation({
@@ -1104,9 +1087,9 @@ function GoalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
 
   const computeDefaults = (): GoalForm => {
-    const now = new Date();
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const now = businessDate(new Date());
+    const firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const lastOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
     return {
       period: 'MONTHLY',
       targetEgp: 0,
@@ -1125,7 +1108,7 @@ function GoalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   useEffect(() => {
     if (!open) return;
     reset(computeDefaults());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [open]);
 
   const createMut = useMutation({
@@ -1179,4 +1162,3 @@ function GoalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     </Dialog>
   );
 }
-

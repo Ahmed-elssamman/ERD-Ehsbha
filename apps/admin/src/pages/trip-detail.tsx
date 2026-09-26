@@ -1,3 +1,4 @@
+import { formatBusinessTimestamp } from '@/lib/utils';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
@@ -9,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useI18n } from '@/i18n/provider';
 import { formatNumber, formatPiastres } from '@/lib/utils';
+import { tripEarningsPiastres } from '@ehsbha/shared-types';
+import { TRIP_MONEY_FIELDS } from './trip-detail.control';
 
 interface Row {
   label: string;
@@ -30,7 +33,7 @@ function MiniRows({ rows }: { rows: Row[] }) {
 
 export function TripDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'trip', id],
@@ -54,26 +57,7 @@ export function TripDetailPage() {
     );
   }
 
-  const trip = data as {
-    id: string;
-    startedAt: string;
-    endedAt: string;
-    grossPiastres: number;
-    receivedPiastres: number | null;
-    tipPiastres: number;
-    commissionPiastres: number;
-    tollPiastres: number;
-    parkingPiastres: number;
-    totalKmMeters: number;
-    paidKmMeters: number;
-    emptyKmMeters: number;
-    notes: string | null;
-    driverId: string;
-    driver: { displayName: string; user: { phone: string; email: string | null } };
-    driverApp: { customName: string | null; appSource: { name: string; code: string } };
-    vehicle: { id: string; type: string; make: string | null; model: string | null; year: number | null };
-    area: { name: string } | null;
-  };
+  const trip = data;
 
   const durationMin = Math.max(0, Math.round((new Date(trip.endedAt).getTime() - new Date(trip.startedAt).getTime()) / 60000));
 
@@ -84,22 +68,15 @@ export function TripDetailPage() {
         {t('trips.backToTrips')}
       </Button>
 
-      <PageHeader title={`#${trip.id.slice(-8)}`} description={`${new Date(trip.startedAt).toLocaleString()} · ${durationMin} min`} />
+      <PageHeader title={`#${trip.id.slice(-8)}`} description={`${formatBusinessTimestamp(trip.startedAt, locale)} · ${durationMin} min`} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>{t('trips.financials')}</CardTitle></CardHeader>
           <CardContent>
-            <MiniRows
-              rows={[
-                { label: t('trips.grossLabel'), value: formatPiastres(trip.grossPiastres) },
-                { label: t('trips.received'), value: trip.receivedPiastres != null ? formatPiastres(trip.receivedPiastres) : '—' },
-                { label: t('trips.tip'), value: formatPiastres(trip.tipPiastres) },
-                { label: t('trips.commission'), value: formatPiastres(trip.commissionPiastres) },
-                { label: t('trips.toll'), value: formatPiastres(trip.tollPiastres) },
-                { label: t('trips.parking'), value: formatPiastres(trip.parkingPiastres) },
-              ]}
-            />
+            <div className="mb-3"><p className="text-sm text-muted-foreground">{t('finance.earnings')}</p><p className="text-lg font-semibold">{formatPiastres(tripEarningsPiastres(trip))}</p></div>
+            {trip.grossPiastres === null ? <p role="status" className="mb-3 text-sm text-muted-foreground">{t('finance.missingDetails')}</p> : null}
+            <MiniRows rows={TRIP_MONEY_FIELDS.map((control) => ({ label: t(control.label), value: formatPiastres(trip[control.field]) }))} />
           </CardContent>
         </Card>
 

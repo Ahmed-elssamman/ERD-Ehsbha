@@ -1,3 +1,4 @@
+import { tripEarningsPiastres } from '@ehsbha/shared-types';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,6 +13,14 @@ interface ListInput {
   includeDeleted?: boolean;
 }
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a trip is not found
+ * - {@link GOVERNED_ERROR_REGISTRY.ADMIN_PERMISSIONS_STALE} - when admin permissions are stale
+ * - {@link GOVERNED_ERROR_REGISTRY.ADMIN_MFA_REQUIRED} - when MFA verification is required for this action
+ * - {@link GOVERNED_ERROR_REGISTRY.SESSION_EXPIRED} - when the admin session has expired
+ * - {@link GOVERNED_ERROR_REGISTRY.FORBIDDEN} - when admin lacks permission for the action
+ */
 @Injectable()
 export class AdminTripsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -49,7 +58,7 @@ export class AdminTripsService {
 
     return {
       items: page.map((t) => ({
-        id: t.id,
+        id: t.id, version: t.version, source: t.source,
         driverId: t.driverId,
         driverPhone: t.driver.user.phone,
         driverDisplayName: t.driver.displayName,
@@ -59,7 +68,7 @@ export class AdminTripsService {
         areaName: t.area?.name ?? null,
         startedAt: t.startedAt.toISOString(),
         endedAt: t.endedAt.toISOString(),
-        grossPiastres: t.grossPiastres,
+        grossPiastres: t.grossPiastres, earningsPiastres: tripEarningsPiastres(t),
         receivedPiastres: t.receivedPiastres,
         tipPiastres: t.tipPiastres,
         commissionPiastres: t.commissionPiastres,
@@ -84,7 +93,7 @@ export class AdminTripsService {
         vehicle: { select: { id: true, type: true, make: true, model: true, year: true } },
       },
     });
-    if (!t) throw new NotFoundException({ code: 'TRIP_NOT_FOUND' });
+    if (!t) throw new NotFoundException({ code: 'NOT_FOUND' });
     return t;
   }
 }

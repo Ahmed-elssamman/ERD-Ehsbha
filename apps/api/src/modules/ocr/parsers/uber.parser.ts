@@ -29,7 +29,7 @@ export class UberParser extends BaseParser {
     this.reorderAddresses(res.fields);
     this.stitchAddressContinuations(text, res);
 
-    // Fallback derivation: when Azure misreads the income label (e.g.
+    // Fallback derivation: when text recognition misreads the income label (e.g.
     // "الدخل" → "لدخل" with the alif dropped) the dictionary pattern
     // doesn't fire and receivedEgp stays null. For Uber the income is
     // mathematically derivable from grossEgp − commissionEgp, so fill it
@@ -44,6 +44,49 @@ export class UberParser extends BaseParser {
         res.fields.receivedEgp = derived;
         res.perField.receivedEgp = 0.7;
         res.warnings.push('OCR_RECEIVED_DERIVED_FROM_GROSS_MINUS_COMMISSION');
+      }
+    }
+
+    // Fallback: if receivedEgp is still null and payment is cash, derive
+    // from the cash-collected amount (المبلغ النقدي الذي تم تحصيله).
+    if (res.fields.receivedEgp == null && res.fields.paymentMethod === 'cash') {
+      const lines = text.split('\n').map((l) => l.trim());
+      const normLines = lines.map((l) => this.normalizer.normalizeText(l));
+      for (let i = 0; i < normLines.length; i++) {
+        if (/المبلغ\s*النقدي\s*الذي\s*تم\s*تحصيله/.test(normLines[i])) {
+          const amt = this.findCurrencyOnLine(lines[i])?.amount;
+          if (amt != null && amt > 0) {
+            res.fields.receivedEgp = amt;
+            res.perField.receivedEgp = 0.75;
+            res.warnings.push('OCR_RECEIVED_FROM_CASH_COLLECTED');
+            break;
+          }
+        }
+      }
+    }
+
+    // Fix commission extraction: on breakdown screens "رسوم الخدمة" appears
+    // after the fare value line, so the base parser picks up the fare amount
+    // (31.81) instead of the actual commission (-4.77 on the next line).
+    // Detect this by checking if commission unreasonably equals gross.
+    if (
+      res.fields.grossEgp != null &&
+      res.fields.commissionEgp != null &&
+      Math.abs(res.fields.commissionEgp - res.fields.grossEgp) < 0.01
+    ) {
+      const lines = text.split('\n').map((l) => l.trim());
+      const normLines = lines.map((l) => this.normalizer.normalizeText(l));
+      for (let i = 0; i < normLines.length; i++) {
+        if (/^رسوم\s*الخدمه/.test(normLines[i])) {
+          if (i + 1 < lines.length) {
+            const amt = this.findCurrencyOnLine(lines[i + 1])?.amount;
+            if (amt != null && amt > 0 && amt < res.fields.grossEgp) {
+              res.fields.commissionEgp = amt;
+              res.perField.commissionEgp = 0.85;
+              break;
+            }
+          }
+        }
       }
     }
 
@@ -104,7 +147,7 @@ export class UberParser extends BaseParser {
         // to an address would corrupt it).
         const nextNorm = this.normalizer.normalizeText(next);
         if (findFieldsOnLine(nextNorm).length > 0) continue;
-        // Fold the Persian ی → Arabic ي (Azure sometimes emits the Persian
+        // Fold the Persian ی → Arabic ي (text recognition sometimes emits the Persian
         // glyph for the same letter shape).
         const tail = next.replace(/ی/g, 'ي').replace(/ک/g, 'ك');
         // Already part of the value?

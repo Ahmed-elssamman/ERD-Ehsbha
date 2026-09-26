@@ -1,54 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Route,
-  Wallet,
-  Wrench,
-  HeartPulse,
-  BarChart3,
-  Gauge,
-  Lightbulb,
-  CalendarClock,
-  Clock,
-  Sigma,
-  Bell,
-  Settings,
-  BookOpen,
-  Users,
-  Star,
-  LifeBuoy,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+
+import { NAV } from './sidebar.control';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import { useEffect, useRef } from 'react';
 
-interface NavItem {
-  to: string;
-  labelKey: string;
-  Icon: LucideIcon;
-}
 
-const NAV: NavItem[] = [
-  { to: '/', labelKey: 'nav.dashboard', Icon: LayoutDashboard },
-  { to: '/trips', labelKey: 'nav.trips', Icon: Route },
-  { to: '/expenses', labelKey: 'nav.expenses', Icon: Wallet },
-  { to: '/maintenance', labelKey: 'nav.maintenance', Icon: Wrench },
-  { to: '/vehicle-health', labelKey: 'nav.vehicleHealth', Icon: HeartPulse },
-  { to: '/analytics', labelKey: 'nav.analytics', Icon: BarChart3 },
-  { to: '/driver-score', labelKey: 'nav.driverScore', Icon: Gauge },
-  { to: '/smart-decisions', labelKey: 'nav.smartDecisions', Icon: Lightbulb },
-  { to: '/work-planner', labelKey: 'nav.workPlanner', Icon: CalendarClock },
-  { to: '/best-hours', labelKey: 'nav.bestHours', Icon: Clock },
-  { to: '/profit-simulator', labelKey: 'nav.profitSimulator', Icon: Sigma },
-  { to: '/notifications', labelKey: 'nav.notifications', Icon: Bell },
-  { to: '/community', labelKey: 'nav.community', Icon: Users },
-  { to: '/reviews', labelKey: 'nav.reviews', Icon: Star },
-  { to: '/support', labelKey: 'nav.support', Icon: LifeBuoy },
-  { to: '/guide', labelKey: 'nav.guide', Icon: BookOpen },
-  { to: '/settings', labelKey: 'nav.settings', Icon: Settings },
-];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const t = useT();
@@ -57,7 +15,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   useEffect(() => {
     if (location.pathname === initialPath.current) return;
     onNavigate?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [location.pathname]);
 
   return (

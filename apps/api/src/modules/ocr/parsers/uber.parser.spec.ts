@@ -30,7 +30,7 @@ describe('UberParser - Arabic Egypt screenshot', () => {
     expect(d.getUTCFullYear()).toBe(2026);
     expect(d.getUTCMonth()).toBe(4);
     expect(d.getUTCDate()).toBe(18);
-    expect(d.getUTCHours()).toBe(22);
+    expect(d.getUTCHours()).toBe(19);
     expect(d.getUTCMinutes()).toBe(46);
   });
 

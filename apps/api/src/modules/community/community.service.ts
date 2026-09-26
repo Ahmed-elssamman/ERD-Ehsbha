@@ -1,7 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, CommunityCategory, ReactionKind } from '@prisma/client';
+import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '@ehsbha/api-contracts';
 import { z } from 'zod';
 import { PrismaService } from '../../prisma/prisma.service';
+// Shared community schemas available via @ehsbha/api-contracts (community schemas in communications.ts)
 
 const CATEGORY_VALUES = [
   'BEST_APPS',
@@ -19,9 +21,10 @@ const CATEGORY_VALUES = [
   'GENERAL',
 ] as const;
 
+/** @see {@link CursorQuerySchema} from `@ehsbha/api-contracts` for pagination shape (cursor, limit). */
 export const ListPostsSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(MAXIMUM_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   category: z.enum(CATEGORY_VALUES).optional(),
   sort: z.enum(['latest', 'trending', 'top']).default('latest'),
   mine: z.coerce.boolean().optional(),
@@ -53,6 +56,12 @@ interface PostWithExtras {
   reactions: { kind: ReactionKind }[];
 }
 
+/**
+ * Governed error codes used by this service:
+ * - {@link GOVERNED_ERROR_REGISTRY.NOT_FOUND} - when a post is not found
+ * - {@link GOVERNED_ERROR_REGISTRY.FORBIDDEN} - when a driver tries to delete another driver's post
+ * - {@link GOVERNED_ERROR_REGISTRY.VALIDATION_ERROR} - when input data fails Zod validation
+ */
 @Injectable()
 export class CommunityService {
   constructor(private readonly prisma: PrismaService) {}

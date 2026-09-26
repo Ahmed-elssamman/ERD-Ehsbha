@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -18,6 +18,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ScoreModule } from './modules/score/score.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { HealthModule } from './modules/health/health.module';
 import { OdometerModule } from './modules/odometer/odometer.module';
@@ -25,11 +26,14 @@ import { CommunityModule } from './modules/community/community.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SupportModule } from './modules/support/support.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
+import { IdempotencyModule } from './modules/idempotency/idempotency.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
+    IdempotencyModule,
     AuthModule,
     AdminModule,
     UsersModule,
@@ -48,6 +52,7 @@ import { AdminModule } from './modules/admin/admin.module';
     RecommendationsModule,
     ScoreModule,
     NotificationsModule,
+    ReportsModule,
     SyncModule,
     HealthModule,
     OdometerModule,
@@ -56,4 +61,8 @@ import { AdminModule } from './modules/admin/admin.module';
     SupportModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}

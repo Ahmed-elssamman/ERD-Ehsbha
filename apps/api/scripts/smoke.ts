@@ -1,23 +1,26 @@
+import { businessDateKey, SyncMutationKind, SyncMutationStatus } from '@ehsbha/shared-types';
+import { dailyAnalyticsSchema, tripItemSchema, syncPullResponseSchema, syncPushResponseSchema, driverAppBindingSchema, sessionSchema } from '@ehsbha/api-contracts';
 /**
  * Ehsbha HTTP smoke test
  * --------------------------------------------------------------
  * Exercises the full API surface end-to-end against a running
- * backend + seeded database.
+ * API + seeded database.
  *
- *   1. cd backend
- *   2. cp .env.example .env  (and set strong JWT secrets)
- *   3. docker compose up -d postgres
+ *   1. cd apps/api
+ *   2. cp .env.example .env
+ *   3. Set Neon DATABASE_URL + DIRECT_URL and the required non-secret placeholders
  *   4. npm run prisma:migrate
  *   5. npm run seed
- *   6. npm run start:dev  (in another terminal)
+ *   6. npm run start:dev (in another terminal)
  *   7. npx ts-node scripts/smoke.ts
  *
  * Pass with `SMOKE_BASE_URL=http://localhost:4000/api/v1` to override.
  */
 
 const base = process.env.SMOKE_BASE_URL ?? 'http://localhost:4000/api/v1';
-const phone = '+201000000001';
-const password = 'demo1234';
+const phone = process.env.SMOKE_DRIVER_PHONE ?? '+201000000001';
+const password = process.env.SMOKE_DRIVER_PASSWORD;
+if (!password) throw new Error('SMOKE_DRIVER_PASSWORD is required');
 
 let accessToken = '';
 let refreshToken = '';
@@ -27,20 +30,23 @@ const passes: string[] = [];
 function ok(name: string) { passes.push(name); console.log(`  ✓ ${name}`); }
 function ko(name: string, why: string) { failures.push(`${name}: ${why}`); console.log(`  ✗ ${name} — ${why}`); }
 
-async function call(method: string, path: string, body?: unknown, auth = true) {
+async function call(method: string, path: string, body?: unknown, auth = true, idempotencyKey = '') {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
   const res = await fetch(`${base}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   let json: any = null;
   try { json = text ? JSON.parse(text) : null; } catch {}
   return { status: res.status, body: json, raw: text };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function assertOk(name: string, p: Promise<{ status: number; body: any }>, expect = 200) {
   try {
     const r = await p;
@@ -50,6 +56,7 @@ async function assertOk(name: string, p: Promise<{ status: number; body: any }>,
     }
     ok(name);
     return r.body?.data ?? r.body;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     ko(name, e?.message ?? String(e));
     return null;
@@ -100,7 +107,7 @@ async function main() {
   // 6. Identity
   console.log('\nIdentity:');
   await assertOk('GET /me', call('GET', '/me'));
-  const driver = await assertOk('GET /drivers/me', call('GET', '/drivers/me'));
+  await assertOk('GET /drivers/me', call('GET', '/drivers/me'));
 
   // 7. Catalog + driver apps
   console.log('\nApps catalog:');
@@ -110,11 +117,13 @@ async function main() {
 
   // 8. Vehicles
   console.log('\nVehicles:');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const vehicles: any[] = await assertOk('GET /vehicles', call('GET', '/vehicles')) ?? [];
   if (vehicles.length === 0) ko('Seed must create a vehicle', 'no vehicles');
 
   // 9. Areas
   console.log('\nAreas:');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const areas: any[] = await assertOk('GET /areas', call('GET', '/areas')) ?? [];
 
   // 10. Trips list
@@ -124,12 +133,17 @@ async function main() {
 
   // 11. Create + delete trip (full aggregate round-trip)
   if (vehicles.length && mine?.length) {
-    const before = await call('GET', '/analytics/today');
-    const beforeNet = (before.body?.data ?? before.body)?.netProfitPiastres ?? 0;
-
-    const startedAt = new Date(Date.now() - 30 * 60_000).toISOString();
     const endedAt = new Date().toISOString();
-    const created = await call('POST', '/trips', {
+    const startedAt = new Date(Date.parse(endedAt) - 30 * 60_000).toISOString();
+    // The trip can start yesterday when this test runs just after midnight.
+    // Read its actual reporting bucket for all three aggregate assertions.
+    const dailyPath = `/analytics/daily?date=${businessDateKey(new Date(startedAt))}`;
+    const before = await call('GET', dailyPath);
+    if (before.status !== 200) throw new Error(`Daily report before creation returned ${before.status}`);
+    const beforeNet = dailyAnalyticsSchema.parse(before.body?.data ?? before.body).netProfitPiastres;
+
+    const mutationKey = 'smoke-' + Date.now();
+    const tripRequest = {
       vehicleId: vehicles[0].id,
       driverAppId: mine[0].id,
       areaId: areas[0]?.id ?? null,
@@ -140,46 +154,38 @@ async function main() {
       commissionPiastres: 2_000,
       totalKmMeters: 5_000,
       paidKmMeters: 4_000,
-      clientMutationId: 'smoke-' + Date.now(),
-    });
+      clientMutationId: mutationKey,
+    };
+    const created = await call('POST', '/trips', tripRequest, true, mutationKey);
     if (created.status === 200 || created.status === 201) ok('POST /trips creates trip');
     else ko('POST /trips', `status ${created.status} body ${JSON.stringify(created.body)}`);
 
-    const tripBody = created.body?.data ?? created.body;
-    const tripId = tripBody?.id;
+    const tripBody = tripItemSchema.parse(created.body?.data ?? created.body);
+    const tripId = tripBody.id;
 
     // Aggregate must have increased by 10000+500-2000 = 8500 piastres
-    const after = await call('GET', '/analytics/today');
-    const afterNet = (after.body?.data ?? after.body)?.netProfitPiastres ?? 0;
+    const after = await call('GET', dailyPath);
+    if (after.status !== 200) throw new Error(`Daily report after creation returned ${after.status}`);
+    const afterNet = dailyAnalyticsSchema.parse(after.body?.data ?? after.body).netProfitPiastres;
     const delta = afterNet - beforeNet;
     if (delta === 8_500) ok(`Daily aggregate +8500 piastres (actual ${delta})`);
     else ko('Daily aggregate delta', `expected 8500 piastres, got ${delta}`);
 
     // Idempotency
-    const dupe = await call('POST', '/trips', {
-      vehicleId: vehicles[0].id,
-      driverAppId: mine[0].id,
-      areaId: areas[0]?.id ?? null,
-      startedAt,
-      endedAt,
-      grossPiastres: 10_000,
-      tipPiastres: 500,
-      commissionPiastres: 2_000,
-      totalKmMeters: 5_000,
-      paidKmMeters: 4_000,
-      clientMutationId: (tripBody?.clientMutationId ?? 'smoke-x'),
-    });
-    if (dupe.status === 200 || dupe.status === 201) ok('Idempotent re-POST returns same trip');
+    const dupe = await call('POST', '/trips', tripRequest, true, mutationKey);
+    const duplicateId = (dupe.body?.data ?? dupe.body)?.id;
+    if ((dupe.status === 200 || dupe.status === 201) && tripId && duplicateId === tripId) ok('Idempotent re-POST returns same trip');
     else ko('Idempotency', `status ${dupe.status}`);
 
     // Delete reverses the aggregate
     if (tripId) {
-      const del = await call('DELETE', `/trips/${tripId}`);
-      if (del.status === 204) ok('DELETE /trips/:id');
+      const del = await call('DELETE', `/trips/${tripId}?expectedVersion=${tripBody.version}`, null, true, crypto.randomUUID());
+      if (del.status === 200 && del.body?.data?.ok === true) ok('DELETE /trips/:id');
       else ko('DELETE /trips/:id', `status ${del.status}`);
 
-      const after2 = await call('GET', '/analytics/today');
-      const after2Net = (after2.body?.data ?? after2.body)?.netProfitPiastres ?? 0;
+      const after2 = await call('GET', dailyPath);
+      if (after2.status !== 200) throw new Error(`Daily report after deletion returned ${after2.status}`);
+      const after2Net = dailyAnalyticsSchema.parse(after2.body?.data ?? after2.body).netProfitPiastres;
       if (after2Net === beforeNet) ok('Aggregate restored after delete');
       else ko('Aggregate restored after delete', `expected ${beforeNet}, got ${after2Net}`);
     }
@@ -206,6 +212,7 @@ async function main() {
 
   // 15. Goals
   console.log('\nGoals:');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const goals: any[] = await assertOk('GET /goals', call('GET', '/goals')) ?? [];
   if (goals[0]) await assertOk('GET /goals/:id/progress', call('GET', `/goals/${goals[0].id}/progress`));
 
@@ -218,7 +225,26 @@ async function main() {
 
   // 17. Sync
   console.log('\nSync:');
-  await assertOk('POST /sync/pull', call('POST', '/sync/pull', { limit: 50 }));
+  syncPullResponseSchema.parse(await assertOk('POST /sync/pull', call('POST', '/sync/pull', { limit: 50 })));
+
+  const syncApp = driverAppBindingSchema.array().parse(mine)[0];
+  if (!syncApp) throw new Error('Smoke driver has no platform for sync');
+  const syncStart = { mutations: [{ kind: SyncMutationKind.SessionStart, clientMutationId: crypto.randomUUID(),
+    payload: { driverAppId: syncApp.id, startedAt: new Date(Date.now() - 120000).toISOString() } }] };
+  const syncStarted = syncPushResponseSchema.parse(await assertOk('POST /sync/push starts a session', call('POST', '/sync/push', syncStart))).results[0];
+  if (syncStarted.status !== SyncMutationStatus.Applied) throw new Error('Sync session start was not applied');
+  const syncRepeated = syncPushResponseSchema.parse(await assertOk('POST /sync/push replays a session start', call('POST', '/sync/push', syncStart))).results[0];
+  if (syncRepeated.status !== SyncMutationStatus.Applied || !syncRepeated.replayed || syncRepeated.recordId !== syncStarted.recordId) throw new Error('Sync start replay changed identity');
+  const sessionEnd = { expectedVersion: 1, clientMutationId: crypto.randomUUID(), endedAt: new Date().toISOString() };
+  const sessionPath = '/sessions/' + syncStarted.recordId + '/end';
+  const sessionEnded = sessionSchema.parse(await assertOk('POST /sessions/:id/end stores a receipt', call('POST', sessionPath, sessionEnd)));
+  const sessionRepeated = sessionSchema.parse(await assertOk('POST /sessions/:id/end replays its receipt', call('POST', sessionPath, sessionEnd)));
+  if (sessionRepeated.endedAt !== sessionEnded.endedAt) throw new Error('Session end replay changed its timestamp');
+  const syncEnd = { mutations: [{ kind: SyncMutationKind.SessionEnd, clientMutationId: sessionEnd.clientMutationId,
+    payload: { id: syncStarted.recordId, expectedVersion: sessionEnd.expectedVersion, endedAt: sessionEnd.endedAt } }] };
+  const syncEnded = syncPushResponseSchema.parse(await assertOk('POST /sync/push replays ordinary session end', call('POST', '/sync/push', syncEnd))).results[0];
+  if (syncEnded.status !== SyncMutationStatus.Applied || !syncEnded.replayed) throw new Error('Session end receipt did not cross transports');
+
 
   // 18. Password reset flow
   console.log('\nPassword reset:');
@@ -230,15 +256,15 @@ async function main() {
   if (devCode && /^\d{6}$/.test(devCode)) ok('Dev code returned (6 digits)');
   else ko('Dev code', 'expected a 6-digit devCode in dev mode');
 
-  // Forgot for unknown phone should still return 200 (no enumeration leak)
+  // The recovery contract directs unknown accounts to registration.
   const forgotUnknown = await call('POST', '/auth/password/forgot', { phone: '+209999999999' }, false);
-  if (forgotUnknown.status === 200) ok('Unknown phone → 200 (no enumeration)');
-  else ko('Unknown phone forgot', `status ${forgotUnknown.status}`);
+  if (forgotUnknown.status === 404) ok('Unknown phone returns 404 USER_NOT_FOUND');
+  else ko('Unknown phone forgot', `expected 404, got ${forgotUnknown.status}`);
 
   // Wrong code → 401
   const wrongReset = await call('POST', '/auth/password/reset', {
     phone,
-    code: '000000',
+    code: devCode === '000000' ? '000001' : '000000',
     newPassword: 'temp-new-pass-1234',
   }, false);
   if (wrongReset.status === 401) ok('Wrong code → 401');

@@ -2,6 +2,9 @@
   "name": "ehsbha",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -9,26 +12,78 @@
   "scripts": {
     "api:dev": "npm --workspace @ehsbha/api run start:dev",
     "api:build": "npm --workspace @ehsbha/api run build",
-    "api:test": "npm --workspace @ehsbha/api run test",
+    "api:test": "npm --workspace @ehsbha/api run test --",
     "api:typecheck": "npm --workspace @ehsbha/api run typecheck",
     "api:prisma:generate": "npm --workspace @ehsbha/api run prisma:generate",
     "api:prisma:migrate": "npm --workspace @ehsbha/api run prisma:migrate",
     "api:seed": "npm --workspace @ehsbha/api run seed",
+    "api:seed:admin": "npm --workspace @ehsbha/api run seed:admin",
+    "prisma:generate": "npm run api:prisma:generate",
+    "prisma:migrate": "npm run api:prisma:migrate",
+    "prisma:studio": "npm --workspace @ehsbha/api run prisma:studio",
+    "seed": "npm run api:seed",
+    "seed:admin": "npm run api:seed:admin",
     "web:dev": "npm --workspace @ehsbha/web run dev",
     "web:build": "npm --workspace @ehsbha/web run build",
     "web:preview": "npm --workspace @ehsbha/web run preview",
     "web:typecheck": "npm --workspace @ehsbha/web run typecheck",
+    "web:test": "npm --workspace @ehsbha/web run test",
+    "test:browser": "playwright test",
+    "test:browser:integration": "playwright test --config playwright.integration.config.ts",
     "admin:dev": "npm --workspace @ehsbha/admin run dev",
     "admin:build": "npm --workspace @ehsbha/admin run build",
     "admin:preview": "npm --workspace @ehsbha/admin run preview",
     "admin:typecheck": "npm --workspace @ehsbha/admin run typecheck",
+    "admin:test": "npm --workspace @ehsbha/admin run test",
     "dev": "npm-run-all -p api:dev web:dev",
     "dev:admin": "npm-run-all -p api:dev admin:dev",
     "dev:all": "npm-run-all -p api:dev web:dev admin:dev",
     "build": "npm run api:build && npm run web:build && npm run admin:build",
-    "typecheck": "npm run api:typecheck && npm run web:typecheck && npm run admin:typecheck"
+    "typecheck": "npm run api:typecheck && npm run web:typecheck && npm run admin:typecheck",
+    "lint": "eslint .",
+    "test": "npm --workspace @ehsbha/api run test --",
+    "test:integration": "npm --workspace @ehsbha/api run test:integration",
+    "test:contract": "npm --workspace @ehsbha/api run test:contract",
+    "test:smoke": "npm --workspace @ehsbha/api run test:smoke",
+    "test:coverage": "npm --workspace @ehsbha/api run test:coverage",
+    "test:e2e": "playwright test",
+    "test:verification": "node --test scripts/verification/tests/*.test.mjs",
+    "packages:build": "npm run packages:build:types && npm run packages:build:cjs && npm run packages:build:esm",
+    "packages:build:types": "tsc -b tsconfig.packages.json",
+    "packages:build:cjs": "npm --workspace @ehsbha/shared-types run build:cjs && npm --workspace @ehsbha/api-contracts run build:cjs && npm --workspace @ehsbha/ui-tokens run build:cjs",
+    "packages:build:esm": "npm --workspace @ehsbha/shared-types run build:esm && npm --workspace @ehsbha/api-contracts run build:esm && npm --workspace @ehsbha/ui-tokens run build:esm",
+    "packages:typecheck": "tsc -b tsconfig.packages.json --noEmit",
+    "packages:test": "npm --workspace @ehsbha/shared-types run test && npm --workspace @ehsbha/api-contracts run test",
+    "contracts:generate": "node scripts/contracts/generate-catalog.mjs && node scripts/contracts/generate-openapi.mjs",
+    "contracts:inventory": "node scripts/contracts/inventory-consumers.mjs",
+    "verify:contracts": "node scripts/contracts/verify-contracts.mjs",
+    "verify:boundaries": "node scripts/verification/verify-boundaries.mjs",
+    "verify:frontend-isolation": "node scripts/verification/verify-frontend-isolation.mjs",
+    "verify:prerequisites": "node scripts/verification/check-prerequisites.mjs",
+    "verify:measure": "node scripts/verification/measure-builds.mjs",
+    "verify:routes": "node scripts/verification/audit-routes.mjs",
+    "verify:adr": "node --test scripts/verification/tests/adr-format.test.mjs",
+    "verify:security": "node scripts/verification/security-scan.mjs",
+    "verify": "node scripts/verification/verify.mjs"
   },
   "devDependencies": {
-    "npm-run-all": "^4.1.5"
+    "@ehsbha/eslint-config": "*",
+    "@playwright/test": "^1.63.0",
+    "dependency-cruiser": "^16.10.0",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
+    "npm-run-all": "^4.1.5",
+    "vitest": "^5.0.1"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "overrides": {
+    "multer": "^2.4.0",
+    "vitest": "$vitest",
+    "@prisma/config": {
+      "deepmerge-ts": "^8.0.0"
+    }
   }
 }

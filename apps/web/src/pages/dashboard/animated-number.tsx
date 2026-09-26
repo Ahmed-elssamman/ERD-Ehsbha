@@ -46,7 +46,7 @@ export function AnimatedNumber({ value, format, duration = 700 }: Props) {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [value, duration, reduce]);
 
   return <>{format(display)}</>;

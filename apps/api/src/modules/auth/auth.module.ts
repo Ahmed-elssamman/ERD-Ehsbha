@@ -16,6 +16,7 @@ import { MailerModule } from '../mailer/mailer.module';
         const env = loadEnv();
         return {
           secret: env.JWT_ACCESS_SECRET,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
           signOptions: { expiresIn: env.JWT_ACCESS_TTL as any },
         };
       },

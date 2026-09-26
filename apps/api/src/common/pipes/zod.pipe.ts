@@ -1,30 +1,24 @@
-import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { ZodError, ZodSchema } from 'zod';
+import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common'
+import { z } from 'zod'
 
 @Injectable()
-export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
-  constructor(private readonly schema: ZodSchema<T>) {}
+export class ZodValidationPipe implements PipeTransform {
+  constructor(private schema: z.ZodTypeAny) {}
 
-  transform(value: unknown, _meta: ArgumentMetadata): T {
-    try {
-      return this.schema.parse(value);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException({
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request payload',
-          issues: err.issues.map((i) => ({
-            path: i.path.join('.'),
-            message: i.message,
-            code: i.code,
-          })),
-        });
-      }
-      throw err;
+  transform(value: unknown) {
+    const result = this.schema.safeParse(value)
+    if (!result.success) {
+      const details = result.error.issues.map(issue => ({
+        path: issue.path.join('.'),
+        code: issue.code,
+        message: issue.message,
+      }))
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid request payload',
+        details,
+      })
     }
+    return result.data
   }
-}
-
-export function zodValidate<T>(schema: ZodSchema<T>): ZodValidationPipe<T> {
-  return new ZodValidationPipe(schema);
 }
