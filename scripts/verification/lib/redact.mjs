@@ -1,4 +1,6 @@
 const SECRET_PATTERNS = [
+  { pattern: /(x-goog-api-key\s*[:=]\s*)\S+/gi, replacement: '$1[REDACTED]' },
+  { pattern: /(generativelanguage\.googleapis\.com\/[^\s]*[?&]key=)[^&\s]+/gi, replacement: '$1[REDACTED]' },
   { pattern: /(password\s*[:=]\s*)\S+/gi, replacement: '$1[REDACTED]' },
   { pattern: /(access.?token\s*[:=]\s*)\S+/gi, replacement: '$1[REDACTED]' },
   { pattern: /(refresh.?token\s*[:=]\s*)\S+/gi, replacement: '$1[REDACTED]' },

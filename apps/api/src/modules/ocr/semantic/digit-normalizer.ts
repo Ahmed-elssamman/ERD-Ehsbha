@@ -21,7 +21,7 @@ export function normalizeNumeric(input: string): string {
   s = s.replace(ARABIC_DECIMAL, '.');
   // Some Arabic screenshots emit Persian letter variants whose glyphs are
   // visually identical to the Arabic counterparts but use different
-  // codepoints — Azure's OCR sometimes picks the Persian glyph (e.g. ک in
+  // codepoints — text recognition sometimes picks the Persian glyph (e.g. ک in
   // "کم"). Fold them so distance / km regexes downstream still match.
   s = s.replace(/ک/g, 'ك');
   s = s.replace(/ی/g, 'ي');

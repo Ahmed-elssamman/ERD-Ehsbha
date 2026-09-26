@@ -6,7 +6,7 @@ import { SemanticNormalizer } from '../semantic/normalizer';
 import { normalizeNumeric } from '../semantic/digit-normalizer';
 
 // Anchors the address block. We only require the date portion (YYYY/MM/DD)
-// because Azure occasionally emits the scrambled RTL order
+// because text recognition occasionally emits the scrambled RTL order
 // "08:09.2026/05/16 م" (time before date) when the source was
 // "2026/05/16، 08:09 م" — but a 4-digit-year date is still a reliable
 // landmark.

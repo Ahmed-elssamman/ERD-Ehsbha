@@ -2,23 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import sharp from 'sharp';
 import { OCR_DECODED_FORMATS, OCR_MAX_IMAGE_EDGE, OCR_MAX_INPUT_PIXELS } from '../ocr.control';
 
-/**
- * Preprocesses raw uploads into Azure-ready PNGs.
- *
- * Goals:
- *  1. Strip EXIF + auto-rotate so the text is upright.
- *  2. Resize down to a sensible long-edge cap. Phone screenshots can be 3-4K
- *     pixels — Azure handles them, but bytes-over-the-wire grow linearly and
- *     downscaling past ~2400px hurts OCR (text becomes fewer pixels per glyph).
- *     2200px is the sweet spot: fits dense Arabic stylized fonts and stays
- *     under Azure's 50 MB body limit by an order of magnitude.
- *  3. Light denoise + sharpen to recover edges on JPEG-compressed screenshots.
- *  4. Keep COLOR (NOT grayscale) — Image Analysis Read benefits from color
- *     channels to disambiguate fare chips, payment-method icons, and
- *     coloured-background numbers. (Tesseract preferred grayscale; Azure
- *     doesn't.)
- *  5. Output PNG-24 — lossless, predictable header byte signature for Azure.
- */
+/** Validates image dimensions, removes metadata, rotates and resizes uploads to lossless PNG. */
 @Injectable()
 export class SharpProcessor {
   async prepare(buf: Buffer): Promise<Buffer> {

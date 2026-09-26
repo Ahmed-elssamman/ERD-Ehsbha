@@ -3,6 +3,15 @@ import assert from 'node:assert';
 import { redact, redactObject } from '../lib/redact.mjs';
 
 describe('Secret and Personal Data Redaction', () => {
+  it('redacts Gemini credentials in environment values, headers and request URLs', () => {
+    for (const input of [
+      'GEMINI_API_KEY=test-gemini-secret',
+      'x-goog-api-key: test-gemini-secret',
+      'https://generativelanguage.googleapis.com/v1beta/models?key=test-gemini-secret',
+    ]) {
+      assert.ok(!redact(input).includes('test-gemini-secret'));
+    }
+  });
   it('redacts passwords', () => {
     const result = redact('password=supersecret123');
     assert.ok(!result.includes('supersecret123'));

@@ -14,6 +14,7 @@ import { SemanticNormalizer } from './semantic/normalizer';
 import { OcrRecognitionProvider } from './ocr-recognition.provider';
 import { OcrWorkLimiter } from './ocr-work-limiter';
 import type { ImageSignals } from './types';
+import { GEMINI_TEST_DOCUMENT } from './gemini/gemini-test.data';
 
 class TestImageProcessor extends SharpProcessor {
   override async prepare(buffer: Buffer): Promise<Buffer> { return buffer; }
@@ -63,6 +64,32 @@ describe('OCR document capture', () => {
     expect(result.platform).toBeNull();
     expect(result.trips.map((trip) => trip.evidence?.platform)).toEqual(['UBER', 'CAREEM']);
     expect(result.trips.map((trip) => trip.parsed.grossEgp)).toEqual([85, 100]);
+    expect(ocrExtractResponseSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('uses structured provider evidence directly and retains multiple trips', async () => {
+    jest.spyOn(provider, 'recognize').mockResolvedValue({
+      read: { text: GEMINI_TEST_DOCUMENT.raw_text, lines: [], words: [], meanConfidence: 0.92 },
+      receipt: null, structuredTrips: [...GEMINI_TEST_DOCUMENT.trips, ...GEMINI_TEST_DOCUMENT.trips],
+    });
+    const result = await service.extract([upload('structured')]);
+    expect(result.trips).toHaveLength(2);
+    expect(result.trips[0].parsed).toMatchObject({ grossEgp: 24.4, earningsEgp: 20.96, receivedEgp: 20 });
+    expect(result.trips[0].evidence?.extractions).toEqual(GEMINI_TEST_DOCUMENT.trips);
+    expect(result.trips[0].evidence?.id).not.toBe(result.trips[1].evidence?.id);
+    expect(ocrExtractResponseSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('preserves structured evidence and earnings when merging two screenshots', async () => {
+    jest.spyOn(provider, 'recognize').mockResolvedValue({
+      read: { text: GEMINI_TEST_DOCUMENT.raw_text, lines: [], words: [], meanConfidence: 0.92 },
+      receipt: null, structuredTrips: GEMINI_TEST_DOCUMENT.trips,
+    });
+    const result = await service.extract([upload('first'), upload('second')], { mode: 'single', platform: null });
+    expect(result.trips).toHaveLength(1);
+    expect(result.trips[0].parsed.earningsEgp).toBe(20.96);
+    expect(result.trips[0].evidence?.extractions).toHaveLength(2);
+    expect(result.trips[0].evidence?.sources).toHaveLength(2);
     expect(ocrExtractResponseSchema.safeParse(result).success).toBe(true);
   });
 

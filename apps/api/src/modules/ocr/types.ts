@@ -1,8 +1,6 @@
-/**
- * Central OCR types used across the pipeline. These shapes are produced by
- * `AzureVisionClient.read()` and consumed by parsers, the platform detector,
- * the merger, and the confidence scorer.
- */
+import type { OcrStructuredTrip } from '@ehsbha/api-contracts';
+
+/** Provider-neutral evidence consumed by extraction, merging and review. */
 export interface ReceiptSignals {
   total: number | null;
   subtotal: number | null;
@@ -24,7 +22,7 @@ export interface BoundingBox {
 
 export interface OcrWord {
   text: string;
-  /** 0..1 confidence from Azure Read. */
+  /** 0..1 confidence supplied by the text provider. */
   confidence: number;
   bbox: BoundingBox;
 }
@@ -50,6 +48,7 @@ export interface OcrResult {
 export interface ImageSignals {
   read: OcrResult;
   receipt: ReceiptSignals | null;
+  structuredTrips?: OcrStructuredTrip[];
 }
 
 export interface ParseContext {

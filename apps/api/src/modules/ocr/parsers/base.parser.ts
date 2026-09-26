@@ -377,7 +377,7 @@ export abstract class BaseParser {
 
       if (!timePart) {
         // Suffix variant: "10:46 م" / "08:45 PM" / "08:43 ص" — and also the
-        // RTL-scrambled order Azure occasionally returns ("08:09.2026/05/16 م"
+        // RTL-scrambled order text recognition occasionally returns ("08:09.2026/05/16 م"
         // when the source was "2026/05/16، 08:09 م"). The non-capturing group
         // between the time and the suffix absorbs digits, dots, slashes,
         // commas, hyphens, and Arabic commas, so the suffix is still
@@ -478,7 +478,7 @@ export abstract class BaseParser {
   ): void {
     // Uber's pickup/destination lines reliably contain the Egypt country
     // code "EG" (from the embedded Google address). The script + arrangement
-    // varies a lot — Azure may emit any of:
+    // varies a lot — text recognition may emit any of:
     //   - Latin-only:           "Nasr City 4455020 EG"
     //   - Arabic-then-EG:       "مدينة نصر عبد المنعم رياض EG"
     //   - RTL-scrambled:        "4442441 EG مدينة نصر محور المشير محمد علي"

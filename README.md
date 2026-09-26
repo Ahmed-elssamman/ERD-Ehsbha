@@ -6,7 +6,7 @@
 ```
 Backend:  NestJS 11 · Prisma 6 · Neon PostgreSQL · JWT (rotating refresh)
 Web:      React 19 · Vite 6 · TailwindCSS 3 · TanStack Query 5 · Workbox PWA
-OCR:      Azure Image Analysis 4.0 · Arabic + English + Persian glyph folding · 100% on 21 test cases
+OCR:      Google Gemini · structured Arabic/English trip extraction · explicit review
 Locale:   Arabic-first RTL + English LTR · Cairo + Inter fonts · all UI logical-direction safe
 ```
 
@@ -65,7 +65,7 @@ Arabic screenshots are an OCR adversary:
 
 - Right-to-left layout — values often appear *above* their labels, not beside them.
 - Arabic-Indic digits (٠–٩) on inDrive, comma decimal separators (`٦٥,٠٠`).
-- Persian glyph contamination — Azure sometimes returns `ک` (U+06A9) where Arabic `ك` (U+0643) was, and `ی` for `ي`.
+- Persian glyph contamination — Text recognition can return `ک` (U+06A9) where Arabic `ك` (U+0643) was, and `ی` for `ي`.
 - Dark mode (inDrive) drops local contrast on key fields.
 - Status-bar clocks (`11:17`) leak into the parser and get parsed as trip durations (`40 620` seconds).
 - The same labels mean different things in different sections (`أجرة المشوار` appears twice on every Didi screen — once for the driver's earnings, once for the rider's payment, with **different values**).
@@ -73,60 +73,17 @@ Arabic screenshots are an OCR adversary:
 
 ### What it does
 
-The pipeline runs through nine specialised stages:
+The production pipeline validates and prepares the image with Sharp, calls Google Gemini with a strict JSON schema, validates the response, and maps each visible trip into the existing import review workflow. It preserves the original structured values alongside the transcription. Text parsers remain available for deterministic regression fixtures; production Gemini output is mapped directly.
 
-```
-Screenshot
-   │
-   ├─ Sharp preprocessing (auto-rotate, 2200 px cap, gentle denoise, sharpen for Arabic strokes)
-   │
-   ├─ Azure Image Analysis 4.0 Read OCR (lines + words + bboxes + confidence)
-   │
-   ├─ Chrome filter (drops the status-bar clock + bottom navigation by geometry + content)
-   │
-   ├─ Semantic + digit normaliser (ة→ه, أ→ا, ک→ك, ی→ي, ٠–٩→0–9, ٫→.)
-   │
-   ├─ Platform detector (12+ signatures per app — Uber / inDrive / DiDi / Careem)
-   │
-   ├─ Per-platform parser (label dictionary + section-aware extraction + value-above-label fallback)
-   │
-   ├─ Multi-trip splitter (slices Uber "ملخص الدخل" screens into N independent cards)
-   │
-   ├─ Confidence scorer (OCR × platform × per-field weights, surfaces low-confidence warnings)
-   │
-   └─ Validator (sanity-checks against business invariants: paid ≤ total km, received ≤ gross, …)
-```
+### Fixture verification
 
-### How well it works
-
-The benchmark runner ([`apps/api/scripts/ocr-benchmark.ts`](./apps/api/scripts/ocr-benchmark.ts)) replays the full pipeline against 21 hand-curated fixtures with field-level golden answers and reports per-field accuracy.
-
-| Platform | Test cases | Single-trip | Multi-trip cards | Field accuracy |
-|---|---:|---:|---:|---:|
-| Uber | 12 | 9 | 6 | **100%** (225/225) |
-| DiDi | 5 | 5 | — | **100%** (75/75) |
-| inDrive | 4 | 4 | — | **100%** (60/60) |
-| **Total** | **21** | **18** | **6** | **100% (360/360)** |
-
-The accuracy journey is logged in PR commits: **52.6% baseline → 67.8% (Phase A) → 80.7% → 87.0% → 91.1% → 96.7% → 99.3% → 100%**.
+Run `npm --workspace @ehsbha/api run test:ocr:live` with a local `GEMINI_API_KEY`. The runner selects eight representative images from the 22-image inventory, checks exact platform, visible trip count, fare, net earnings, cash and schema validity, and requires fare or net earnings for every visible trip. Use `-- --list` to preview the batch without API calls or `-- --all` to opt into all 22 images. Results and extracted examples are saved under `verification-output/ocr-gemini/`. Careem has deterministic coverage but no real image in the supplied fixture set. These fixtures do not establish accuracy on unseen receipts.
 
 ### Using it (from the web app)
 
-```
-Add Trip → "استخراج من لقطة الشاشة"
-   ↓
-1. Pick the app           (Uber / inDrive / DiDi / Careem)  ← four-up chip selector
-2. Pick the screenshot type:
-     a. "رحلة واحدة"      — a trip-details screen (one trip)
-     b. "عدة رحلات"       — a summary screen with multiple trip cards
-3. Drop 1–5 screenshots and click Extract.
-4. Review and edit the parsed fields per trip card
-   (income, distance, duration, datetime, pickup, destination, payment).
-5. Click "احفظ كل الرحلات (N)" — one POST /trips/batch saves them all,
-   then redirects to the trip list.
-```
+Open Add Trip and choose screenshot extraction. Upload up to 20 screenshots; platform detection runs per image, with an optional platform hint. Import jobs preserve progress and extracted evidence. Review each candidate, fill missing values, select the trips to save, and confirm them. Successful confirmations return durable receipts so a retry cannot create the same candidate twice.
 
-Each card auto-fills `startedAt` by combining the date header (`الجمعة، 15 مايو`) with the per-card time (`5:49 م`) — including year inference when the screenshot doesn't show one.
+Dates are populated only when the full date is visible. Missing years remain empty. Cairo local start times use the shared daylight-saving-aware time conversion.
 
 ### Running the benchmark yourself
 
@@ -135,7 +92,7 @@ cd apps/api
 npm run benchmark:ocr
 ```
 
-The script reports per-case accuracy, top failing fields, and writes the full report (raw OCR text, parsed output, per-field diffs) to `apps/api/test-fixtures/results/baseline-{timestamp}.json` so any regression is immediately diff-able.
+The script prints filename, platform, fare/earnings and PASS/FAIL, saves a timestamped JSON report, and exits nonzero on failures or missing fixtures.
 
 ---
 
@@ -364,7 +321,7 @@ Light + dark, HSL CSS-var tokens, no flash-of-wrong-theme thanks to an inline bo
 │  health, sync                                                                                          │
 │                                                                                                        │
 │  OCR pipeline:                                                                                         │
-│     SharpProcessor → AzureVisionClient + AzureDocumentIntelligence → ChromeFilter → SemanticNormalizer │
+│     SharpProcessor → Gemini structured extraction → schema validation → trip mapping │
 │     → PlatformDetector → {Uber|InDrive|Didi|Careem}Parser → MultiTripSplitter (Uber summary)           │
 │     → ConfidenceScorer → TripValidator → DTO                                                           │
 │                                                                                                        │
@@ -389,7 +346,7 @@ Light + dark, HSL CSS-var tokens, no flash-of-wrong-theme thanks to an inline bo
                                               │
 ┌─────────────────────────────────────────────┴────────────────────────────────────────────────────────┐
 │  External                                                                                              │
-│    Azure AI Vision (Image Analysis 4.0 Read + Document Intelligence prebuilt-receipt) — OCR only       │
+│    Google Gemini structured multimodal extraction — OCR only       │
 │    SMTP (Gmail or any) — transactional emails for password recovery + support                          │
 │    Nightly cron 03:17 UTC re-derives yesterday's aggregates from raw rows (drift protection)           │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -422,7 +379,7 @@ cd apps/api
 # Add connect_timeout=15 to both URLs to reduce cold-start P1001 failures.
 # The API and seed scripts use the official Neon Prisma adapter against DATABASE_URL.
 # Prisma CLI tools (migrate / Studio) keep using DIRECT_URL.
-# For OCR: set AZURE_VISION_ENDPOINT + AZURE_VISION_KEY (multi-service AI resource).
+# For OCR: set GEMINI_API_KEY and optionally GEMINI_MODEL (default gemini-3.5-flash).
 
 # 3. Prisma client (required on first install and after schema changes)
 cd ../..
@@ -465,7 +422,7 @@ npm run web:preview              # serve the production bundle on 5173
 # API
 npm run api:build                # builds apps/api to dist/
 
-# OCR benchmark — replays 21 Arabic screenshots through Azure + the full pipeline
+# Live OCR verification — eight representative images by default
 npm run api:test:smoke           # smoke test
 # Full report → apps/api/test-fixtures/results/baseline-{ISO timestamp}.json
 
@@ -545,8 +502,7 @@ A smoke script (`apps/api/scripts/smoke.ts`) exercises every endpoint plus auth 
 - Argon2id password hashing
 - Zod for all input validation
 - `@nestjs/schedule` for the nightly 03:17 UTC aggregate cron
-- `@azure-rest/ai-vision-image-analysis` 1.0 (Read OCR)
-- `@azure-rest/ai-document-intelligence` 1.1 (prebuilt-receipt model, optional)
+- `@google/genai` 2.23 (Gemini structured extraction)
 - `sharp` for OCR preprocessing
 
 **Web**
@@ -576,8 +532,7 @@ A smoke script (`apps/api/scripts/smoke.ts`) exercises every endpoint plus auth 
 │   │   ├── prisma/              # schema, migrations, seed
 │   │   ├── scripts/
 │   │   │   ├── smoke.ts, test-integration.ts
-│   │   │   ├── smoke-azure-ocr.ts
-│   │   │   └── ocr-benchmark.ts
+│   │   │   └── gemini-fixtures.ts
 │   │   ├── test-fixtures/
 │   │   └── src/
 │   │       ├── main.ts, app.module.ts
@@ -625,7 +580,7 @@ A smoke script (`apps/api/scripts/smoke.ts`) exercises every endpoint plus auth 
 | `Prisma` errors on API start | Generated client missing | `npm run prisma:generate` |
 | `P1000` / `P1001` during Prisma commands | `DATABASE_URL` / `DIRECT_URL` still point at placeholders, or Neon is cold | Set the real Neon pooled/direct URLs in `apps/api/.env`; keep `connect_timeout=15` |
 | First login is slow (~5 s) | Neon free-tier DB sleeping | One-time wake-up; later requests are fast |
-| `OCR_AUTH` on extract | `AZURE_VISION_KEY` is missing or rotated | Update `apps/api/.env`, restart API |
+| `OCR_AUTH` on extract | `GEMINI_API_KEY` is missing or rotated | Update `apps/api/.env`, restart API |
 | `OCR_NO_PLATFORM` error in the upload dialog | The driver hasn't picked an app | Pick Uber / inDrive / DiDi / Careem; the Extract button enables |
 | Multi-trip save returns `DB_ERROR` on every card | Out-of-date API | Pull latest API; restart |
 | Port 5173 already in use | Stale Vite process | `netstat -ano \| findstr :5173` then `taskkill /F /PID <pid>` — or let Vite pick the next port |

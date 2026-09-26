@@ -35,11 +35,7 @@ product scope remains in `engineering-roadmap.md`.
 
 ## Backend boundaries and resources
 
-The recognition abstraction returns domain image/receipt signals. Azure is an
-adapter, not a dependency of extraction orchestration. The reader now retains all
-text blocks. Azure request and polling cancellation have a twenty-second deadline;
-the SDK retries at most once within it. Optional receipt failures are logged
-without provider text or transport messages.
+The recognition abstraction carries structured trip evidence and a transcription. Gemini uses JSON schema response mode, followed by strict runtime validation. Requests have a 60-second total deadline and at most two attempts. Provider diagnostics are reduced to safe error codes. See `ocr-gemini-migration.md` for the current adapter and fixture evidence.
 
 Sharp verifies decoded format, page count, dimensions and a 32-million-pixel cap
 before transformation, then fully decodes with strict error handling. SVG content,
@@ -66,8 +62,8 @@ preserved; no Angular migration was introduced.
 - `packages/api-contracts/src/domains/ocr-capture.ts`, `ocr-platform.ts`,
   `trip-ocr.ts`, and `core/errors.ts`: capture metadata, limits and governed errors.
 - `apps/api/src/modules/ocr/`: orchestration, provider abstraction, admission,
-  processing limit, Azure adapter, parser corrections and security/service tests.
-- `apps/api/scripts/ocr-benchmark.ts`: updated provider-independent constructor.
+  processing limit, recognition adapter, parser corrections and security/service tests.
+- `apps/api/scripts/gemini-fixtures.ts`: live extraction and schema/fixture validation.
 - `apps/web/src/components/ocr/`: upload, preview, optional source controls,
   configurable candidate review, confidence/edit display and failure recovery.
 - `apps/web/src/lib/ocr/ocr-to-trip.ts` and tests: validated save conversion.
@@ -104,9 +100,7 @@ review form and synchronous client hook/transport have been removed after cutove
 Readiness scores are heuristic, not calibrated probabilities. Provider quality,
 latency and false-ready rates require a redacted held-out screenshot dataset.
 
-See `ocr-research.md` for provider research and acceptance criteria. Installed SDK
-declarations (`@azure-rest/core-client` request parameters and `@azure/core-lro`
-poll options) were checked for abort/timeout support. Browser setup follows
+See `ocr-research.md` for provider research and acceptance criteria. The Google Gen AI SDK exposes abort signals, per-request timeouts and retry controls. Browser setup follows
 https://playwright.dev/docs/test-webserver and https://playwright.dev/docs/mock.
 
 ## Verification checkpoint

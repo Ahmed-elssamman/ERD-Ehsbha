@@ -68,10 +68,7 @@ jobs:
           ADMIN_JWT_REFRESH_SECRET: ci-test-admin-refresh-secret-that-is-long-enough
           OCR_SUBSTITUTE_MODE: true
           MAIL_SUBSTITUTE_MODE: true
-          AZURE_VISION_ENDPOINT: https://example.cognitiveservices.azure.com/
-          AZURE_VISION_KEY: ci-test-azure-vision-key-not-for-production
-          AZURE_VISION_REGION: eastus
-          AZURE_DOC_INTELLIGENCE_ENABLED: false
+          GEMINI_API_KEY: ci-test-gemini-key-not-for-production
           SMOKE_DRIVER_PHONE: +201000000001
           SMOKE_DRIVER_PASSWORD: demo-test-password
           ADMIN_SEED_PASSWORD: admin-test-password

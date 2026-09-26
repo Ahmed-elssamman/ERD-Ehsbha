@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { OcrPlatform } from './ocr-platform'
+import type { OcrStructuredTrip } from './ocr-structured'
 
 export const OCR_MAX_IMAGES = 20
 export const OCR_MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -34,6 +35,7 @@ export interface OcrCandidateEvidence {
   sources: OcrCandidateSource[]
   warnings: string[]
   rawText: string
+  extractions?: OcrStructuredTrip[]
 }
 
 export interface OcrDocumentResult {

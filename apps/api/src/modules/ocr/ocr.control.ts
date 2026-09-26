@@ -7,7 +7,6 @@ export const OCR_MAX_WAITING_DOCUMENTS = 40;
 export const OCR_MAX_ACTIVE_UPLOADS = 2;
 export const OCR_REQUESTS_PER_WINDOW = 12;
 export const OCR_REQUEST_WINDOW_MS = 10 * 60 * 1000;
-export const OCR_PROVIDER_TIMEOUT_MS = 20_000;
 export const OCR_REQUIRED_FIELDS = ['grossEgp', 'commissionEgp', 'totalKm', 'paidKm', 'startedAt', 'endedAt'] as const;
 export const OCR_SUMMARY_HEADER = /ملخص\s*(?:الدخل|الارباح)|(?:earnings|trip)\s*(?:summary|history)/i;
 export const OCR_READY_CONFIDENCE = 0.8;

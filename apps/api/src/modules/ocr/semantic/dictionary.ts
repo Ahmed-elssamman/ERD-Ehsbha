@@ -53,7 +53,7 @@ export const DICTIONARY: DictEntry[] = [
   ]},
   // Standalone "الأجرة" as a line label (the most common Uber/Careem layout).
   // Anchored to BOTH start AND end so it doesn't fire on the percentage
-  // breakdown note "الأجرة × 15%" (which Azure may emit with spaces around
+  // breakdown note "الأجرة × 15%" (which text recognition may emit with spaces around
   // the multiplication sign) or "أجرة المشوار" (DiDi-specific driver-share
   // line, which has no "ال" prefix and is handled by the Didi override).
   { field: 'fare', weight: 1.05, patterns: [

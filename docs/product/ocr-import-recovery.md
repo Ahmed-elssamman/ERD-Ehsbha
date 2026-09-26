@@ -157,7 +157,7 @@ database. Production rollout requires them before the new API build.
 
 The PostgreSQL harness uses real transactions, constraints, parser/assembly and
 worker execution with a deterministic provider and fixture image processor. It
-does not contact Azure. The separate existing Sharp tests cover actual decoding.
+does not contact Gemini. The separate existing Sharp tests cover actual decoding.
 
 Covered: concurrent manifest replay; changed-key conflict; cross-driver read,
 upload, cancellation and cursor denial; duplicate source reservations; lost

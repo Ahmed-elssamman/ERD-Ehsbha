@@ -1,5 +1,7 @@
 # OCR provider research and capture design
 
+Current provider: Google Gemini. The September 18 migration supersedes the provisional provider decision below; see `ocr-gemini-migration.md` for implementation and live verification.
+
 Initial sources retrieved 2026-09-17. This is a research/design record, not an
 accuracy benchmark or a provider availability guarantee.
 
@@ -19,7 +21,7 @@ Sources:
 - <https://docs.aws.amazon.com/textract/latest/dg/limits-document.html>
 - <https://github.com/naptha/tesseract.js/blob/master/README.md>
 
-Keep the working Azure integration during capture repairs, behind a domain-owned
+Historical decision (superseded): keep the working Azure integration during capture repairs, behind a domain-owned
 recognition interface. Provider selection remains provisional until comparison
 evidence supports a change. Do not install a second OCR runtime solely because it
 is available. Neither high OCR word confidence nor a model's self-reported score

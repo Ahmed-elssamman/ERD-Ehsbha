@@ -25,6 +25,7 @@ import {
   OCR_REQUIRED_FIELDS, OCR_SUMMARY_HEADER,
 } from './ocr.control';
 import { markCandidateDuplicates } from './validation/candidate-duplicates';
+import { mapGeminiTrip } from './gemini/gemini-mapper';
 
 export interface OcrImageUpload { buffer: Buffer; mimetype: string; size: number; originalname?: string }
 export interface DocumentExtraction { document: OcrDocumentResult; trips: OcrTripResultDto[]; meanConfidence: number }
@@ -155,6 +156,9 @@ export class OcrService {
   }
 
   private parseDocument(signals: ImageSignals, document: OcrDocumentResult, hint: OcrPlatform | null, forceMulti: boolean): OcrTripResultDto[] {
+    if (signals.structuredTrips) {
+      return signals.structuredTrips.map((trip, index) => mapGeminiTrip(trip, document, index, hint, this.validator));
+    }
     const { read, receipt } = signals;
     const detection = this.detector.detect([read.text]);
     const platform = detection.platform ?? hint;
@@ -234,6 +238,7 @@ export class OcrService {
         platform: trips[0].evidence?.platform ?? null,
         platformConfidence: Math.min(...trips.map((trip) => trip.evidence?.platformConfidence ?? 0)),
         status: OcrCandidateStatus.Review, duplicateOf: null, sources,
+        extractions: trips.flatMap((trip) => trip.evidence?.extractions ?? []),
         warnings: [...new Set([...merged.warnings, 'OCR_MERGED_REVIEW'])],
         rawText: trips.map((trip) => trip.evidence?.rawText ?? '').join('\n\n').slice(0, OCR_MAX_TEXT_LENGTH),
       },

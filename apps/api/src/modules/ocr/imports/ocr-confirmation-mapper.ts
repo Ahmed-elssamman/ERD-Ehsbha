@@ -32,6 +32,9 @@ export function originalSnapshot(candidate: OcrTripResult): Prisma.InputJsonObje
     parsed: { ...candidate.parsed }, fieldConfidences: { ...candidate.fieldConfidences },
     platform: candidate.evidence?.platform ?? null, platformConfidence: candidate.evidence?.platformConfidence ?? 0,
     sources: candidate.evidence?.sources.map((source) => ({ ...source })) ?? [],
+    extractions: candidate.evidence?.extractions?.map((trip) => ({
+      ...trip, fare_details: { ...trip.fare_details }, trip_metrics: { ...trip.trip_metrics }, route: { ...trip.route },
+    })) ?? [],
     warnings: candidate.evidence?.warnings ?? [], duplicateOf: candidate.evidence?.duplicateOf ?? null,
   };
 }

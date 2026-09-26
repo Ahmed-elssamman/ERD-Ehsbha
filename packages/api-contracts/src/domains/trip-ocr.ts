@@ -1,6 +1,8 @@
 import { tripRecordMetadataShape, tripVersionTargetsSchema, tripWriteIdempotency } from './trip-records';
 export * from './trip-records';
 import { z } from 'zod'
+import { ocrStructuredTripSchema } from './ocr-structured'
+export * from './ocr-structured'
 import { registerOperation } from '../catalog/registry'
 import { DEFAULT_PAGE_SIZE, MAXIMUM_PAGE_SIZE } from '../core/pagination'
 import { OcrCandidateStatus, ocrCandidateSourceSchema, ocrDocumentResultSchema, type OcrCandidateEvidence } from './ocr-capture'
@@ -173,6 +175,7 @@ export const ocrCandidateEvidenceSchema: z.ZodType<OcrCandidateEvidence> = z.obj
   platformConfidence: z.number().min(0).max(1), status: z.nativeEnum(OcrCandidateStatus),
   duplicateOf: z.string().nullable(), sources: z.array(ocrCandidateSourceSchema),
   warnings: z.array(z.string()), rawText: z.string().max(40000),
+  extractions: z.array(ocrStructuredTripSchema).max(200).optional(),
 }).strict()
 
 export const ocrTripResultSchema = z.object({

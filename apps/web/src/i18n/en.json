@@ -438,6 +438,8 @@
         "OCR_TEXT_TRUNCATED": "This image contains too much text to display in full. Upload a smaller section.",
         "OCR_SUMMARY_NET_ONLY": "The summary shows net earnings. Gross fare and commission were left blank.",
         "OCR_MERGE_CONFLICT": "These images appear to contain different trips and were kept separate.",
+        "OCR_EXTRACTED_REVIEW": "Extracted values need review before saving.",
+        "OCR_CURRENCY_REVIEW": "Currency is missing or is not EGP. Review the original amounts.",
         "OCR_MERGED_REVIEW": "Screenshots were combined at your request. Review the combined values.",
         "OCR_DUPLICATE_IMAGE": "An identical image was ignored.",
         "OCR_DUPLICATE_TRIP": "This appears to be a trip already present in this batch. Leave it unselected unless it is a different trip.",

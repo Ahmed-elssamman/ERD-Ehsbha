@@ -29,7 +29,7 @@ export class UberParser extends BaseParser {
     this.reorderAddresses(res.fields);
     this.stitchAddressContinuations(text, res);
 
-    // Fallback derivation: when Azure misreads the income label (e.g.
+    // Fallback derivation: when text recognition misreads the income label (e.g.
     // "الدخل" → "لدخل" with the alif dropped) the dictionary pattern
     // doesn't fire and receivedEgp stays null. For Uber the income is
     // mathematically derivable from grossEgp − commissionEgp, so fill it
@@ -147,7 +147,7 @@ export class UberParser extends BaseParser {
         // to an address would corrupt it).
         const nextNorm = this.normalizer.normalizeText(next);
         if (findFieldsOnLine(nextNorm).length > 0) continue;
-        // Fold the Persian ی → Arabic ي (Azure sometimes emits the Persian
+        // Fold the Persian ی → Arabic ي (text recognition sometimes emits the Persian
         // glyph for the same letter shape).
         const tail = next.replace(/ی/g, 'ي').replace(/ک/g, 'ك');
         // Already part of the value?

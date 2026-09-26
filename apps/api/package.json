@@ -29,15 +29,14 @@
     "seed": "ts-node -r dotenv/config prisma/seed.ts",
     "seed:admin": "ts-node -r dotenv/config prisma/seed-admin.ts",
     "smoke": "ts-node -r dotenv/config scripts/smoke.ts",
-    "smoke:ocr": "ts-node -r dotenv/config scripts/smoke-azure-ocr.ts",
-    "benchmark:ocr": "ts-node -r dotenv/config scripts/ocr-benchmark.ts"
+    "smoke:ocr": "ts-node -r dotenv/config scripts/gemini-fixtures.ts",
+    "benchmark:ocr": "ts-node -r dotenv/config scripts/gemini-fixtures.ts",
+    "test:ocr:live": "ts-node -r dotenv/config scripts/gemini-fixtures.ts"
   },
   "dependencies": {
-    "@azure-rest/ai-document-intelligence": "^1.1.0",
-    "@azure-rest/ai-vision-image-analysis": "^1.0.0-beta.3",
-    "@azure/core-auth": "^1.10.1",
     "@ehsbha/api-contracts": "*",
     "@ehsbha/shared-types": "*",
+    "@google/genai": "^2.23.0",
     "@neondatabase/serverless": "^1.1.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",

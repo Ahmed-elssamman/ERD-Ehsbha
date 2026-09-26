@@ -122,7 +122,7 @@ The API includes:
 **Admin frontend:** React 19, Vite 6, React Router 7, TanStack Query, Zustand, Tailwind CSS  
 **Validation:** Zod  
 **Authentication:** separate driver and admin JWT realms  
-**OCR:** Azure Vision/Image Analysis pipeline with Sharp preprocessing and platform parsers  
+**OCR:** Google Gemini structured extraction with Sharp preprocessing, schema validation and review
 **Testing:** Jest currently; Playwright and database integration testing to be added  
 **Package management:** npm workspaces  
 **Primary performance target:** mobile-first driver PWA and data-dense desktop admin  

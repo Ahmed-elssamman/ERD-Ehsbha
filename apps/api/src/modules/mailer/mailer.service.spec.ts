@@ -18,9 +18,7 @@ describe('Password recovery email delivery', () => {
     CORS_ORIGINS: 'http://localhost:5173',
     SMTP_FROM: 'Ehsbha <test@example.invalid>',
     APP_PUBLIC_NAME: 'Ehsbha', APP_PUBLIC_URL: 'https://example.invalid',
-    AZURE_VISION_ENDPOINT: 'https://example.cognitiveservices.azure.com',
-    AZURE_VISION_KEY: 'test-azure-key-for-mailer-unit-only',
-    AZURE_VISION_REGION: 'eastus', AZURE_DOC_INTELLIGENCE_ENABLED: false,
+    GEMINI_MODEL: 'gemini-3.5-flash',
   };
 
   beforeEach(() => {
